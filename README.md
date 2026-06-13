@@ -13,7 +13,7 @@ cp .env.example .env.local
 npm run dev
 ```
 
-Open [http://localhost:3002](http://localhost:3002) (or [http://127.0.0.1:3002](http://127.0.0.1:3002)) and tap **Enter Matchday** (mock login).
+Open [http://localhost:3002](http://localhost:3002) (or [http://127.0.0.1:3002](http://127.0.0.1:3002)) and log in or create an account.
 
 ## MVP features
 
