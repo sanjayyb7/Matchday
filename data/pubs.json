@@ -1,0 +1,92 @@
+[
+  {
+    "id": "pub-mission",
+    "name": "The Mission Tap",
+    "imageUrl": "https://images.unsplash.com/photo-1572116469696-31de0f17cc34?w=200&h=200&fit=crop",
+    "lat": 37.7599,
+    "lng": -122.4148,
+    "address": "2889 Mission St",
+    "neighborhood": "Mission District"
+  },
+  {
+    "id": "pub-soma",
+    "name": "SOMA Sports Lounge",
+    "imageUrl": "https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=200&h=200&fit=crop",
+    "lat": 37.7786,
+    "lng": -122.4059,
+    "address": "123 4th St",
+    "neighborhood": "SOMA"
+  },
+  {
+    "id": "pub-marina",
+    "name": "Marina Kickoff Bar",
+    "imageUrl": "https://images.unsplash.com/photo-1559329007-40df8a9346d8?w=200&h=200&fit=crop",
+    "lat": 37.8021,
+    "lng": -122.4414,
+    "address": "2143 Chestnut St",
+    "neighborhood": "Marina"
+  },
+  {
+    "id": "pub-castro",
+    "name": "Castro Corner Pub",
+    "imageUrl": "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=200&h=200&fit=crop",
+    "lat": 37.7609,
+    "lng": -122.4350,
+    "address": "400 Castro St",
+    "neighborhood": "Castro"
+  },
+  {
+    "id": "pub-northbeach",
+    "name": "North Beach Football Club",
+    "imageUrl": "https://images.unsplash.com/photo-1566417713940-bf6c91275425?w=200&h=200&fit=crop",
+    "lat": 37.8002,
+    "lng": -122.4075,
+    "address": "561 Columbus Ave",
+    "neighborhood": "North Beach"
+  },
+  {
+    "id": "pub-haight",
+    "name": "Haight Match House",
+    "imageUrl": "https://images.unsplash.com/photo-1543007630-9710e4a47a20?w=200&h=200&fit=crop",
+    "lat": 37.7694,
+    "lng": -122.4482,
+    "address": "1520 Haight St",
+    "neighborhood": "Haight-Ashbury"
+  },
+  {
+    "id": "pub-richmond",
+    "name": "Richmond Rovers Pub",
+    "imageUrl": "https://images.unsplash.com/photo-1572116469696-31de0f17cc34?w=200&h=200&fit=crop",
+    "lat": 37.7801,
+    "lng": -122.4662,
+    "address": "3800 Geary Blvd",
+    "neighborhood": "Richmond"
+  },
+  {
+    "id": "pub-fi-di",
+    "name": "FiDi Fan Zone",
+    "imageUrl": "https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=200&h=200&fit=crop",
+    "lat": 37.7936,
+    "lng": -122.3965,
+    "address": "101 California St",
+    "neighborhood": "Financial District"
+  },
+  {
+    "id": "pub-dogpatch",
+    "name": "Dogpatch Derby",
+    "imageUrl": "https://images.unsplash.com/photo-1559329007-40df8a9346d8?w=200&h=200&fit=crop",
+    "lat": 37.7615,
+    "lng": -122.3883,
+    "address": "2500 3rd St",
+    "neighborhood": "Dogpatch"
+  },
+  {
+    "id": "pub-hayes",
+    "name": "Hayes Valley Hooligans",
+    "imageUrl": "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=200&h=200&fit=crop",
+    "lat": 37.7763,
+    "lng": -122.4240,
+    "address": "580 Hayes St",
+    "neighborhood": "Hayes Valley"
+  }
+]

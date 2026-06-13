@@ -1,0 +1,16 @@
+[
+  {
+    "id": "spain",
+    "name": "Spain",
+    "flagUrl": "/assets/flags/spain.svg",
+    "countryCode": "ES",
+    "color": "#C60B1E"
+  },
+  {
+    "id": "france",
+    "name": "France",
+    "flagUrl": "/assets/flags/france.svg",
+    "countryCode": "FR",
+    "color": "#0055A4"
+  }
+]
