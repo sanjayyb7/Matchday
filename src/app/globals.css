@@ -81,6 +81,8 @@
   --sidebar-accent-foreground: #f5f5f5;
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: #00C853;
+  --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 .light {
@@ -156,6 +158,16 @@
 
 .live-pulse {
   animation: live-pulse 1.5s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .live-pulse {
+    animation: none;
+  }
+
+  .motion-safe-transition {
+    transition: none !important;
+  }
 }
 
 .font-heading {

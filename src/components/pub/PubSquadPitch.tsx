@@ -1,131 +1,254 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
+import { motion, useReducedMotion } from "framer-motion";
 import { FormationPlayerCard } from "./FormationPlayerCard";
+import { SquadRewardPanel } from "./SquadRewardPanel";
 import {
-  assignFormation,
-  countByRow,
+  assignStartingEleven,
+  isGoalkeeper,
+  presentPlayerCounts,
+  teamIdsByFanCount,
   type FormationRow,
+  type RosterFormationSlot,
 } from "@/lib/squad/formation";
-import type { FanPresence } from "@/types";
+import {
+  getLiveOrUpcomingMatch,
+  getPlayersByTeam,
+  getTeam,
+} from "@/lib/mock/data";
+import { useMatchdayStore } from "@/store/matchday-store";
+import { staggerContainer, staggerItem } from "@/lib/motion/tokens";
+import type { FanPresence, Player } from "@/types";
 import { cn } from "@/lib/utils";
 
 interface PubSquadPitchProps {
   squad: FanPresence[];
+  pubName?: string;
 }
 
-function SideMeter({
-  label,
-  filled,
-  max,
-  className,
-}: {
-  label: string;
-  filled: number;
-  max: number;
-  className?: string;
-}) {
-  return (
-    <div className={cn("flex flex-col items-center gap-1", className)}>
-      <span className="text-[9px] font-bold uppercase tracking-wider text-white/70">
-        {label}
-      </span>
-      <div className="flex flex-col gap-1">
-        {Array.from({ length: max }).map((_, i) => (
-          <div
-            key={i}
-            className={cn(
-              "h-2 w-6 rounded-sm border border-white/30",
-              i < filled ? "bg-white" : "bg-transparent",
-            )}
-          />
-        ))}
-      </div>
-    </div>
-  );
-}
+const PITCH_WIDTH = "mx-auto w-full max-w-sm";
 
 function FormationRow({
   row,
   slots,
+  presentCounts,
   inverted,
+  reduced,
 }: {
   row: FormationRow;
-  slots: ReturnType<typeof assignFormation>[FormationRow];
+  slots: RosterFormationSlot[];
+  presentCounts: Map<string, number>;
   inverted?: boolean;
+  reduced: boolean;
 }) {
   if (slots.length === 0) return null;
 
   return (
-    <div
+    <motion.div
+      variants={staggerContainer(reduced)}
+      initial="hidden"
+      animate="show"
       className={cn(
-        "flex items-end justify-center gap-6 sm:gap-10",
+        "flex w-full items-end justify-evenly",
         row === "attack" && "pt-2",
-        row === "midfield" && "py-1",
-        row === "defense" && "pb-2",
+        row === "midfield" && "py-0.5",
+        row === "defense" && "pb-0.5",
+        row === "goalkeeper" && "pb-1",
+        slots.length === 2 && "gap-8",
+        slots.length >= 4 && "gap-0.5 px-0",
       )}
     >
-      {slots.map(({ member }) => (
-        <FormationPlayerCard
-          key={member.userId}
-          member={member}
-          inverted={inverted}
-        />
-      ))}
+      {slots.map(({ player }) => {
+        const fanCount = presentCounts.get(player.id) ?? 0;
+        const flip = inverted || isGoalkeeper(player);
+        return (
+          <motion.div key={player.id} variants={staggerItem(reduced)}>
+            <FormationPlayerCard
+              player={player}
+              isPresent={fanCount > 0}
+              fanCount={fanCount}
+              inverted={flip}
+              compact
+            />
+          </motion.div>
+        );
+      })}
+    </motion.div>
+  );
+}
+
+function BenchRow({
+  players,
+  presentCounts,
+}: {
+  players: Player[];
+  presentCounts: Map<string, number>;
+}) {
+  if (players.length === 0) return null;
+
+  return (
+    <div className={cn("rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-3", PITCH_WIDTH)}>
+      <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-white/40">
+        Bench
+      </p>
+      <div className="flex flex-wrap items-end justify-center gap-3">
+        {players.map((player) => {
+          const fanCount = presentCounts.get(player.id) ?? 0;
+          return (
+            <FormationPlayerCard
+              key={player.id}
+              player={player}
+              isPresent={fanCount > 0}
+              fanCount={fanCount}
+              compact
+            />
+          );
+        })}
+      </div>
     </div>
   );
 }
 
-export function PubSquadPitch({ squad }: PubSquadPitchProps) {
-  const formation = assignFormation(squad);
-  const { attack, defense } = countByRow(squad);
-
-  if (squad.length === 0) {
-    return (
-      <div className="flex h-[340px] items-center justify-center rounded-2xl border border-white/10 bg-[#1a3d2e]">
-        <p className="text-sm text-white/60">No fans nearby yet — be the first!</p>
-      </div>
-    );
+function resolveDefaultTeamId(
+  squad: FanPresence[],
+  identityTeamId?: string,
+): string {
+  const teamsAtPub = teamIdsByFanCount(squad);
+  if (identityTeamId && teamsAtPub.includes(identityTeamId)) {
+    return identityTeamId;
   }
+  if (teamsAtPub.length > 0) return teamsAtPub[0];
+  const match = getLiveOrUpcomingMatch();
+  return identityTeamId ?? match?.homeTeamId ?? "spain";
+}
+
+export function PubSquadPitch({ squad, pubName }: PubSquadPitchProps) {
+  const reduced = useReducedMotion() ?? false;
+  const identity = useMatchdayStore((s) => s.identity);
+  const teamsAtPub = useMemo(() => teamIdsByFanCount(squad), [squad]);
+  const defaultTeamId = useMemo(
+    () => resolveDefaultTeamId(squad, identity?.teamId),
+    [squad, identity?.teamId],
+  );
+  const [selectedTeamId, setSelectedTeamId] = useState(defaultTeamId);
+
+  useEffect(() => {
+    setSelectedTeamId(defaultTeamId);
+  }, [defaultTeamId]);
+
+  const roster = getPlayersByTeam(selectedTeamId);
+  const { starting, bench } = assignStartingEleven(roster);
+  const presentCounts = presentPlayerCounts(squad, selectedTeamId);
+  const presentCount = [...presentCounts.values()].reduce((a, b) => a + b, 0);
+  const presentPlayerCount = presentCounts.size;
+  const team = getTeam(selectedTeamId);
 
   return (
-    <div className="relative mx-auto aspect-[3/4] max-h-[420px] w-full max-w-sm overflow-hidden rounded-2xl">
-      {/* Pitch background */}
-      <div className="absolute inset-0 bg-[#1a4d35]" />
-      <div
-        className="absolute inset-0 opacity-30"
-        style={{
-          backgroundImage:
-            "repeating-linear-gradient(90deg, transparent, transparent 48px, rgba(255,255,255,0.03) 48px, rgba(255,255,255,0.03) 49px)",
-        }}
-      />
+    <div className="space-y-3">
+      {teamsAtPub.length > 1 && (
+        <div className="flex gap-2">
+          {teamsAtPub.map((teamId) => {
+            const t = getTeam(teamId);
+            const fans = squad.filter((f) => f.teamId === teamId).length;
+            const active = teamId === selectedTeamId;
+            return (
+              <button
+                key={teamId}
+                type="button"
+                onClick={() => setSelectedTeamId(teamId)}
+                className={cn(
+                  "flex flex-1 items-center justify-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold transition-colors",
+                  active
+                    ? "border-[#FFFC00]/50 bg-[#FFFC00]/10 text-white"
+                    : "border-white/10 bg-white/5 text-white/60",
+                )}
+              >
+                {t && (
+                  <Image
+                    src={t.flagUrl}
+                    alt=""
+                    width={20}
+                    height={14}
+                    className="rounded-sm"
+                    unoptimized
+                  />
+                )}
+                {t?.name ?? teamId} ({fans})
+              </button>
+            );
+          })}
+        </div>
+      )}
 
-      {/* Pitch markings */}
-      <div className="absolute inset-3 rounded-lg border border-white/25" />
-      <div className="absolute left-3 right-3 top-1/2 h-px -translate-y-1/2 bg-white/25" />
-      <div className="absolute left-1/2 top-1/2 h-16 w-16 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/25" />
-      <div className="absolute bottom-3 left-1/2 h-20 w-[55%] -translate-x-1/2 rounded-t-lg border border-b-0 border-white/25" />
-      <div className="absolute top-3 left-1/2 h-20 w-[55%] -translate-x-1/2 rounded-b-lg border border-t-0 border-white/25" />
-
-      {/* Side meters */}
-      <SideMeter
-        label="ATT max 5"
-        filled={attack}
-        max={5}
-        className="absolute left-2 top-6"
-      />
-      <SideMeter
-        label="max 5 DEF"
-        filled={defense}
-        max={5}
-        className="absolute bottom-6 left-2"
-      />
-
-      {/* Formation */}
-      <div className="relative flex h-full flex-col justify-between px-8 py-6 pl-10">
-        <FormationRow row="attack" slots={formation.attack} />
-        <FormationRow row="midfield" slots={formation.midfield} />
-        <FormationRow row="defense" slots={formation.defense} inverted />
+      <div className={cn("flex items-center justify-between px-1 text-xs text-white/50", PITCH_WIDTH)}>
+        <span>{team?.name ?? "Squad"} · 4-4-2</span>
+        <span>
+          {presentCount} fan{presentCount === 1 ? "" : "s"} here ·{" "}
+          {presentPlayerCount}/{roster.length} players
+        </span>
       </div>
+
+      <div className={PITCH_WIDTH}>
+        <SquadRewardPanel
+          presentPlayers={presentPlayerCount}
+          rosterSize={roster.length}
+          presentFans={presentCount}
+          pubName={pubName}
+        />
+      </div>
+
+      <div className={cn("relative aspect-[3/4] max-h-[500px] overflow-hidden rounded-2xl", PITCH_WIDTH)}>
+        <div className="absolute inset-0 bg-[#1a4d35]" />
+        <div
+          className="absolute inset-0 opacity-30"
+          style={{
+            backgroundImage:
+              "repeating-linear-gradient(90deg, transparent, transparent 48px, rgba(255,255,255,0.03) 48px, rgba(255,255,255,0.03) 49px)",
+          }}
+        />
+
+        <div className="absolute inset-3 rounded-lg border border-white/25" />
+        <div className="absolute left-3 right-3 top-1/2 h-px -translate-y-1/2 bg-white/25" />
+        <div className="absolute left-1/2 top-1/2 h-16 w-16 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/25" />
+        <div className="absolute bottom-3 left-1/2 h-20 w-[55%] -translate-x-1/2 rounded-t-lg border border-b-0 border-white/25" />
+        <div className="absolute top-3 left-1/2 h-20 w-[55%] -translate-x-1/2 rounded-b-lg border border-t-0 border-white/25" />
+
+        <div
+          key={selectedTeamId}
+          className="relative flex h-full flex-col justify-between px-3 py-4 sm:px-5"
+        >
+          <FormationRow
+            row="attack"
+            slots={starting.attack}
+            presentCounts={presentCounts}
+            reduced={reduced}
+          />
+          <FormationRow
+            row="midfield"
+            slots={starting.midfield}
+            presentCounts={presentCounts}
+            reduced={reduced}
+          />
+          <FormationRow
+            row="defense"
+            slots={starting.defense}
+            presentCounts={presentCounts}
+            inverted
+            reduced={reduced}
+          />
+          <FormationRow
+            row="goalkeeper"
+            slots={starting.goalkeeper}
+            presentCounts={presentCounts}
+            inverted
+            reduced={reduced}
+          />
+        </div>
+      </div>
+
+      <BenchRow players={bench} presentCounts={presentCounts} />
     </div>
   );
 }

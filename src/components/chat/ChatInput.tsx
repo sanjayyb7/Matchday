@@ -1,9 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { Camera, Send } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { Send } from "lucide-react";
 import { CHAT_TEMPLATES } from "@/lib/mock/simulatedFans";
-import { getTeamChatThemeFromTeam } from "@/lib/chat/team-theme";
+import {
+  BOTTOM_NAV_CLEARANCE,
+  BOTTOM_SAFE_CLEARANCE,
+} from "@/lib/layout/constants";
+import { enterVariants, uiTransition } from "@/lib/motion/tokens";
 import type { Team } from "@/types";
 
 interface ChatInputProps {
@@ -14,7 +20,13 @@ interface ChatInputProps {
 
 export function ChatInput({ onSend, disabled, team }: ChatInputProps) {
   const [text, setText] = useState("");
-  const chatTheme = getTeamChatThemeFromTeam(team);
+  const pathname = usePathname();
+  const reduced = useReducedMotion() ?? false;
+  const bottomInset = pathname.startsWith("/chat")
+    ? BOTTOM_SAFE_CLEARANCE
+    : BOTTOM_NAV_CLEARANCE;
+
+  const canSend = text.trim().length > 0;
 
   const handleSend = () => {
     const trimmed = text.trim();
@@ -24,49 +36,55 @@ export function ChatInput({ onSend, disabled, team }: ChatInputProps) {
   };
 
   return (
-    <div className="relative z-10 bg-[#0B0F14]/85 px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-2 backdrop-blur-md">
-      <div className="mb-2 flex gap-2 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {CHAT_TEMPLATES.slice(0, 4).map((template) => (
-          <button
-            key={template}
-            type="button"
-            onClick={() => onSend(template)}
-            disabled={disabled}
-            className="shrink-0 rounded-full bg-white/10 px-3.5 py-1.5 text-xs font-medium text-white/70 transition-colors hover:bg-white/15 disabled:opacity-40"
-          >
-            {template}
-          </button>
-        ))}
-      </div>
-      <div className="flex items-center gap-2">
-        <button
-          type="button"
-          disabled={disabled}
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/10 text-white/60 disabled:opacity-40"
-          aria-label="Camera"
-        >
-          <Camera className="h-5 w-5" />
-        </button>
-        <div className="flex flex-1 items-center rounded-full border border-white/10 bg-white/8 px-4 py-2 backdrop-blur-sm">
+    <div
+      className="pointer-events-none fixed bottom-0 left-0 right-0 z-40 px-4 pt-2"
+      style={{ paddingBottom: bottomInset }}
+    >
+      <div className="pointer-events-auto mx-auto w-full max-w-md space-y-2">
+        <div className="flex gap-2 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {CHAT_TEMPLATES.slice(0, 4).map((template) => (
+            <button
+              key={template}
+              type="button"
+              onClick={() => onSend(template)}
+              disabled={disabled}
+              className="shrink-0 rounded-full bg-[#141a22]/75 px-3.5 py-1.5 text-xs font-medium text-white/70 shadow-md ring-1 ring-white/10 backdrop-blur-xl transition-[background-color,transform] duration-150 ease-[var(--ease-out-strong)] hover:bg-[#141a22]/90 active:scale-[0.97] disabled:opacity-40"
+            >
+              {template}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex min-h-[52px] items-center gap-2.5 rounded-full bg-[#141a22]/75 py-2.5 pl-5 pr-2 shadow-[0_8px_32px_rgba(0,0,0,0.45)] ring-1 ring-white/10 backdrop-blur-xl">
           <input
             value={text}
             onChange={(e) => setText(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleSend()}
+            onKeyDown={(e) => e.key === "Enter" && canSend && handleSend()}
             placeholder="Send a chat..."
             disabled={disabled}
-            className="w-full bg-transparent text-[15px] text-white placeholder:text-white/35 outline-none disabled:opacity-40"
+            className="min-w-0 flex-1 bg-transparent text-[17px] leading-snug text-white placeholder:text-white/35 outline-none disabled:opacity-40"
           />
+          <AnimatePresence mode="popLayout">
+            {canSend && (
+              <motion.button
+                key="send"
+                type="button"
+                onClick={handleSend}
+                disabled={disabled}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+                variants={enterVariants(reduced)}
+                transition={uiTransition(reduced, 0.16)}
+                whileTap={reduced ? undefined : { scale: 0.97 }}
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[#FFFC00] disabled:opacity-40"
+                aria-label="Send"
+              >
+                <Send className="h-5 w-5" strokeWidth={2.5} />
+              </motion.button>
+            )}
+          </AnimatePresence>
         </div>
-        <button
-          type="button"
-          onClick={handleSend}
-          disabled={disabled || !text.trim()}
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-black shadow-sm transition-transform active:scale-95 disabled:opacity-30"
-          style={{ backgroundColor: chatTheme.accent }}
-          aria-label="Send"
-        >
-          <Send className="h-4 w-4" />
-        </button>
       </div>
     </div>
   );

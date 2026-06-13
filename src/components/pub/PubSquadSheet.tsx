@@ -47,7 +47,7 @@ export function PubSquadSheet() {
               </div>
             </SheetHeader>
             <div className="mt-4">
-              <PubSquadPitch squad={squad} />
+              <PubSquadPitch squad={squad} pubName={selectedPub.name} />
             </div>
           </>
         )}

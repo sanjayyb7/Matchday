@@ -72,7 +72,7 @@ export function PubMap() {
 
   if (!MAPBOX_TOKEN) {
     return (
-      <div className="flex h-[calc(100vh-5rem)] flex-col items-center justify-center gap-4 p-6 text-center">
+      <div className="flex h-dvh flex-col items-center justify-center gap-4 p-6 text-center">
         <p className="text-muted-foreground">
           Add <code className="text-primary">NEXT_PUBLIC_MAPBOX_TOKEN</code> to{" "}
           <code>.env.local</code> to enable the map.
@@ -95,7 +95,7 @@ export function PubMap() {
   }
 
   return (
-    <div className="relative h-[calc(100vh-5rem)] w-full">
+    <div className="relative h-dvh w-full">
       {liveMatch?.status === "live" && (
         <Badge className="absolute left-4 top-4 z-10 gap-2 bg-accent text-accent-foreground">
           <span className="live-pulse h-2 w-2 rounded-full bg-red-500" />

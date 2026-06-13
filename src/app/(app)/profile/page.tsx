@@ -12,6 +12,7 @@ import {
   getPub,
   getTeam,
 } from "@/lib/mock/data";
+import { BOTTOM_NAV_CLEARANCE } from "@/lib/layout/constants";
 import { FanHistoryTimeline } from "@/components/profile/FanHistoryTimeline";
 import { DeleteAccountDialog } from "@/components/profile/DeleteAccountDialog";
 import { ThemeSelector } from "@/components/profile/ThemeSelector";
@@ -48,7 +49,7 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="px-4 py-6">
+    <div className="px-4 py-6" style={{ paddingBottom: BOTTOM_NAV_CLEARANCE }}>
       <header className="mb-8 flex items-center gap-4">
         <div className="relative h-16 w-16 overflow-hidden rounded-2xl ring-2 ring-primary/40">
           <Image

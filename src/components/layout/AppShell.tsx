@@ -28,7 +28,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   if (!isAuthenticated) return null;
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className="relative min-h-dvh">
       {children}
       <BottomNav />
       <MatchNotification />

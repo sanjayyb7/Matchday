@@ -13,6 +13,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useMatchdayStore } from "@/store/matchday-store";
 import { getLiveOrUpcomingMatch, getTeam } from "@/lib/mock/data";
 import { getTeamChatThemeFromTeam } from "@/lib/chat/team-theme";
+import { CHAT_INPUT_CLEARANCE } from "@/lib/layout/constants";
 
 export default function ChatPage({
   params,
@@ -34,7 +35,7 @@ export default function ChatPage({
   };
 
   return (
-    <div className="relative flex h-[calc(100vh-5rem)] flex-col overflow-hidden bg-[#0B0F14]">
+    <div className="relative flex h-dvh flex-col overflow-hidden">
       <ChatTeamBackground team={team} />
 
       <header className="relative z-10 flex items-center gap-3 border-b border-white/10 bg-[#0B0F14]/80 px-3 py-3 backdrop-blur-md">
@@ -63,11 +64,14 @@ export default function ChatPage({
         </div>
       </header>
 
-      <div className="relative z-10 flex min-h-0 flex-1 flex-col">
+      <div
+        className="relative z-10 flex min-h-0 flex-1 flex-col"
+        style={{ paddingBottom: CHAT_INPUT_CLEARANCE }}
+      >
         <ChatStoriesRow messages={messages} teamId={teamId} team={team} />
         <ChatThread messages={messages} currentUserId={user?.id} team={team} />
-        <ChatInput onSend={handleSend} disabled={!identity} team={team} />
       </div>
+      <ChatInput onSend={handleSend} disabled={!identity} team={team} />
     </div>
   );
 }

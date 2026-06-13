@@ -16,7 +16,7 @@ export function PubMarker({ pub, onClick }: PubMarkerProps) {
       className="group flex flex-col items-center"
       aria-label={`Open ${pub.name}`}
     >
-      <div className="relative h-14 w-14 overflow-hidden rounded-full border-2 border-white shadow-lg ring-2 ring-primary/50 transition-transform group-hover:scale-110">
+      <div className="relative h-14 w-14 overflow-hidden rounded-full border-2 border-white shadow-lg ring-2 ring-primary/50 transition-transform duration-150 ease-[var(--ease-out-strong)] active:scale-[0.97] hover:scale-105">
         <Image
           src={pub.imageUrl}
           alt={pub.name}
