@@ -11,7 +11,7 @@ import { useGeolocation } from "@/hooks/useGeolocation";
 import { useAuth } from "@/hooks/useAuth";
 import { useRealtime } from "@/lib/realtime/context";
 import { useMatchdayStore } from "@/store/matchday-store";
-import { mockHistoryAdapter } from "@/lib/history/mock-adapter";
+import { getHistoryAdapter } from "@/hooks/useHistory";
 import { getPub } from "@/lib/mock/data";
 import { PubMarker } from "./PubMarker";
 import { UserPlayerMarkerContent } from "./UserPlayerMarker";
@@ -47,7 +47,7 @@ export function PubMap() {
     if (pubId && liveMatch) {
       const pub = getPub(pubId);
       if (pub) {
-        mockHistoryAdapter.updatePubForMatch(
+        getHistoryAdapter().updatePubForMatch(
           user.id,
           liveMatch.id,
           pubId,

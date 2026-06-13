@@ -1,16 +1,5 @@
 import type { MatchHistoryEntry } from "@/types";
-
-export interface HistoryAdapter {
-  getHistory(userId: string): MatchHistoryEntry[];
-  recordMatchAttendance(entry: Omit<MatchHistoryEntry, "id">): void;
-  updatePubForMatch(
-    userId: string,
-    matchId: string,
-    pubId: string,
-    pubName: string,
-  ): void;
-  clearAll(userId: string): void;
-}
+import type { HistoryAdapter } from "./types";
 
 const HISTORY_KEY = "matchday:history";
 

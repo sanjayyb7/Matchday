@@ -5,7 +5,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { useMatchdayStore } from "@/store/matchday-store";
-import { mockHistoryAdapter } from "@/lib/history/mock-adapter";
+import { useHistory } from "@/hooks/useHistory";
 import {
   getLiveOrUpcomingMatch,
   getPlayer,
@@ -30,7 +30,7 @@ export default function ProfilePage() {
   const [showDelete, setShowDelete] = useState(false);
   const { position } = useGeolocation();
 
-  const history = user ? mockHistoryAdapter.getHistory(user.id) : [];
+  const { history } = useHistory(user?.id);
   const liveMatch = getLiveOrUpcomingMatch();
   const player = identity ? getPlayer(identity.playerId) : null;
   const team = identity ? getTeam(identity.teamId) : null;
@@ -42,8 +42,8 @@ export default function ProfilePage() {
   );
   const nearbyPub = nearbyPubId ? getPub(nearbyPubId) : null;
 
-  const handleDelete = () => {
-    deleteAccount();
+  const handleDelete = async () => {
+    await deleteAccount();
     setShowDelete(false);
     router.replace("/login");
   };

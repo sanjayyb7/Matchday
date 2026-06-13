@@ -18,7 +18,9 @@ import {
   getPlayersByTeam,
   getTeam,
 } from "@/lib/mock/data";
-import { mockHistoryAdapter } from "@/lib/history/mock-adapter";
+import { getHistoryAdapter } from "@/hooks/useHistory";
+import { INSFORGE_ENABLED } from "@/lib/insforge/config";
+import { upsertUserIdentity } from "@/lib/identity/insforge-identity";
 import type { Player } from "@/types";
 
 export function MatchNotification() {
@@ -54,7 +56,9 @@ export function MatchNotification() {
       updatedAt: new Date().toISOString(),
     };
     setIdentity(identity);
-    mockHistoryAdapter.recordMatchAttendance({
+
+    const history = getHistoryAdapter();
+    void history.recordMatchAttendance({
       userId: user.id,
       matchId: match.id,
       teamId: selectedTeamId,
@@ -62,6 +66,11 @@ export function MatchNotification() {
       attendedAt: new Date().toISOString(),
       matchLabel: getMatchLabel(match),
     });
+
+    if (INSFORGE_ENABLED) {
+      void upsertUserIdentity(identity);
+    }
+
     closeMatchModal();
   };
 

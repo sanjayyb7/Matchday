@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { AuthHero } from "@/components/auth/AuthHero";
 import { LoginForm } from "@/components/auth/LoginForm";
 import { useAuth } from "@/hooks/useAuth";
@@ -24,7 +25,9 @@ export default function LoginPage() {
         title="Welcome back"
         subtitle="Log in to rejoin your squad and keep your matchday streak going."
       />
-      <LoginForm />
+      <Suspense fallback={<div className="h-40" />}>
+        <LoginForm />
+      </Suspense>
     </main>
   );
 }

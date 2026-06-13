@@ -4,7 +4,9 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import { OAuthButtons } from "@/components/auth/OAuthButtons";
 import { useAuth } from "@/hooks/useAuth";
+import { INSFORGE_ENABLED } from "@/lib/insforge/config";
 
 export function SignupForm() {
   const { signUp } = useAuth();
@@ -24,6 +26,25 @@ export function SignupForm() {
     signUp({ name: trimmed, email: email.trim() || undefined });
     router.push("/map");
   };
+
+  if (INSFORGE_ENABLED) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.15 }}
+        className="relative z-10 w-full max-w-sm px-6 pb-10"
+      >
+        <OAuthButtons mode="signup" />
+        <p className="mt-5 text-center text-sm text-white/45">
+          Already have an account?{" "}
+          <Link href="/login" className="font-semibold text-[#FFFC00] hover:underline">
+            Log in
+          </Link>
+        </p>
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div

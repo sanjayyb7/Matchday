@@ -4,10 +4,15 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
+  useState,
   useSyncExternalStore,
 } from "react";
 import { mockAuthAdapter, SESSION_KEY } from "@/lib/auth/mock-auth";
+import { mapInsForgeUser, type InsForgeAuthUser } from "@/lib/auth/insforge-auth";
+import { getInsForgeBrowserClient, resetInsForgeBrowserClient } from "@/lib/insforge/client";
+import { INSFORGE_ENABLED } from "@/lib/insforge/config";
 import type { AuthUser, SignUpInput } from "@/types";
 
 interface AuthContextValue {
@@ -16,8 +21,8 @@ interface AuthContextValue {
   isLoading: boolean;
   signUp: (input: SignUpInput) => AuthUser;
   signIn: () => AuthUser | null;
-  signOut: () => void;
-  deleteAccount: () => void;
+  signOut: () => Promise<void>;
+  deleteAccount: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -58,7 +63,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     getAuthServerSnapshot,
   );
 
-  const user = useMemo(() => parseSession(sessionRaw), [sessionRaw]);
+  const mockUser = useMemo(
+    () => (INSFORGE_ENABLED ? null : parseSession(sessionRaw)),
+    [sessionRaw],
+  );
+
+  const [insforgeUser, setInsforgeUser] = useState<AuthUser | null>(null);
+  const [isLoading, setIsLoading] = useState(INSFORGE_ENABLED);
+
+  useEffect(() => {
+    if (!INSFORGE_ENABLED) return;
+
+    let cancelled = false;
+
+    async function loadUser() {
+      try {
+        const client = getInsForgeBrowserClient();
+        const { data } = await client.auth.getCurrentUser();
+        if (cancelled) return;
+        setInsforgeUser(
+          data.user ? mapInsForgeUser(data.user as InsForgeAuthUser) : null,
+        );
+      } catch {
+        if (!cancelled) setInsforgeUser(null);
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    }
+
+    void loadUser();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const user = INSFORGE_ENABLED ? insforgeUser : mockUser;
 
   const signUp = useCallback((input: SignUpInput) => {
     const session = mockAuthAdapter.signUp(input);
@@ -72,27 +111,52 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return session;
   }, []);
 
-  const signOut = useCallback(() => {
+  const signOut = useCallback(async () => {
+    if (INSFORGE_ENABLED) {
+      const client = getInsForgeBrowserClient();
+      await client.auth.signOut();
+      await fetch("/api/auth/sign-out", { method: "POST" });
+      resetInsForgeBrowserClient();
+      setInsforgeUser(null);
+      return;
+    }
     mockAuthAdapter.signOut();
     notifyAuthListeners();
   }, []);
 
-  const deleteAccount = useCallback(() => {
+  const deleteAccount = useCallback(async () => {
+    if (INSFORGE_ENABLED && user) {
+      const client = getInsForgeBrowserClient();
+      await client.database
+        .from("match_history")
+        .delete()
+        .eq("user_id", user.id);
+      await client.database
+        .from("user_identities")
+        .delete()
+        .eq("user_id", user.id);
+      await client.database.from("fan_presence").delete().eq("user_id", user.id);
+      await client.auth.signOut();
+      await fetch("/api/auth/sign-out", { method: "POST" });
+      resetInsForgeBrowserClient();
+      setInsforgeUser(null);
+      return;
+    }
     mockAuthAdapter.deleteAccount();
     notifyAuthListeners();
-  }, []);
+  }, [user]);
 
   const value = useMemo(
     () => ({
       user,
       isAuthenticated: !!user,
-      isLoading: false,
+      isLoading,
       signUp,
       signIn,
       signOut,
       deleteAccount,
     }),
-    [user, signUp, signIn, signOut, deleteAccount],
+    [user, isLoading, signUp, signIn, signOut, deleteAccount],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
