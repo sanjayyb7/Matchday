@@ -123,16 +123,18 @@ class InsForgeRealtimeEngine implements RealtimeAdapter {
       this.presence.set(presence.userId, presence);
       this.notifyPresence();
 
-      await client.database.from("fan_presence").upsert({
-        user_id: presence.userId,
-        match_id: this.matchId,
-        player_id: presence.playerId,
-        team_id: presence.teamId,
-        lat: presence.lat,
-        lng: presence.lng,
-        pub_id: presence.pubId ?? null,
-        updated_at: new Date().toISOString(),
-      });
+      await client.database.from("fan_presence").upsert([
+        {
+          user_id: presence.userId,
+          match_id: this.matchId,
+          player_id: presence.playerId,
+          team_id: presence.teamId,
+          lat: presence.lat,
+          lng: presence.lng,
+          pub_id: presence.pubId ?? null,
+          updated_at: new Date().toISOString(),
+        },
+      ]);
     });
   }
 
@@ -224,13 +226,15 @@ class InsForgeRealtimeEngine implements RealtimeAdapter {
   sendChatMessage(message: Omit<ChatMessage, "id" | "createdAt">) {
     void this.ensureInitialized().then(async () => {
       const client = getInsForgeBrowserClient();
-      await client.database.from("chat_messages").insert({
-        team_id: message.teamId,
-        match_id: message.matchId,
-        user_id: message.userId,
-        player_id: message.playerId,
-        text: message.text,
-      });
+      await client.database.from("chat_messages").insert([
+        {
+          team_id: message.teamId,
+          match_id: message.matchId,
+          user_id: message.userId,
+          player_id: message.playerId,
+          text: message.text,
+        },
+      ]);
     });
   }
 

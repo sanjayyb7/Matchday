@@ -10,7 +10,12 @@ import {
   useSyncExternalStore,
 } from "react";
 import { mockAuthAdapter, SESSION_KEY } from "@/lib/auth/mock-auth";
-import { mapInsForgeUser, type InsForgeAuthUser } from "@/lib/auth/insforge-auth";
+import {
+  mapInsForgeUser,
+  syncInsForgeProfile,
+  type InsForgeAuthUser,
+} from "@/lib/auth/insforge-auth";
+import { bootstrapInsForgeBackend } from "@/lib/insforge/bootstrap";
 import { getInsForgeBrowserClient, resetInsForgeBrowserClient } from "@/lib/insforge/client";
 import { INSFORGE_ENABLED } from "@/lib/insforge/config";
 import type { AuthUser, SignUpInput } from "@/types";
@@ -78,12 +83,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     async function loadUser() {
       try {
+        await bootstrapInsForgeBackend();
         const client = getInsForgeBrowserClient();
         const { data } = await client.auth.getCurrentUser();
         if (cancelled) return;
-        setInsforgeUser(
-          data.user ? mapInsForgeUser(data.user as InsForgeAuthUser) : null,
-        );
+        if (data.user) {
+          const authUser = mapInsForgeUser(data.user as InsForgeAuthUser);
+          await syncInsForgeProfile(data.user as InsForgeAuthUser);
+          await bootstrapInsForgeBackend(authUser.id);
+          setInsforgeUser(authUser);
+        } else {
+          setInsforgeUser(null);
+        }
       } catch {
         if (!cancelled) setInsforgeUser(null);
       } finally {
@@ -126,18 +137,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const deleteAccount = useCallback(async () => {
     if (INSFORGE_ENABLED && user) {
-      const client = getInsForgeBrowserClient();
-      await client.database
-        .from("match_history")
-        .delete()
-        .eq("user_id", user.id);
-      await client.database
-        .from("user_identities")
-        .delete()
-        .eq("user_id", user.id);
-      await client.database.from("fan_presence").delete().eq("user_id", user.id);
-      await client.auth.signOut();
-      await fetch("/api/auth/sign-out", { method: "POST" });
+      const response = await fetch("/api/auth/delete-account", { method: "POST" });
+      if (!response.ok) {
+        const { deleteInsForgeUserDataClient } = await import(
+          "@/lib/auth/delete-account-client"
+        );
+        await deleteInsForgeUserDataClient(user.id);
+        const client = getInsForgeBrowserClient();
+        await client.auth.signOut();
+        await fetch("/api/auth/sign-out", { method: "POST" });
+      }
       resetInsForgeBrowserClient();
       setInsforgeUser(null);
       return;

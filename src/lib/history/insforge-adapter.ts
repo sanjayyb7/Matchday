@@ -40,16 +40,18 @@ export const insforgeHistoryAdapter: HistoryAdapter = {
 
     if (existing) return;
 
-    await client.database.from("match_history").insert({
-      user_id: entry.userId,
-      match_id: entry.matchId,
-      team_id: entry.teamId,
-      player_id: entry.playerId,
-      pub_id: entry.pubId ?? null,
-      pub_name: entry.pubName ?? null,
-      attended_at: entry.attendedAt,
-      match_label: entry.matchLabel,
-    });
+    await client.database.from("match_history").insert([
+      {
+        user_id: entry.userId,
+        match_id: entry.matchId,
+        team_id: entry.teamId,
+        player_id: entry.playerId,
+        pub_id: entry.pubId ?? null,
+        pub_name: entry.pubName ?? null,
+        attended_at: entry.attendedAt,
+        match_label: entry.matchLabel,
+      },
+    ]);
   },
 
   async updatePubForMatch(userId, matchId, pubId, pubName) {
