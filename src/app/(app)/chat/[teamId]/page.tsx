@@ -7,7 +7,6 @@ import Link from "next/link";
 import { ChatThread } from "@/components/chat/ChatThread";
 import { ChatInput } from "@/components/chat/ChatInput";
 import { ChatStoriesRow } from "@/components/chat/ChatStoriesRow";
-import { ChatTeamBackground } from "@/components/chat/ChatTeamBackground";
 import { useTeamChat } from "@/hooks/useTeamChat";
 import { useAuth } from "@/hooks/useAuth";
 import { useMatchdayStore } from "@/store/matchday-store";
@@ -35,9 +34,7 @@ export default function ChatPage({
   };
 
   return (
-    <div className="relative flex h-dvh flex-col overflow-hidden">
-      <ChatTeamBackground team={team} />
-
+    <div className="relative flex h-dvh flex-col overflow-hidden bg-[#0B0F14]">
       <header className="relative z-10 flex items-center gap-3 border-b border-white/10 bg-[#0B0F14]/80 px-3 py-3 backdrop-blur-md">
         <Link
           href="/map"
