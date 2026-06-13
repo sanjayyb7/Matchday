@@ -12,20 +12,27 @@ interface PlayerPickerProps {
 
 export function PlayerPicker({ players, teamColor, onSelect }: PlayerPickerProps) {
   return (
-    <div className="grid max-h-[50vh] grid-cols-2 gap-3 overflow-y-auto pr-1">
+    <div className="flex max-h-[55vh] flex-col gap-2 overflow-y-auto overscroll-contain pr-1">
       {players.map((player, i) => (
         <motion.button
           key={player.id}
           type="button"
-          initial={{ opacity: 0, y: 10 }}
+          initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: i * 0.04 }}
-          whileTap={{ scale: 0.97 }}
+          transition={{ delay: i * 0.03 }}
+          whileTap={{ scale: 0.98 }}
           onClick={() => onSelect(player)}
-          className="relative overflow-hidden rounded-2xl border border-white/10 bg-card p-3 text-left shadow-md"
-          style={{ borderColor: `${teamColor}55` }}
+          className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.03] p-2.5 text-left transition-colors hover:border-white/20 hover:bg-white/[0.06] active:scale-[0.98]"
+          style={{ borderColor: `${teamColor}44` }}
         >
-          <div className="relative mx-auto mb-2 h-20 w-20 overflow-hidden rounded-xl">
+          <span
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-black/20 font-heading text-xl font-black tabular-nums"
+            style={{ color: teamColor }}
+          >
+            {player.number}
+          </span>
+
+          <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-lg ring-1 ring-white/10">
             <Image
               src={player.imageUrl}
               alt={player.name}
@@ -33,15 +40,16 @@ export function PlayerPicker({ players, teamColor, onSelect }: PlayerPickerProps
               className="object-cover"
               unoptimized
             />
-            <span
-              className="absolute bottom-0 right-0 rounded-tl-lg px-2 py-0.5 text-lg font-black opacity-30"
-              style={{ color: teamColor }}
-            >
-              {player.number}
-            </span>
           </div>
-          <p className="truncate text-sm font-bold">{player.name}</p>
-          <p className="text-xs text-muted-foreground">{player.position}</p>
+
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-bold leading-tight text-white">
+              {player.name}
+            </p>
+            <p className="mt-0.5 truncate text-xs text-white/45">
+              {player.position}
+            </p>
+          </div>
         </motion.button>
       ))}
     </div>

@@ -12,7 +12,7 @@ interface TeamPickerProps {
 
 export function TeamPicker({ homeTeam, awayTeam, onSelect }: TeamPickerProps) {
   return (
-    <div className="grid grid-cols-2 gap-4">
+    <div className="flex flex-col gap-3">
       {[homeTeam, awayTeam].map((team) => (
         <motion.button
           key={team.id}

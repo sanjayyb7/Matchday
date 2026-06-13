@@ -77,7 +77,7 @@ export function MatchNotification() {
   return (
     <Dialog open={showMatchModal} onOpenChange={() => {}}>
       <DialogContent
-        className="max-w-md border-white/10 bg-card"
+        className="w-[calc(100%-2rem)] max-w-md border-white/10 bg-card"
         showCloseButton={false}
       >
         <DialogHeader>
