@@ -7,6 +7,11 @@ import { Map, MessageCircle, User } from "lucide-react";
 import { uiTransition } from "@/lib/motion/tokens";
 import { cn } from "@/lib/utils";
 import { useMatchdayStore } from "@/store/matchday-store";
+import { useAuth } from "@/hooks/useAuth";
+import {
+  getLiveOrUpcomingMatch,
+  identityMatchesActiveMatch,
+} from "@/lib/mock/data";
 
 const tabs = [
   { href: "/map", icon: Map },
@@ -17,8 +22,15 @@ const tabs = [
 export function BottomNav() {
   const pathname = usePathname();
   const reduced = useReducedMotion() ?? false;
+  const { user } = useAuth();
   const identity = useMatchdayStore((s) => s.identity);
-  const chatHref = identity ? `/chat/${identity.teamId}` : "/chat/spain";
+  const activeMatch = getLiveOrUpcomingMatch();
+  const hasActiveIdentity = identityMatchesActiveMatch(
+    identity,
+    user?.id,
+    activeMatch,
+  );
+  const chatHref = hasActiveIdentity ? `/chat/${identity!.teamId}` : "/chat";
 
   const resolvedTabs = tabs.map((tab) =>
     tab.href === "/chat" ? { ...tab, href: chatHref } : tab,

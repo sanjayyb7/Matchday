@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
@@ -13,7 +13,7 @@ function oauthErrorMessage(code: string) {
     case "oauth_failed":
       return "OAuth sign-in was cancelled or failed.";
     case "missing_verifier":
-      return "OAuth session expired. Try again.";
+      return "Sign-in timed out. Open http://localhost:3002/login and try Google again.";
     case "exchange_failed":
       return "Could not complete sign-in. Try again.";
     default:
@@ -30,6 +30,12 @@ export function LoginForm() {
     const code = searchParams.get("error");
     return code ? oauthErrorMessage(code) : "";
   });
+
+  useEffect(() => {
+    const code = searchParams.get("error");
+    if (!code) return;
+    router.replace("/login", { scroll: false });
+  }, [router, searchParams]);
 
   const handleLogin = () => {
     setError("");

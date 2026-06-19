@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { useMatchdayStore } from "@/store/matchday-store";
@@ -16,15 +17,16 @@ import { BOTTOM_NAV_CLEARANCE } from "@/lib/layout/constants";
 import { FanHistoryTimeline } from "@/components/profile/FanHistoryTimeline";
 import { DeleteAccountDialog } from "@/components/profile/DeleteAccountDialog";
 import { ThemeSelector } from "@/components/profile/ThemeSelector";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { findNearestPubId } from "@/lib/geo/haversine";
 import { pubs } from "@/lib/mock/data";
 import { NEAR_PUB_RADIUS_METERS } from "@/lib/mock/constants";
 import { useGeolocation } from "@/hooks/useGeolocation";
+import { cn } from "@/lib/utils";
 
 export default function ProfilePage() {
-  const { user, deleteAccount } = useAuth();
+  const { user, isAdmin, signOut, deleteAccount } = useAuth();
   const router = useRouter();
   const identity = useMatchdayStore((s) => s.identity);
   const [showDelete, setShowDelete] = useState(false);
@@ -41,6 +43,11 @@ export default function ProfilePage() {
     NEAR_PUB_RADIUS_METERS,
   );
   const nearbyPub = nearbyPubId ? getPub(nearbyPubId) : null;
+
+  const handleLogout = async () => {
+    await signOut();
+    router.replace("/login");
+  };
 
   const handleDelete = async () => {
     await deleteAccount();
@@ -113,13 +120,33 @@ export default function ProfilePage() {
         <FanHistoryTimeline history={history} />
       </section>
 
-      <Button
-        variant="destructive"
-        className="w-full rounded-xl"
-        onClick={() => setShowDelete(true)}
-      >
-        Delete account
-      </Button>
+      <div className="flex flex-col gap-3">
+        {isAdmin && (
+          <Link
+            href="/matchday-matcha"
+            className={cn(
+              buttonVariants({ variant: "secondary", size: "lg" }),
+              "w-full rounded-xl",
+            )}
+          >
+            Manage pub locations
+          </Link>
+        )}
+        <Button
+          variant="outline"
+          className="w-full rounded-xl"
+          onClick={handleLogout}
+        >
+          Log out
+        </Button>
+        <Button
+          variant="destructive"
+          className="w-full rounded-xl"
+          onClick={() => setShowDelete(true)}
+        >
+          Delete account
+        </Button>
+      </div>
 
       <DeleteAccountDialog
         open={showDelete}

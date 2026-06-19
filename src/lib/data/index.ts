@@ -12,6 +12,7 @@ export {
   getMatch,
   getLiveOrUpcomingMatch,
   getMatchLabel,
+  identityMatchesActiveMatch,
   getAllPlayers,
   hydrateStaticDataFromInsForge,
   isStaticDataHydrated,

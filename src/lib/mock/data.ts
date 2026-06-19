@@ -33,6 +33,31 @@ function replacePlayersByTeam(players: Player[]) {
   }
 }
 
+function mapPubRows(rows: Record<string, unknown>[]): Pub[] {
+  return rows.map((row) => ({
+    id: String(row.id),
+    name: String(row.name),
+    imageUrl: String(row.image_url),
+    lat: Number(row.lat),
+    lng: Number(row.lng),
+    address: String(row.address),
+    neighborhood: String(row.neighborhood),
+  }));
+}
+
+export async function refreshPubsFromInsForge(): Promise<void> {
+  const { INSFORGE_ENABLED } = await import("@/lib/insforge/config");
+  if (!INSFORGE_ENABLED) return;
+
+  const { getInsForgeBrowserClient } = await import("@/lib/insforge/client");
+  const client = getInsForgeBrowserClient();
+  const { data, error } = await client.database.from("pubs").select("*");
+
+  if (error || !data?.length) return;
+
+  pubs.splice(0, pubs.length, ...mapPubRows(data as Record<string, unknown>[]));
+}
+
 export async function hydrateStaticDataFromInsForge(): Promise<void> {
   const { INSFORGE_ENABLED } = await import("@/lib/insforge/config");
   if (!INSFORGE_ENABLED || staticDataHydrated) return;
@@ -65,15 +90,7 @@ export async function hydrateStaticDataFromInsForge(): Promise<void> {
     pubs.splice(
       0,
       pubs.length,
-      ...pubsRes.data.map((row) => ({
-        id: String(row.id),
-        name: String(row.name),
-        imageUrl: String(row.image_url),
-        lat: Number(row.lat),
-        lng: Number(row.lng),
-        address: String(row.address),
-        neighborhood: String(row.neighborhood),
-      })),
+      ...mapPubRows(pubsRes.data as Record<string, unknown>[]),
     );
   }
 
@@ -138,7 +155,25 @@ export function getMatch(matchId: string): Match | undefined {
 }
 
 export function getLiveOrUpcomingMatch(): Match | undefined {
-  return matches.find((m) => m.status === "live" || m.status === "upcoming");
+  const live = matches.find((m) => m.status === "live");
+  if (live) return live;
+
+  const upcoming = matches
+    .filter((m) => m.status === "upcoming")
+    .sort(
+      (a, b) => new Date(a.kickoff).getTime() - new Date(b.kickoff).getTime(),
+    );
+
+  return upcoming[0];
+}
+
+export function identityMatchesActiveMatch(
+  identity: { matchId: string; userId: string } | null | undefined,
+  userId: string | undefined,
+  match: Match | undefined,
+): boolean {
+  if (!identity || !userId || !match) return false;
+  return identity.userId === userId && identity.matchId === match.id;
 }
 
 export function getMatchLabel(match: Match): string {

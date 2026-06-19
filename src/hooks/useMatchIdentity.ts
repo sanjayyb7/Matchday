@@ -1,21 +1,23 @@
 "use client";
 
 import { useEffect } from "react";
-import { getLiveOrUpcomingMatch } from "@/lib/mock/data";
+import {
+  getLiveOrUpcomingMatch,
+  identityMatchesActiveMatch,
+} from "@/lib/mock/data";
 import { useMatchdayStore } from "@/store/matchday-store";
 
 export function useMatchIdentity(userId?: string) {
   const identity = useMatchdayStore((s) => s.identity);
   const showMatchModal = useMatchdayStore((s) => s.showMatchModal);
   const openMatchModal = useMatchdayStore((s) => s.openMatchModal);
+  const activeMatch = getLiveOrUpcomingMatch();
 
   useEffect(() => {
-    if (!userId) return;
-    const match = getLiveOrUpcomingMatch();
-    if (!match) return;
-    if (identity?.matchId === match.id && identity.userId === userId) return;
+    if (!userId || !activeMatch) return;
+    if (identityMatchesActiveMatch(identity, userId, activeMatch)) return;
     openMatchModal();
-  }, [userId, identity, openMatchModal]);
+  }, [userId, identity, activeMatch?.id, openMatchModal]);
 
-  return { identity, showMatchModal, activeMatch: getLiveOrUpcomingMatch() };
+  return { identity, showMatchModal, activeMatch };
 }

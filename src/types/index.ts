@@ -88,12 +88,15 @@ export interface MatchHistoryEntry {
   matchLabel: string;
 }
 
+export type UserRole = "fan" | "admin";
+
 export interface AuthUser {
   id: string;
   name: string;
   email?: string;
   avatarUrl: string;
   fanSince: string;
+  role: UserRole;
 }
 
 export interface SignUpInput {

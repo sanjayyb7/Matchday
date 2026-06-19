@@ -15,6 +15,9 @@ import {
   syncInsForgeProfile,
   type InsForgeAuthUser,
 } from "@/lib/auth/insforge-auth";
+import { loadInsForgeUserFromSession } from "@/lib/auth/insforge-session";
+import { loadUserRole } from "@/lib/auth/load-user-role";
+import { ensureUserProfile } from "@/lib/auth/ensure-user-profile";
 import { bootstrapInsForgeBackend } from "@/lib/insforge/bootstrap";
 import { getInsForgeBrowserClient, resetInsForgeBrowserClient } from "@/lib/insforge/client";
 import { INSFORGE_ENABLED } from "@/lib/insforge/config";
@@ -23,6 +26,7 @@ import type { AuthUser, SignUpInput } from "@/types";
 interface AuthContextValue {
   user: AuthUser | null;
   isAuthenticated: boolean;
+  isAdmin: boolean;
   isLoading: boolean;
   signUp: (input: SignUpInput) => AuthUser;
   signIn: () => AuthUser | null;
@@ -55,7 +59,8 @@ function getAuthServerSnapshot(): string {
 function parseSession(raw: string): AuthUser | null {
   if (!raw) return null;
   try {
-    return JSON.parse(raw) as AuthUser;
+    const parsed = JSON.parse(raw) as AuthUser;
+    return { ...parsed, role: parsed.role ?? "fan" };
   } catch {
     return null;
   }
@@ -83,22 +88,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     async function loadUser() {
       try {
-        await bootstrapInsForgeBackend();
-        const client = getInsForgeBrowserClient();
-        const { data } = await client.auth.getCurrentUser();
+        resetInsForgeBrowserClient();
+        const insForgeUser = await loadInsForgeUserFromSession();
         if (cancelled) return;
-        if (data.user) {
-          const authUser = mapInsForgeUser(data.user as InsForgeAuthUser);
-          await syncInsForgeProfile(data.user as InsForgeAuthUser);
-          await bootstrapInsForgeBackend(authUser.id);
-          setInsforgeUser(authUser);
+
+        if (insForgeUser) {
+          const authUser = mapInsForgeUser(insForgeUser);
+          resetInsForgeBrowserClient();
+          await ensureUserProfile(insForgeUser);
+          const role = await loadUserRole(authUser.id);
+          if (cancelled) return;
+          setInsforgeUser({ ...authUser, role });
+          if (!cancelled) setIsLoading(false);
+          void bootstrapInsForgeBackend().catch(() => {});
+          void syncInsForgeProfile(insForgeUser).catch(() => {});
+          void bootstrapInsForgeBackend(authUser.id).catch(() => {});
         } else {
           setInsforgeUser(null);
+          if (!cancelled) setIsLoading(false);
         }
       } catch {
-        if (!cancelled) setInsforgeUser(null);
-      } finally {
-        if (!cancelled) setIsLoading(false);
+        if (!cancelled) {
+          setInsforgeUser(null);
+          setIsLoading(false);
+        }
       }
     }
 
@@ -109,6 +122,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const user = INSFORGE_ENABLED ? insforgeUser : mockUser;
+  const isAdmin = user?.role === "admin";
 
   const signUp = useCallback((input: SignUpInput) => {
     const session = mockAuthAdapter.signUp(input);
@@ -159,13 +173,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     () => ({
       user,
       isAuthenticated: !!user,
+      isAdmin,
       isLoading,
       signUp,
       signIn,
       signOut,
       deleteAccount,
     }),
-    [user, isLoading, signUp, signIn, signOut, deleteAccount],
+    [user, isAdmin, isLoading, signUp, signIn, signOut, deleteAccount],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

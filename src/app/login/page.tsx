@@ -7,7 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
-export default function LoginPage() {
+function LoginRedirect() {
   const { isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
 
@@ -17,6 +17,10 @@ export default function LoginPage() {
     }
   }, [isAuthenticated, isLoading, router]);
 
+  return null;
+}
+
+export default function LoginPage() {
   return (
     <main className="relative flex min-h-screen flex-col overflow-hidden bg-[#1a1033]">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_0%,rgba(255,252,0,0.12)_0%,transparent_55%)]" />
@@ -25,6 +29,9 @@ export default function LoginPage() {
         title="Welcome back"
         subtitle="Log in to rejoin your squad and keep your matchday streak going."
       />
+      <Suspense fallback={null}>
+        <LoginRedirect />
+      </Suspense>
       <Suspense fallback={<div className="h-40" />}>
         <LoginForm />
       </Suspense>

@@ -36,6 +36,7 @@ export function mapInsForgeUser(user: InsForgeAuthUser): AuthUser {
     email: user.email,
     avatarUrl: profile?.avatar_url ?? avatarForName(name),
     fanSince: user.created_at ?? user.createdAt ?? new Date().toISOString(),
+    role: "fan",
   };
 }
 
