@@ -7,8 +7,11 @@ import { FormationPlayerCard } from "./FormationPlayerCard";
 import { SquadRewardPanel } from "./SquadRewardPanel";
 import {
   assignStartingEleven,
+  countPresentStartingPlayers,
   isGoalkeeper,
   presentPlayerCounts,
+  STARTING_XI_SIZE,
+  startingElevenIds,
   teamIdsByFanCount,
   type FormationRow,
   type RosterFormationSlot,
@@ -140,9 +143,13 @@ export function PubSquadPitch({ squad, pubName }: PubSquadPitchProps) {
 
   const roster = getPlayersByTeam(selectedTeamId);
   const { starting, bench } = assignStartingEleven(roster);
+  const startingIds = startingElevenIds({ starting, bench });
   const presentCounts = presentPlayerCounts(squad, selectedTeamId);
   const presentCount = [...presentCounts.values()].reduce((a, b) => a + b, 0);
-  const presentPlayerCount = presentCounts.size;
+  const presentPlayerCount = countPresentStartingPlayers(
+    presentCounts,
+    startingIds,
+  );
   const team = getTeam(selectedTeamId);
 
   return (
@@ -186,14 +193,14 @@ export function PubSquadPitch({ squad, pubName }: PubSquadPitchProps) {
         <span>{team?.name ?? "Squad"} · 4-4-2</span>
         <span>
           {presentCount} fan{presentCount === 1 ? "" : "s"} here ·{" "}
-          {presentPlayerCount}/{roster.length} players
+          {presentPlayerCount}/{STARTING_XI_SIZE} players
         </span>
       </div>
 
       <div className={PITCH_WIDTH}>
         <SquadRewardPanel
           presentPlayers={presentPlayerCount}
-          rosterSize={roster.length}
+          rosterSize={STARTING_XI_SIZE}
           presentFans={presentCount}
           pubName={pubName}
         />

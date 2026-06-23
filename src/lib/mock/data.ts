@@ -3,6 +3,12 @@ import matchesData from "../../../data/matches.json";
 import teamsData from "../../../data/teams.json";
 import spainPlayers from "../../../data/players/spain.json";
 import francePlayers from "../../../data/players/france.json";
+import {
+  deriveMatchStatus,
+  getActiveMatch,
+  getNextUpcomingMatches,
+  getUpcomingMatchesWithinHours,
+} from "@/lib/matches/match-window";
 import type { Match, MatchStatus, Player, Pub, Team } from "@/types";
 
 /** Mutable arrays so InsForge hydration updates existing importers in place. */
@@ -16,9 +22,102 @@ const playersByTeam: Record<string, Player[]> = {
 };
 
 let staticDataHydrated = false;
+let activeMatchHydrated = false;
+let activeMatchRefreshPromise: Promise<void> | null = null;
+let lastMatchFetchError: string | null = null;
+let usingFallbackFixtures = false;
 
 export function isStaticDataHydrated(): boolean {
   return staticDataHydrated;
+}
+
+export function isActiveMatchHydrated(): boolean {
+  return activeMatchHydrated;
+}
+
+export function getLastMatchFetchError(): string | null {
+  return lastMatchFetchError;
+}
+
+export function isUsingFallbackFixtures(): boolean {
+  return usingFallbackFixtures;
+}
+
+function upsertTeam(team: Team) {
+  const index = teams.findIndex((entry) => entry.id === team.id);
+  if (index >= 0) {
+    teams[index] = team;
+  } else {
+    teams.push(team);
+  }
+}
+
+function mergePlayersForTeams(apiPlayers: Player[], teamIds: string[]) {
+  for (const teamId of teamIds) {
+    playersByTeam[teamId] = apiPlayers.filter((player) => player.teamId === teamId);
+  }
+}
+
+function withDerivedStatus(match: Match): Match {
+  return { ...match, status: deriveMatchStatus(match) };
+}
+
+export async function refreshActiveMatchFromApi(): Promise<void> {
+  if (activeMatchRefreshPromise) {
+    await activeMatchRefreshPromise;
+    return;
+  }
+
+  activeMatchRefreshPromise = (async () => {
+    try {
+      const response = await fetch("/api/matches/active");
+      const payload = (await response.json()) as {
+        match: Match | null;
+        teams: Team[];
+        players: Player[];
+        fixtures: Match[];
+        source?: string;
+        error?: string;
+      };
+
+      if (!response.ok && payload.source !== "fallback") {
+        activeMatchHydrated = true;
+        return;
+      }
+
+      lastMatchFetchError = payload.error ?? null;
+      usingFallbackFixtures = payload.source === "fallback";
+
+      if (payload.fixtures.length > 0) {
+        matches.splice(
+          0,
+          matches.length,
+          ...payload.fixtures.map((fixture) => withDerivedStatus(fixture)),
+        );
+      }
+
+      for (const team of payload.teams) {
+        upsertTeam(team);
+      }
+
+      if (payload.match && payload.players.length > 0) {
+        mergePlayersForTeams(payload.players, [
+          payload.match.homeTeamId,
+          payload.match.awayTeamId,
+        ]);
+      }
+
+      activeMatchHydrated = true;
+    } catch {
+      lastMatchFetchError = "Failed to load match schedule";
+      // Keep JSON / InsForge fallback data.
+      activeMatchHydrated = true;
+    } finally {
+      activeMatchRefreshPromise = null;
+    }
+  })();
+
+  await activeMatchRefreshPromise;
 }
 
 function replacePlayersByTeam(players: Player[]) {
@@ -155,16 +254,22 @@ export function getMatch(matchId: string): Match | undefined {
 }
 
 export function getLiveOrUpcomingMatch(): Match | undefined {
-  const live = matches.find((m) => m.status === "live");
-  if (live) return live;
+  const active = getActiveMatch(matches);
+  return active ? withDerivedStatus(active) : undefined;
+}
 
-  const upcoming = matches
-    .filter((m) => m.status === "upcoming")
-    .sort(
-      (a, b) => new Date(a.kickoff).getTime() - new Date(b.kickoff).getTime(),
-    );
+export function getUpcomingMatchesNext24Hours(): Match[] {
+  return getUpcomingMatchesWithinHours(matches, 24).map(withDerivedStatus);
+}
 
-  return upcoming[0];
+export function getDisplayableUpcomingMatches(): Match[] {
+  const within24h = getUpcomingMatchesNext24Hours();
+  if (within24h.length > 0) return within24h;
+  return getNextUpcomingMatches(matches, 3).map(withDerivedStatus);
+}
+
+export function getDerivedMatchStatus(match: Match): MatchStatus {
+  return deriveMatchStatus(match);
 }
 
 export function identityMatchesActiveMatch(

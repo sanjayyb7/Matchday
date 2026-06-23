@@ -9,11 +9,13 @@ import {
   identityMatchesActiveMatch,
 } from "@/lib/mock/data";
 import { MatchChatGate } from "@/components/match/MatchChatGate";
+import { useMatchIdentity } from "@/hooks/useMatchIdentity";
 
 export default function ChatPage() {
   const router = useRouter();
   const { user } = useAuth();
   const identity = useMatchdayStore((s) => s.identity);
+  useMatchIdentity(user?.id);
   const activeMatch = getLiveOrUpcomingMatch();
 
   useEffect(() => {

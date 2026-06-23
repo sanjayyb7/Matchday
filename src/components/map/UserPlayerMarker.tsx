@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { getPlayer } from "@/lib/mock/data";
+import { UserLocationMarker } from "./UserLocationMarker";
 
 interface UserPlayerMarkerProps {
   playerId: string;
@@ -9,9 +10,36 @@ interface UserPlayerMarkerProps {
   lng: number;
 }
 
-export function UserPlayerMarkerContent({ playerId }: { playerId: string }) {
+export function UserPlayerMarkerContent({
+  playerId,
+  fallbackAvatarUrl,
+}: {
+  playerId: string;
+  fallbackAvatarUrl?: string;
+}) {
   const player = getPlayer(playerId);
-  if (!player) return null;
+
+  if (!player) {
+    if (fallbackAvatarUrl) {
+      return (
+        <div className="relative flex flex-col items-center">
+          <div className="relative h-12 w-12 overflow-hidden rounded-full border-2 border-accent shadow-lg ring-2 ring-accent/60">
+            <Image
+              src={fallbackAvatarUrl}
+              alt="You"
+              fill
+              className="object-cover"
+              unoptimized
+            />
+          </div>
+          <span className="mt-1 rounded-full bg-primary px-2 py-0.5 text-[9px] font-bold uppercase text-primary-foreground">
+            You
+          </span>
+        </div>
+      );
+    }
+    return <UserLocationMarker />;
+  }
 
   return (
     <div className="relative flex flex-col items-center">

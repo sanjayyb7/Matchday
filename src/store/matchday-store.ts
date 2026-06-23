@@ -6,16 +6,12 @@ interface MatchdayState {
   identity: UserIdentity | null;
   selectedPub: Pub | null;
   selectedPlayerId: string | null;
-  showMatchModal: boolean;
-  matchModalStep: "team" | "player";
-  selectedTeamId: string | null;
+  showMatchReminder: boolean;
   setIdentity: (identity: UserIdentity | null) => void;
   setSelectedPub: (pub: Pub | null) => void;
   setSelectedPlayerId: (id: string | null) => void;
-  openMatchModal: () => void;
-  closeMatchModal: () => void;
-  setMatchModalStep: (step: "team" | "player") => void;
-  setSelectedTeamId: (teamId: string | null) => void;
+  openMatchReminder: () => void;
+  closeMatchReminder: () => void;
   selectedPlayerProfile: Player | null;
   setSelectedPlayerProfile: (player: Player | null) => void;
 }
@@ -26,19 +22,13 @@ export const useMatchdayStore = create<MatchdayState>()(
       identity: null,
       selectedPub: null,
       selectedPlayerId: null,
-      showMatchModal: false,
-      matchModalStep: "team",
-      selectedTeamId: null,
+      showMatchReminder: false,
       selectedPlayerProfile: null,
       setIdentity: (identity) => set({ identity }),
       setSelectedPub: (selectedPub) => set({ selectedPub }),
       setSelectedPlayerId: (selectedPlayerId) => set({ selectedPlayerId }),
-      openMatchModal: () =>
-        set({ showMatchModal: true, matchModalStep: "team", selectedTeamId: null }),
-      closeMatchModal: () =>
-        set({ showMatchModal: false, matchModalStep: "team", selectedTeamId: null }),
-      setMatchModalStep: (matchModalStep) => set({ matchModalStep }),
-      setSelectedTeamId: (selectedTeamId) => set({ selectedTeamId }),
+      openMatchReminder: () => set({ showMatchReminder: true }),
+      closeMatchReminder: () => set({ showMatchReminder: false }),
       setSelectedPlayerProfile: (selectedPlayerProfile) =>
         set({ selectedPlayerProfile }),
     }),

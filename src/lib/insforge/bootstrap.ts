@@ -8,12 +8,15 @@ import { INSFORGE_ENABLED } from "@/lib/insforge/config";
  * - Auth: OAuth only when InsForge is enabled
  */
 export async function bootstrapInsForgeBackend(userId?: string): Promise<void> {
-  if (!INSFORGE_ENABLED) return;
+  if (INSFORGE_ENABLED) {
+    const { hydrateStaticDataFromInsForge } = await import("@/lib/mock/data");
+    await hydrateStaticDataFromInsForge();
+  }
 
-  const { hydrateStaticDataFromInsForge } = await import("@/lib/mock/data");
-  await hydrateStaticDataFromInsForge();
+  const { refreshActiveMatchFromApi } = await import("@/lib/mock/data");
+  await refreshActiveMatchFromApi();
 
-  if (userId) {
+  if (userId && INSFORGE_ENABLED) {
     const { hydrateIdentityForCurrentMatch } = await import(
       "@/lib/identity/insforge-identity"
     );

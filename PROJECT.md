@@ -152,8 +152,36 @@ Sign in with **Google** or **GitHub** on `/login`. OAuth redirect URLs must incl
 | `NEXT_PUBLIC_INSFORGE_ANON_KEY` | InsForge | Public anon key for client SDK |
 | `NEXT_PUBLIC_APP_URL` | InsForge | App origin for OAuth redirects (default `http://localhost:3002`) |
 | `INSFORGE_API_KEY` | InsForge | Server-only key for admin/delete operations |
+| `API_FOOTBALL_KEY` | WC fixtures | Server-only key from [api-football.com](https://www.api-football.com/) |
+| `API_FOOTBALL_WC_LEAGUE_ID` | No | World Cup league id (default `1`) |
+| `API_FOOTBALL_WC_SEASON` | No | World Cup season year (default `2026`) |
+| `MATCH_FIXTURE_DURATION_MINUTES` | No | Assumed match length for selection window end (default `105`) |
 
 Never commit `.env.local`.
+
+---
+
+## World Cup fixtures and team picker timing
+
+When `API_FOOTBALL_KEY` is set, the app loads **FIFA World Cup** fixtures from API-Football via [`GET /api/matches/active`](src/app/api/matches/active/route.ts) (cached 15 minutes). Without the key, it falls back to [`data/matches.json`](data/matches.json).
+
+**Team/player picker rules:**
+
+- Modal opens only from **1 hour before kickoff** until the fixture ends.
+- Each user picks **once per fixture** (`user_identities` unique on `user_id, match_id`).
+- Match status (`upcoming` / `live` / `finished`) is **derived from kickoff time**, not stored statically.
+
+**Manual test checklist:**
+
+| Scenario | Expected |
+| --- | --- |
+| \>1h before kickoff | No picker modal; chat gate shows countdown |
+| 30 min before kickoff | Picker opens automatically |
+| After team + player selected | Modal stays closed for that fixture |
+| After fixture ends without pick | Modal stays closed; chat gate explains window closed |
+| No WC match today | Graceful empty state |
+
+API-Football free tier: ~100 requests/day — the active-match route caches responses server-side to stay within limits.
 
 ---
 

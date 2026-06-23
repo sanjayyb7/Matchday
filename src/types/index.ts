@@ -25,6 +25,11 @@ export interface Match {
   kickoff: string;
   status: MatchStatus;
   venue?: string;
+  /** Raw API-Football fixture status short code (e.g. FT, 1H). */
+  apiStatus?: string;
+  /** When the fixture ended (from API or computed). */
+  fixtureEndAt?: string;
+  externalFixtureId?: number;
 }
 
 export interface PlayerStats {

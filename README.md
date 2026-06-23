@@ -10,6 +10,7 @@ Find nearby pubs, pick a team and player identity, join team chats, and see who'
 npm install
 cp .env.example .env.local
 # Add NEXT_PUBLIC_MAPBOX_TOKEN from https://account.mapbox.com/
+# Add API_FOOTBALL_KEY from https://www.api-football.com/ for live World Cup fixtures
 npm run dev
 ```
 

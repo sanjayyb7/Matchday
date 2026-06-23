@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -12,6 +12,8 @@ import {
   getPlayer,
   getPub,
   getTeam,
+  identityMatchesActiveMatch,
+  refreshActiveMatchFromApi,
 } from "@/lib/mock/data";
 import { BOTTOM_NAV_CLEARANCE } from "@/lib/layout/constants";
 import { FanHistoryTimeline } from "@/components/profile/FanHistoryTimeline";
@@ -30,12 +32,21 @@ export default function ProfilePage() {
   const router = useRouter();
   const identity = useMatchdayStore((s) => s.identity);
   const [showDelete, setShowDelete] = useState(false);
+  const [, setMatchTick] = useState(0);
   const { position } = useGeolocation();
+
+  useEffect(() => {
+    void refreshActiveMatchFromApi().then(() => setMatchTick((value) => value + 1));
+  }, []);
 
   const { history } = useHistory(user?.id);
   const liveMatch = getLiveOrUpcomingMatch();
-  const player = identity ? getPlayer(identity.playerId) : null;
-  const team = identity ? getTeam(identity.teamId) : null;
+  const activeIdentity =
+    identity && identityMatchesActiveMatch(identity, user?.id, liveMatch)
+      ? identity
+      : null;
+  const player = activeIdentity ? getPlayer(activeIdentity.playerId) : null;
+  const team = activeIdentity ? getTeam(activeIdentity.teamId) : null;
   const nearbyPubId = findNearestPubId(
     position.lat,
     position.lng,
@@ -80,7 +91,7 @@ export default function ProfilePage() {
         </div>
       </header>
 
-      {identity && liveMatch && player && team && (
+      {activeIdentity && liveMatch && player && team && (
         <section className="mb-8 rounded-2xl border border-primary/30 bg-primary/5 p-4">
           <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-primary">
             Current matchday identity

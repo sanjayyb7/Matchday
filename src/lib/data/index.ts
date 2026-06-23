@@ -11,11 +11,18 @@ export {
   getPub,
   getMatch,
   getLiveOrUpcomingMatch,
+  getUpcomingMatchesNext24Hours,
+  getDisplayableUpcomingMatches,
+  getLastMatchFetchError,
+  isUsingFallbackFixtures,
   getMatchLabel,
+  getDerivedMatchStatus,
   identityMatchesActiveMatch,
   getAllPlayers,
   hydrateStaticDataFromInsForge,
   isStaticDataHydrated,
+  refreshActiveMatchFromApi,
+  isActiveMatchHydrated,
 } from "@/lib/mock/data";
 
 export const dataSource = INSFORGE_ENABLED ? "insforge-postgres" : "mock-json";

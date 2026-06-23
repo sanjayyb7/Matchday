@@ -33,8 +33,13 @@ class InsForgeRealtimeEngine implements RealtimeAdapter {
   private presenceListeners = new Set<(p: FanPresence[]) => void>();
   private squadListeners = new Map<string, Set<(s: FanPresence[]) => void>>();
   private chatListeners = new Map<string, Set<(m: ChatMessage[]) => void>>();
-  private matchId = getLiveOrUpcomingMatch()?.id ?? "match-spain-france";
-  private presenceChannel = `presence:match:${this.matchId}`;
+  private getMatchId(): string {
+    return getLiveOrUpcomingMatch()?.id ?? "match-spain-france";
+  }
+
+  private get presenceChannel(): string {
+    return `presence:match:${this.getMatchId()}`;
+  }
   private initialized = false;
   private initPromise: Promise<void> | null = null;
 
@@ -72,7 +77,7 @@ class InsForgeRealtimeEngine implements RealtimeAdapter {
     const { data } = await client.database
       .from("fan_presence")
       .select("*")
-      .eq("match_id", this.matchId);
+      .eq("match_id", this.getMatchId());
 
     if (data) {
       for (const row of data) {
@@ -126,7 +131,7 @@ class InsForgeRealtimeEngine implements RealtimeAdapter {
       await client.database.from("fan_presence").upsert([
         {
           user_id: presence.userId,
-          match_id: this.matchId,
+          match_id: this.getMatchId(),
           player_id: presence.playerId,
           team_id: presence.teamId,
           lat: presence.lat,

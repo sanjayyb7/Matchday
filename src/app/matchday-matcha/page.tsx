@@ -1,10 +1,17 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { createPub, listPubsFromDatabase } from "@/lib/pubs/admin-pubs";
+import {
+  createPub,
+  deletePub,
+  listPubsFromDatabase,
+  updatePub,
+  type PubInput,
+} from "@/lib/pubs/admin-pubs";
 import { refreshPubsFromInsForge } from "@/lib/mock/data";
 import type { Pub } from "@/types";
 import { AddPubForm } from "@/components/matchday-matcha/AddPubForm";
+import { PubRow } from "@/components/matchday-matcha/PubRow";
 
 export default function MatchdayMatchaPage() {
   const [pubList, setPubList] = useState<Pub[]>([]);
@@ -29,23 +36,46 @@ export default function MatchdayMatchaPage() {
     void loadPubs();
   }, [loadPubs]);
 
-  const handleCreate = async (input: {
-    name: string;
-    address: string;
-    neighborhood: string;
-    lat: number;
-    lng: number;
-    imageUrl?: string;
-  }) => {
+  const refreshAfterChange = async (message: string) => {
+    await refreshPubsFromInsForge();
+    setSuccess(message);
+    setError(null);
+    await loadPubs();
+  };
+
+  const handleCreate = async (input: PubInput) => {
     setError(null);
     setSuccess(null);
     try {
       const pub = await createPub(input);
-      await refreshPubsFromInsForge();
-      setSuccess(`Added ${pub.name}`);
-      await loadPubs();
+      await refreshAfterChange(`Added ${pub.name}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to add pub");
+      throw err;
+    }
+  };
+
+  const handleUpdate = async (id: string, input: PubInput) => {
+    setError(null);
+    setSuccess(null);
+    try {
+      const pub = await updatePub(id, input);
+      await refreshAfterChange(`Updated ${pub.name}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update pub");
+      throw err;
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    setError(null);
+    setSuccess(null);
+    const pub = pubList.find((row) => row.id === id);
+    try {
+      await deletePub(id);
+      await refreshAfterChange(`Deleted ${pub?.name ?? "pub"}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete pub");
       throw err;
     }
   };
@@ -80,18 +110,12 @@ export default function MatchdayMatchaPage() {
         ) : (
           <ul className="space-y-3">
             {pubList.map((pub) => (
-              <li
+              <PubRow
                 key={pub.id}
-                className="rounded-xl border border-border/60 bg-card p-4"
-              >
-                <p className="font-semibold">{pub.name}</p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {pub.address} · {pub.neighborhood}
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {pub.lat.toFixed(4)}, {pub.lng.toFixed(4)}
-                </p>
-              </li>
+                pub={pub}
+                onUpdate={handleUpdate}
+                onDelete={handleDelete}
+              />
             ))}
           </ul>
         )}

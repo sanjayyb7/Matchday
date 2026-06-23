@@ -4,7 +4,7 @@ import type { Pub } from "@/types";
 const DEFAULT_PUB_IMAGE =
   "https://images.unsplash.com/photo-1572116469696-31de0f17cc34?w=200&h=200&fit=crop";
 
-export interface CreatePubInput {
+export interface PubInput {
   name: string;
   address: string;
   neighborhood: string;
@@ -12,6 +12,9 @@ export interface CreatePubInput {
   lng: number;
   imageUrl?: string;
 }
+
+export type CreatePubInput = PubInput;
+export type UpdatePubInput = PubInput;
 
 function slugify(name: string): string {
   return (
@@ -98,4 +101,42 @@ export async function listPubsFromDatabase(): Promise<Pub[]> {
   }
 
   return (data ?? []).map((row) => mapPubRow(row as Record<string, unknown>));
+}
+
+export async function updatePub(id: string, input: UpdatePubInput): Promise<Pub> {
+  const client = getInsForgeBrowserClient();
+
+  const { data, error } = await client.database
+    .from("pubs")
+    .update({
+      name: input.name.trim(),
+      image_url: input.imageUrl?.trim() || DEFAULT_PUB_IMAGE,
+      lat: input.lat,
+      lng: input.lng,
+      address: input.address.trim(),
+      neighborhood: input.neighborhood.trim(),
+    })
+    .eq("id", id)
+    .select("*");
+
+  if (error) {
+    throw new Error(error.message ?? "Failed to update pub");
+  }
+
+  const updated = data?.[0];
+  if (!updated) {
+    throw new Error("Failed to update pub");
+  }
+
+  return mapPubRow(updated as Record<string, unknown>);
+}
+
+export async function deletePub(id: string): Promise<void> {
+  const client = getInsForgeBrowserClient();
+
+  const { error } = await client.database.from("pubs").delete().eq("id", id);
+
+  if (error) {
+    throw new Error(error.message ?? "Failed to delete pub");
+  }
 }

@@ -4,64 +4,43 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { CreatePubInput } from "@/lib/pubs/admin-pubs";
+import { resolvePubFromGoogleMapsUrl } from "@/lib/pubs/resolve-google-maps-url";
 
 interface AddPubFormProps {
   onSubmit: (input: CreatePubInput) => Promise<void>;
 }
 
 export function AddPubForm({ onSubmit }: AddPubFormProps) {
-  const [name, setName] = useState("");
-  const [address, setAddress] = useState("");
-  const [neighborhood, setNeighborhood] = useState("");
-  const [lat, setLat] = useState("");
-  const [lng, setLng] = useState("");
-  const [imageUrl, setImageUrl] = useState("");
+  const [mapsUrl, setMapsUrl] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [fieldError, setFieldError] = useState<string | null>(null);
+  const [preview, setPreview] = useState<CreatePubInput | null>(null);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setFieldError(null);
+    setPreview(null);
 
-    const trimmedName = name.trim();
-    const trimmedAddress = address.trim();
-    const trimmedNeighborhood = neighborhood.trim();
-    const parsedLat = Number(lat);
-    const parsedLng = Number(lng);
-
-    if (!trimmedName || !trimmedAddress || !trimmedNeighborhood) {
-      setFieldError("Name, address, and neighborhood are required.");
+    const trimmed = mapsUrl.trim();
+    if (!trimmed) {
+      setFieldError("Paste a Google Maps place URL.");
       return;
     }
 
-    if (!Number.isFinite(parsedLat) || !Number.isFinite(parsedLng)) {
-      setFieldError("Latitude and longitude must be valid numbers.");
-      return;
-    }
-
-    if (parsedLat < -90 || parsedLat > 90 || parsedLng < -180 || parsedLng > 180) {
-      setFieldError("Coordinates are out of range.");
+    if (!trimmed.includes("google.com/maps") && !trimmed.includes("maps.google")) {
+      setFieldError("Use a full Google Maps place link (not a short link).");
       return;
     }
 
     setSubmitting(true);
     try {
-      await onSubmit({
-        name: trimmedName,
-        address: trimmedAddress,
-        neighborhood: trimmedNeighborhood,
-        lat: parsedLat,
-        lng: parsedLng,
-        imageUrl: imageUrl.trim() || undefined,
-      });
-      setName("");
-      setAddress("");
-      setNeighborhood("");
-      setLat("");
-      setLng("");
-      setImageUrl("");
-    } catch {
-      // Parent shows error message.
+      const resolved = await resolvePubFromGoogleMapsUrl(trimmed);
+      setPreview(resolved);
+      await onSubmit(resolved);
+      setMapsUrl("");
+      setPreview(null);
+    } catch (err) {
+      setFieldError(err instanceof Error ? err.message : "Failed to parse Google Maps URL.");
     } finally {
       setSubmitting(false);
     }
@@ -70,90 +49,34 @@ export function AddPubForm({ onSubmit }: AddPubFormProps) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-2">
-        <label htmlFor="pub-name" className="text-sm font-medium">
-          Name
+        <label htmlFor="pub-maps-url" className="text-sm font-medium">
+          Google Maps URL
         </label>
         <Input
-          id="pub-name"
-          value={name}
-          onChange={(event) => setName(event.target.value)}
-          placeholder="The Mission Tap"
+          id="pub-maps-url"
+          value={mapsUrl}
+          onChange={(event) => setMapsUrl(event.target.value)}
+          placeholder="https://www.google.com/maps/place/…"
           className="rounded-xl"
           required
         />
+        <p className="text-xs text-muted-foreground">
+          Paste a Google Maps place link. Name, photo, coordinates, and address are
+          extracted automatically.
+        </p>
       </div>
 
-      <div className="space-y-2">
-        <label htmlFor="pub-address" className="text-sm font-medium">
-          Address
-        </label>
-        <Input
-          id="pub-address"
-          value={address}
-          onChange={(event) => setAddress(event.target.value)}
-          placeholder="2889 Mission St"
-          className="rounded-xl"
-          required
-        />
-      </div>
-
-      <div className="space-y-2">
-        <label htmlFor="pub-neighborhood" className="text-sm font-medium">
-          Neighborhood
-        </label>
-        <Input
-          id="pub-neighborhood"
-          value={neighborhood}
-          onChange={(event) => setNeighborhood(event.target.value)}
-          placeholder="Mission District"
-          className="rounded-xl"
-          required
-        />
-      </div>
-
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-2">
-          <label htmlFor="pub-lat" className="text-sm font-medium">
-            Latitude
-          </label>
-          <Input
-            id="pub-lat"
-            value={lat}
-            onChange={(event) => setLat(event.target.value)}
-            placeholder="37.7599"
-            inputMode="decimal"
-            className="rounded-xl"
-            required
-          />
+      {preview && (
+        <div className="rounded-xl border border-border/60 bg-muted/40 p-3 text-sm">
+          <p className="font-semibold">{preview.name}</p>
+          <p className="mt-1 text-muted-foreground">
+            {preview.address} · {preview.neighborhood}
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {preview.lat.toFixed(6)}, {preview.lng.toFixed(6)}
+          </p>
         </div>
-        <div className="space-y-2">
-          <label htmlFor="pub-lng" className="text-sm font-medium">
-            Longitude
-          </label>
-          <Input
-            id="pub-lng"
-            value={lng}
-            onChange={(event) => setLng(event.target.value)}
-            placeholder="-122.4148"
-            inputMode="decimal"
-            className="rounded-xl"
-            required
-          />
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <label htmlFor="pub-image" className="text-sm font-medium">
-          Image URL (optional)
-        </label>
-        <Input
-          id="pub-image"
-          value={imageUrl}
-          onChange={(event) => setImageUrl(event.target.value)}
-          placeholder="https://…"
-          className="rounded-xl"
-        />
-      </div>
+      )}
 
       {fieldError && (
         <p className="text-sm text-destructive" role="alert">
@@ -166,7 +89,7 @@ export function AddPubForm({ onSubmit }: AddPubFormProps) {
         className="w-full rounded-xl"
         disabled={submitting}
       >
-        {submitting ? "Adding…" : "Add pub"}
+        {submitting ? "Extracting & adding…" : "Add pub from URL"}
       </Button>
     </form>
   );

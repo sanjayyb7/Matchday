@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo } from "react";
-import Map, { Marker } from "react-map-gl/mapbox";
+import { useCallback, useEffect, useMemo, useRef } from "react";
+import Map, { Marker, type MapRef } from "react-map-gl/mapbox";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { pubs } from "@/lib/mock/data";
 import { DEFAULT_ZOOM } from "@/lib/mock/constants";
@@ -15,18 +15,21 @@ import { getHistoryAdapter } from "@/hooks/useHistory";
 import { getPub } from "@/lib/mock/data";
 import { PubMarker } from "./PubMarker";
 import { UserPlayerMarkerContent } from "./UserPlayerMarker";
+import { UserLocationMarker } from "./UserLocationMarker";
 import { Badge } from "@/components/ui/badge";
-import { getLiveOrUpcomingMatch } from "@/lib/mock/data";
+import { getLiveOrUpcomingMatch, getDerivedMatchStatus } from "@/lib/mock/data";
 
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? "";
 
 export function PubMap() {
-  const { position } = useGeolocation();
+  const { position, error, isWatching } = useGeolocation();
   const { user } = useAuth();
   const realtime = useRealtime();
   const identity = useMatchdayStore((s) => s.identity);
   const setSelectedPub = useMatchdayStore((s) => s.setSelectedPub);
   const liveMatch = getLiveOrUpcomingMatch();
+  const mapRef = useRef<MapRef>(null);
+  const hasFlownToUser = useRef(false);
 
   const publishLocation = useCallback(() => {
     if (!user || !identity) return;
@@ -61,6 +64,16 @@ export function PubMap() {
     publishLocation();
   }, [publishLocation]);
 
+  useEffect(() => {
+    if (!isWatching || hasFlownToUser.current) return;
+    hasFlownToUser.current = true;
+    mapRef.current?.flyTo({
+      center: [position.lng, position.lat],
+      zoom: DEFAULT_ZOOM,
+      duration: 1200,
+    });
+  }, [isWatching, position.lat, position.lng]);
+
   const initialViewState = useMemo(
     () => ({
       longitude: position.lng,
@@ -69,6 +82,8 @@ export function PubMap() {
     }),
     [position.lat, position.lng],
   );
+
+  const showUserMarker = isWatching && !error;
 
   if (!MAPBOX_TOKEN) {
     return (
@@ -96,13 +111,24 @@ export function PubMap() {
 
   return (
     <div className="relative h-dvh w-full">
-      {liveMatch?.status === "live" && (
-        <Badge className="absolute left-4 top-4 z-10 gap-2 bg-accent text-accent-foreground">
+      {liveMatch && getDerivedMatchStatus(liveMatch) === "live" && (
+        <Badge
+          className={`absolute z-10 gap-2 bg-accent text-accent-foreground ${error ? "right-4 top-4" : "left-4 top-4"}`}
+        >
           <span className="live-pulse h-2 w-2 rounded-full bg-red-500" />
           LIVE
         </Badge>
       )}
+      {error && (
+        <div className="absolute left-4 right-4 top-4 z-10 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100 backdrop-blur-sm">
+          <p className="font-semibold">Location unavailable</p>
+          <p className="mt-1 text-xs text-amber-100/80">
+            Enable location in your browser settings to see yourself on the map.
+          </p>
+        </div>
+      )}
       <Map
+        ref={mapRef}
         mapboxAccessToken={MAPBOX_TOKEN}
         initialViewState={initialViewState}
         style={{ width: "100%", height: "100%" }}
@@ -119,13 +145,20 @@ export function PubMap() {
             <PubMarker pub={pub} onClick={() => setSelectedPub(pub)} />
           </Marker>
         ))}
-        {identity && (
+        {showUserMarker && (
           <Marker
             longitude={position.lng}
             latitude={position.lat}
             anchor="bottom"
           >
-            <UserPlayerMarkerContent playerId={identity.playerId} />
+            {identity ? (
+              <UserPlayerMarkerContent
+                playerId={identity.playerId}
+                fallbackAvatarUrl={user?.avatarUrl}
+              />
+            ) : (
+              <UserLocationMarker />
+            )}
           </Marker>
         )}
       </Map>

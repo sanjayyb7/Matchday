@@ -15,6 +15,7 @@ import {
   getLiveOrUpcomingMatch,
   getMatchLabel,
   getTeam,
+  getDerivedMatchStatus,
   identityMatchesActiveMatch,
 } from "@/lib/mock/data";
 import { getTeamChatThemeFromTeam } from "@/lib/chat/team-theme";
@@ -78,7 +79,7 @@ export default function ChatPage({
           </h1>
           <p className="text-xs text-white/50">
             {matchLabel
-              ? `${matchLabel}${match?.status === "live" ? " · LIVE" : ""}`
+              ? `${matchLabel}${match && getDerivedMatchStatus(match) === "live" ? " · LIVE" : ""}`
               : messages.length > 0
                 ? `${messages.length} messages`
                 : "No chats yet"}

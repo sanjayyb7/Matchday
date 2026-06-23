@@ -27,6 +27,12 @@ const STARTING_SHAPE = {
   goalkeepers: 1,
 } as const;
 
+export const STARTING_XI_SIZE =
+  STARTING_SHAPE.forwards +
+  STARTING_SHAPE.midfielders +
+  STARTING_SHAPE.defenders +
+  STARTING_SHAPE.goalkeepers;
+
 function byStarterPriority(a: Player, b: Player): number {
   return b.stats.caps - a.stats.caps || a.number - b.number;
 }
@@ -166,6 +172,27 @@ export function presentPlayerCounts(
     counts.set(fan.playerId, (counts.get(fan.playerId) ?? 0) + 1);
   }
   return counts;
+}
+
+export function startingElevenIds(layout: SquadLayout): Set<string> {
+  const ids = new Set<string>();
+  for (const row of Object.values(layout.starting)) {
+    for (const slot of row) {
+      ids.add(slot.player.id);
+    }
+  }
+  return ids;
+}
+
+export function countPresentStartingPlayers(
+  presentCounts: Map<string, number>,
+  startingIds: Set<string>,
+): number {
+  let count = 0;
+  for (const playerId of presentCounts.keys()) {
+    if (startingIds.has(playerId)) count++;
+  }
+  return count;
 }
 
 export function isGoalkeeper(player: Player): boolean {

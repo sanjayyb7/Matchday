@@ -36,7 +36,7 @@ export function BottomNav() {
     tab.href === "/chat" ? { ...tab, href: chatHref } : tab,
   );
 
-  if (pathname.startsWith("/chat")) return null;
+  if (/^\/chat\/[^/]+/.test(pathname)) return null;
 
   return (
     <nav className="pointer-events-none fixed bottom-0 left-0 right-0 z-50 px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-2">
