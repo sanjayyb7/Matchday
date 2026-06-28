@@ -53,7 +53,7 @@ export function LoginForm() {
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.15 }}
-        className="relative z-10 w-full max-w-sm px-6 pb-10"
+        className="relative z-10 mx-auto w-full max-w-sm px-6 pb-10"
       >
         {error && (
           <p className="mb-4 rounded-xl bg-red-500/10 px-4 py-3 text-center text-sm text-red-400">
@@ -76,7 +76,7 @@ export function LoginForm() {
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.15 }}
-      className="relative z-10 w-full max-w-sm px-6 pb-10"
+      className="relative z-10 mx-auto w-full max-w-sm px-6 pb-10"
     >
       <div className="space-y-4">
         {error && (

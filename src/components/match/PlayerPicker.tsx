@@ -11,6 +11,14 @@ interface PlayerPickerProps {
 }
 
 export function PlayerPicker({ players, teamColor, onSelect }: PlayerPickerProps) {
+  if (players.length === 0) {
+    return (
+      <p className="py-8 text-center text-sm text-white/50">
+        No players available for this team yet.
+      </p>
+    );
+  }
+
   return (
     <div className="flex max-h-[55vh] flex-col gap-2 overflow-y-auto overscroll-contain pr-1">
       {players.map((player, i) => (

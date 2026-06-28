@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { CreatePubInput } from "@/lib/pubs/admin-pubs";
+import { validateSfPubCoords } from "@/lib/geo/sf-coords";
 import { resolvePubFromGoogleMapsUrl } from "@/lib/pubs/resolve-google-maps-url";
 
 interface AddPubFormProps {
@@ -35,6 +36,11 @@ export function AddPubForm({ onSubmit }: AddPubFormProps) {
     setSubmitting(true);
     try {
       const resolved = await resolvePubFromGoogleMapsUrl(trimmed);
+      const boundsError = validateSfPubCoords(resolved.lat, resolved.lng);
+      if (boundsError) {
+        setFieldError(boundsError);
+        return;
+      }
       setPreview(resolved);
       await onSubmit(resolved);
       setMapsUrl("");

@@ -6,6 +6,7 @@ import {
   getWcSeason,
 } from "@/lib/matches/config";
 import { mapApiTeam, teamNameToSlug } from "@/lib/matches/team-utils";
+import { generateFallbackSquad } from "@/lib/matches/squad-fallback";
 import { deriveMatchStatus } from "@/lib/matches/match-window";
 
 interface ApiFootballFixtureTeam {
@@ -181,7 +182,8 @@ async function fetchUpcomingFixtures(key: string): Promise<ApiFootballFixtureIte
   // Legacy fallback — often empty for WC 2026 in API-Football.
   const league = getWcLeagueId();
   const season = getWcSeason();
-  const path = `/fixtures?league=${league}&season=${season}&next=10`;
+  // Free tier does not support the `next` query param — fetch by league + season only.
+  const path = `/fixtures?league=${league}&season=${season}`;
   return apiFetch<ApiFootballFixtureItem[]>(path, key);
 }
 
@@ -190,11 +192,15 @@ async function fetchSquads(
   teamApiId: number,
   season: number,
 ): Promise<ApiFootballSquadPlayer[]> {
-  const path = `/players/squads?team=${teamApiId}&season=${season}`;
-  const response = await apiFetch<
-    { team: ApiFootballFixtureTeam; players: ApiFootballSquadPlayer[] }[]
-  >(path, key);
-  return response[0]?.players ?? [];
+  try {
+    const path = `/players/squads?team=${teamApiId}&season=${season}`;
+    const response = await apiFetch<
+      { team: ApiFootballFixtureTeam; players: ApiFootballSquadPlayer[] }[]
+    >(path, key);
+    return response[0]?.players ?? [];
+  } catch {
+    return [];
+  }
 }
 
 function todayUtcDate(): string {
@@ -242,63 +248,72 @@ export async function fetchWorldCupFixtures(): Promise<{
   };
 }
 
+async function resolveTeamPlayers(
+  key: string,
+  apiTeam: ApiFootballFixtureTeam,
+  season: number,
+  team: Team,
+): Promise<Player[]> {
+  const squad = await fetchSquads(key, apiTeam.id, season);
+  if (squad.length > 0) {
+    return squad.map((apiPlayer) => mapSquadPlayer(apiPlayer, team));
+  }
+  return generateFallbackSquad(team);
+}
+
+async function fetchPlayersForFixtures(
+  fixtureItems: ApiFootballFixtureItem[],
+  teams: Team[],
+): Promise<Player[]> {
+  const key = getApiFootballKey();
+  if (!key || fixtureItems.length === 0) return [];
+
+  const teamBySlug = new Map(teams.map((team) => [team.id, team]));
+  const loadedTeamIds = new Set<string>();
+  const players: Player[] = [];
+
+  for (const item of fixtureItems) {
+    const pairs: [ApiFootballFixtureTeam, string][] = [
+      [item.teams.home, teamNameToSlug(item.teams.home.name)],
+      [item.teams.away, teamNameToSlug(item.teams.away.name)],
+    ];
+
+    for (const [apiTeam, slug] of pairs) {
+      if (loadedTeamIds.has(slug)) continue;
+      loadedTeamIds.add(slug);
+
+      const team = teamBySlug.get(slug) ?? mapApiTeam(apiTeam);
+      teamBySlug.set(slug, team);
+
+      const teamPlayers = await resolveTeamPlayers(
+        key,
+        apiTeam,
+        item.league.season,
+        team,
+      );
+      players.push(...teamPlayers);
+    }
+  }
+
+  return players;
+}
+
 export async function fetchSquadsForFixture(
   item: ApiFootballFixtureItem,
   teams: Team[],
 ): Promise<Player[]> {
-  const key = getApiFootballKey();
-  if (!key) return [];
-
-  const season = item.league.season;
-  const teamBySlug = new Map(teams.map((team) => [team.id, team]));
-  const players: Player[] = [];
-
-  const homeSlug = teamNameToSlug(item.teams.home.name);
-  const awaySlug = teamNameToSlug(item.teams.away.name);
-
-  const homeTeam = teamBySlug.get(homeSlug) ?? mapApiTeam(item.teams.home);
-  const awayTeam = teamBySlug.get(awaySlug) ?? mapApiTeam(item.teams.away);
-
-  const [homeSquad, awaySquad] = await Promise.all([
-    fetchSquads(key, item.teams.home.id, season),
-    fetchSquads(key, item.teams.away.id, season),
-  ]);
-
-  for (const apiPlayer of homeSquad) {
-    players.push(mapSquadPlayer(apiPlayer, homeTeam));
-  }
-  for (const apiPlayer of awaySquad) {
-    players.push(mapSquadPlayer(apiPlayer, awayTeam));
-  }
-
-  return players;
+  return fetchPlayersForFixtures([item], teams);
 }
 
 export async function buildActiveMatchPayload(): Promise<ActiveMatchPayload> {
   const { fixtures, teams, fixtureItems } = await fetchWorldCupFixtures();
   const { getActiveMatch } = await import("@/lib/matches/match-window");
   const active = getActiveMatch(fixtures);
-
-  if (!active) {
-    return { match: null, teams: [], players: [], fixtures };
-  }
-
-  const activeItem = fixtureItems.find(
-    (item) => `wc-${item.fixture.id}` === active.id,
-  );
-
-  let players: Player[] = [];
-  if (activeItem) {
-    players = await fetchSquadsForFixture(activeItem, teams);
-  }
-
-  const activeTeams = teams.filter(
-    (team) => team.id === active.homeTeamId || team.id === active.awayTeamId,
-  );
+  const players = await fetchPlayersForFixtures(fixtureItems, teams);
 
   return {
-    match: active,
-    teams: activeTeams,
+    match: active ?? null,
+    teams,
     players,
     fixtures,
   };

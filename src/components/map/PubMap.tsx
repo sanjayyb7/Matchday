@@ -3,25 +3,30 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import Map, { Marker, type MapRef } from "react-map-gl/mapbox";
 import "mapbox-gl/dist/mapbox-gl.css";
-import { pubs } from "@/lib/mock/data";
 import { DEFAULT_ZOOM } from "@/lib/mock/constants";
 import { findNearestPubId } from "@/lib/geo/haversine";
 import { NEAR_PUB_RADIUS_METERS } from "@/lib/mock/constants";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { useAuth } from "@/hooks/useAuth";
+import { usePubs } from "@/hooks/usePubs";
 import { useRealtime } from "@/lib/realtime/context";
 import { useMatchdayStore } from "@/store/matchday-store";
 import { getHistoryAdapter } from "@/hooks/useHistory";
-import { getPub } from "@/lib/mock/data";
+import {
+  getPub,
+  getLiveOrUpcomingMatch,
+  getDerivedMatchStatus,
+} from "@/lib/mock/data";
+
 import { PubMarker } from "./PubMarker";
 import { UserPlayerMarkerContent } from "./UserPlayerMarker";
 import { UserLocationMarker } from "./UserLocationMarker";
 import { Badge } from "@/components/ui/badge";
-import { getLiveOrUpcomingMatch, getDerivedMatchStatus } from "@/lib/mock/data";
 
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? "";
 
 export function PubMap() {
+  const pubs = usePubs();
   const { position, error, isWatching } = useGeolocation();
   const { user } = useAuth();
   const realtime = useRealtime();
@@ -58,7 +63,7 @@ export function PubMap() {
         );
       }
     }
-  }, [user, identity, position, realtime, liveMatch]);
+  }, [user, identity, position, realtime, liveMatch, pubs]);
 
   useEffect(() => {
     publishLocation();

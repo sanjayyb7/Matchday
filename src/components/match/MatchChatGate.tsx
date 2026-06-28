@@ -44,6 +44,9 @@ export function MatchChatGate() {
   const fallbackBanner = showFallbackBanner ? (
     <div className="border-b border-amber-500/20 bg-amber-500/10 px-4 py-2 text-center text-xs text-amber-100/90">
       Live schedule unavailable — showing demo fixtures
+      {fetchError ? (
+        <span className="mt-0.5 block text-amber-100/70">{fetchError}</span>
+      ) : null}
     </div>
   ) : null;
 

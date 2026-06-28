@@ -1,3 +1,4 @@
+import { validateSfPubCoords } from "@/lib/geo/sf-coords";
 import { getInsForgeBrowserClient } from "@/lib/insforge/client";
 import type { Pub } from "@/types";
 
@@ -59,6 +60,11 @@ async function generatePubId(name: string): Promise<string> {
 }
 
 export async function createPub(input: CreatePubInput): Promise<Pub> {
+  const validationError = validateSfPubCoords(input.lat, input.lng);
+  if (validationError) {
+    throw new Error(validationError);
+  }
+
   const client = getInsForgeBrowserClient();
   const id = await generatePubId(input.name);
 

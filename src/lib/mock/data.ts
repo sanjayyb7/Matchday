@@ -27,6 +27,23 @@ let activeMatchRefreshPromise: Promise<void> | null = null;
 let lastMatchFetchError: string | null = null;
 let usingFallbackFixtures = false;
 
+const pubListeners = new Set<() => void>();
+let pubCatalogVersion = 0;
+
+export function subscribePubs(listener: () => void): () => void {
+  pubListeners.add(listener);
+  return () => pubListeners.delete(listener);
+}
+
+export function notifyPubsChanged(): void {
+  pubCatalogVersion += 1;
+  pubListeners.forEach((listener) => listener());
+}
+
+export function getPubCatalogVersion(): number {
+  return pubCatalogVersion;
+}
+
 export function isStaticDataHydrated(): boolean {
   return staticDataHydrated;
 }
@@ -100,11 +117,16 @@ export async function refreshActiveMatchFromApi(): Promise<void> {
         upsertTeam(team);
       }
 
-      if (payload.match && payload.players.length > 0) {
-        mergePlayersForTeams(payload.players, [
-          payload.match.homeTeamId,
-          payload.match.awayTeamId,
-        ]);
+      if (payload.players.length > 0) {
+        const teamIds = [
+          ...new Set(
+            payload.fixtures.flatMap((fixture) => [
+              fixture.homeTeamId,
+              fixture.awayTeamId,
+            ]),
+          ),
+        ];
+        mergePlayersForTeams(payload.players, teamIds);
       }
 
       activeMatchHydrated = true;
@@ -144,6 +166,11 @@ function mapPubRows(rows: Record<string, unknown>[]): Pub[] {
   }));
 }
 
+function replacePubs(next: Pub[]): void {
+  pubs.splice(0, pubs.length, ...next);
+  notifyPubsChanged();
+}
+
 export async function refreshPubsFromInsForge(): Promise<void> {
   const { INSFORGE_ENABLED } = await import("@/lib/insforge/config");
   if (!INSFORGE_ENABLED) return;
@@ -152,9 +179,12 @@ export async function refreshPubsFromInsForge(): Promise<void> {
   const client = getInsForgeBrowserClient();
   const { data, error } = await client.database.from("pubs").select("*");
 
-  if (error || !data?.length) return;
+  if (error) {
+    console.error("Failed to refresh pubs from InsForge:", error.message);
+    return;
+  }
 
-  pubs.splice(0, pubs.length, ...mapPubRows(data as Record<string, unknown>[]));
+  replacePubs(mapPubRows((data ?? []) as Record<string, unknown>[]));
 }
 
 export async function hydrateStaticDataFromInsForge(): Promise<void> {
@@ -186,11 +216,7 @@ export async function hydrateStaticDataFromInsForge(): Promise<void> {
   }
 
   if (pubsRes.data?.length) {
-    pubs.splice(
-      0,
-      pubs.length,
-      ...mapPubRows(pubsRes.data as Record<string, unknown>[]),
-    );
+    replacePubs(mapPubRows(pubsRes.data as Record<string, unknown>[]));
   }
 
   if (matchesRes.data?.length) {
