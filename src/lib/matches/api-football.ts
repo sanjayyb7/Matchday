@@ -7,7 +7,12 @@ import {
 } from "@/lib/matches/config";
 import { mapApiTeam, teamNameToSlug } from "@/lib/matches/team-utils";
 import { generateFallbackSquad } from "@/lib/matches/squad-fallback";
-import { deriveMatchStatus } from "@/lib/matches/match-window";
+import { buildDevFallbackPayload } from "@/lib/matches/dev-fallback-fixtures";
+import {
+  deriveMatchStatus,
+  getActiveMatch,
+  hasSelectableFixtures,
+} from "@/lib/matches/match-window";
 
 interface ApiFootballFixtureTeam {
   id: number;
@@ -42,6 +47,9 @@ export interface ActiveMatchPayload {
   teams: Team[];
   players: Player[];
   fixtures: Match[];
+  /** True when API only returned finished historical fixtures and demo schedule is used. */
+  demoSchedule?: boolean;
+  demoReason?: string;
 }
 
 function apiHeaders(key: string): HeadersInit {
@@ -306,8 +314,28 @@ export async function fetchSquadsForFixture(
 }
 
 export async function buildActiveMatchPayload(): Promise<ActiveMatchPayload> {
-  const { fixtures, teams, fixtureItems } = await fetchWorldCupFixtures();
-  const { getActiveMatch } = await import("@/lib/matches/match-window");
+  let { fixtures, teams, fixtureItems } = await fetchWorldCupFixtures();
+
+  if (fixtures.length === 0) {
+    const fallback = buildDevFallbackPayload();
+    return {
+      match: fallback.match,
+      teams: fallback.teams,
+      players: [],
+      fixtures: fallback.fixtures,
+    };
+  }
+
+  if (!hasSelectableFixtures(fixtures)) {
+    const demo = buildDevFallbackPayload();
+    return {
+      ...demo,
+      demoSchedule: true,
+      demoReason:
+        "API schedule has no live or upcoming matches — showing demo fixtures",
+    };
+  }
+
   const active = getActiveMatch(fixtures);
   const players = await fetchPlayersForFixtures(fixtureItems, teams);
 

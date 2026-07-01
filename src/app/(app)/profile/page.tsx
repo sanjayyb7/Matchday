@@ -18,7 +18,6 @@ import {
 import { BOTTOM_NAV_CLEARANCE } from "@/lib/layout/constants";
 import { FanHistoryTimeline } from "@/components/profile/FanHistoryTimeline";
 import { DeleteAccountDialog } from "@/components/profile/DeleteAccountDialog";
-import { ThemeSelector } from "@/components/profile/ThemeSelector";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { findNearestPubId } from "@/lib/geo/haversine";
@@ -121,8 +120,6 @@ export default function ProfilePage() {
           </div>
         </section>
       )}
-
-      <ThemeSelector />
 
       <section className="mb-8">
         <h2 className="mb-4 font-heading text-lg font-bold uppercase tracking-wide">

@@ -8,6 +8,7 @@ import {
   getMatchLabel,
   getDerivedMatchStatus,
   getTeam,
+  isUsingFallbackFixtures,
   matches,
 } from "@/lib/mock/data";
 import {
@@ -39,12 +40,15 @@ export function UpcomingMatchCard({ match, onSelect }: UpcomingMatchCardProps) {
   const matchStatus = getDerivedMatchStatus(match);
   const canPick = canPromptTeamSelection(match, matches);
   const selectionOpen = isTeamSelectionOpen(match);
+  const isDemo = isUsingFallbackFixtures() || match.id.startsWith("match-demo-");
 
-  const actionLabel = canPick
-    ? selectionOpen
-      ? "Pick now"
-      : "Pick early"
-    : `Opens in ${formatTimeUntil(getSelectionOpensAt(match))}`;
+  const actionLabel = isDemo
+    ? "Demo — try the pick flow"
+    : canPick
+      ? selectionOpen
+        ? "Pick now"
+        : "Pick early"
+      : `Opens in ${formatTimeUntil(getSelectionOpensAt(match))}`;
 
   return (
     <motion.button

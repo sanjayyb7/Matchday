@@ -6,6 +6,7 @@ import francePlayers from "../../../data/players/france.json";
 import {
   deriveMatchStatus,
   getActiveMatch,
+  getKickoffMs,
   getNextUpcomingMatches,
   getUpcomingMatchesWithinHours,
 } from "@/lib/matches/match-window";
@@ -288,9 +289,22 @@ export function getUpcomingMatchesNext24Hours(): Match[] {
   return getUpcomingMatchesWithinHours(matches, 24).map(withDerivedStatus);
 }
 
+/** Matches to show on the chat gate: live first, then upcoming within 24h, then next 3. */
 export function getDisplayableUpcomingMatches(): Match[] {
+  const now = new Date();
+  const live = matches
+    .filter((match) => deriveMatchStatus(match, now) === "live")
+    .map(withDerivedStatus)
+    .sort((a, b) => getKickoffMs(a) - getKickoffMs(b));
+
   const within24h = getUpcomingMatchesNext24Hours();
-  if (within24h.length > 0) return within24h;
+  const liveIds = new Set(live.map((m) => m.id));
+  const upcomingOnly = within24h.filter((m) => !liveIds.has(m.id));
+
+  if (live.length > 0 || upcomingOnly.length > 0) {
+    return [...live, ...upcomingOnly];
+  }
+
   return getNextUpcomingMatches(matches, 3).map(withDerivedStatus);
 }
 

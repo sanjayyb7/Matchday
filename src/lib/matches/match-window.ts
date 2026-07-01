@@ -24,6 +24,11 @@ export function deriveMatchStatus(match: Match, now = new Date()): MatchStatus {
   const kickoffMs = getKickoffMs(match);
   const endMs = getFixtureEndMs(match, nowMs);
 
+  // Kickoff still in the future — always upcoming (ignore stale FT from archived API data).
+  if (nowMs < kickoffMs) {
+    return "upcoming";
+  }
+
   if (match.apiStatus && FINISHED_STATUSES.has(match.apiStatus)) {
     return "finished";
   }
@@ -159,6 +164,16 @@ export function getUpcomingMatchesWithinHours(
       return kickoffMs > nowMs && kickoffMs <= windowEndMs;
     })
     .sort((a, b) => getKickoffMs(a) - getKickoffMs(b));
+}
+
+export function hasSelectableFixtures(
+  matchList: Match[],
+  now = new Date(),
+): boolean {
+  return matchList.some((match) => {
+    const status = deriveMatchStatus(match, now);
+    return status === "live" || status === "upcoming";
+  });
 }
 
 /** Soonest upcoming fixtures, regardless of time window. */

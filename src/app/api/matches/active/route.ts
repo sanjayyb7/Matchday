@@ -33,7 +33,7 @@ export async function GET() {
   try {
     const payload = await buildActiveMatchPayload();
 
-    if (payload.match) {
+    if (payload.match && !payload.demoSchedule) {
       await syncActiveMatchToInsForge(
         payload.match,
         payload.teams,
@@ -45,6 +45,24 @@ export async function GET() {
       (fixture) => deriveMatchStatus(fixture) === "live",
     );
     const cacheSeconds = hasLive ? 60 : ACTIVE_MATCH_CACHE_SECONDS;
+
+    if (payload.demoSchedule) {
+      return NextResponse.json(
+        {
+          match: payload.match,
+          teams: payload.teams,
+          players: payload.players,
+          fixtures: payload.fixtures,
+          source: "fallback",
+          error: payload.demoReason,
+        },
+        {
+          headers: {
+            "Cache-Control": `public, s-maxage=60, stale-while-revalidate=30`,
+          },
+        },
+      );
+    }
 
     return NextResponse.json(
       {
