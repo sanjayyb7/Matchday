@@ -260,6 +260,12 @@ git worktree add ../Matchday-backend backend/insforge-v2
 
 ---
 
+## Deploying
+
+See [`docs/DEPLOY.md`](docs/DEPLOY.md) for the full workflow. Key point: `git push` does **not** deploy — production only updates when you run `npx @insforge/cli deployments deploy .`. Always test locally and run `npm run build` before deploying.
+
+---
+
 ## Recent UI changes (`backend/insforge-v2`)
 
 - **Player picker** — list layout with visible jersey number, avatar, name, and position

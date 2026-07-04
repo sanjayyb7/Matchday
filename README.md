@@ -33,6 +33,10 @@ Leave `NEXT_PUBLIC_USE_INSFORGE=false`. Use **Log in** / **Create account** with
    ```
 4. Sign in with **Google** or **GitHub** OAuth on `/login`
 
+## Deploying
+
+Production is deployed manually via `npx @insforge/cli deployments deploy .` — pushing to GitHub does not affect the live site. See [`docs/DEPLOY.md`](docs/DEPLOY.md) for the safe test-then-deploy workflow.
+
 ## Parallel frontend + backend workflow
 
 | Branch | Purpose |
