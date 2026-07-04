@@ -35,6 +35,7 @@ export function PubMap() {
   const liveMatch = getLiveOrUpcomingMatch();
   const mapRef = useRef<MapRef>(null);
   const hasFlownToUser = useRef(false);
+  const lastPubIdRef = useRef<string | undefined>(undefined);
 
   const publishLocation = useCallback(() => {
     if (!user || !identity) return;
@@ -43,7 +44,9 @@ export function PubMap() {
       position.lng,
       pubs,
       NEAR_PUB_RADIUS_METERS,
+      lastPubIdRef.current,
     );
+    lastPubIdRef.current = pubId;
     realtime.publishLocation({
       userId: user.id,
       playerId: identity.playerId,

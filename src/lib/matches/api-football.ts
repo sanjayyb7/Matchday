@@ -198,10 +198,10 @@ async function fetchUpcomingFixtures(key: string): Promise<ApiFootballFixtureIte
 async function fetchSquads(
   key: string,
   teamApiId: number,
-  season: number,
 ): Promise<ApiFootballSquadPlayer[]> {
   try {
-    const path = `/players/squads?team=${teamApiId}&season=${season}`;
+    // The squads endpoint rejects a season param ("The Season field do not exist").
+    const path = `/players/squads?team=${teamApiId}`;
     const response = await apiFetch<
       { team: ApiFootballFixtureTeam; players: ApiFootballSquadPlayer[] }[]
     >(path, key);
@@ -259,10 +259,9 @@ export async function fetchWorldCupFixtures(): Promise<{
 async function resolveTeamPlayers(
   key: string,
   apiTeam: ApiFootballFixtureTeam,
-  season: number,
   team: Team,
 ): Promise<Player[]> {
-  const squad = await fetchSquads(key, apiTeam.id, season);
+  const squad = await fetchSquads(key, apiTeam.id);
   if (squad.length > 0) {
     return squad.map((apiPlayer) => mapSquadPlayer(apiPlayer, team));
   }
@@ -293,12 +292,7 @@ async function fetchPlayersForFixtures(
       const team = teamBySlug.get(slug) ?? mapApiTeam(apiTeam);
       teamBySlug.set(slug, team);
 
-      const teamPlayers = await resolveTeamPlayers(
-        key,
-        apiTeam,
-        item.league.season,
-        team,
-      );
+      const teamPlayers = await resolveTeamPlayers(key, apiTeam, team);
       players.push(...teamPlayers);
     }
   }

@@ -102,7 +102,8 @@ class MockRealtimeEngine implements RealtimeAdapter {
     const pub = getPub(pubId);
     if (!pub) return [];
     return all.filter((p) => {
-      if (p.pubId === pubId) return true;
+      // Trust the assigned pub so a fan never appears at two adjacent pubs.
+      if (p.pubId) return p.pubId === pubId;
       return haversine(p.lat, p.lng, pub.lat, pub.lng) <= NEAR_PUB_RADIUS_METERS;
     });
   }
