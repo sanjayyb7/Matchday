@@ -25,7 +25,7 @@ export function OAuthButtons({ mode = "login" }: OAuthButtonsProps) {
       </button>
       <p className="text-center text-xs text-white/30">
         {mode === "signup"
-          ? "Google sign-in creates your Matchday account automatically."
+          ? "Google sign-in creates your LocalDerby account automatically."
           : "Sign in with your Google account."}
       </p>
     </div>

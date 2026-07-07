@@ -25,7 +25,7 @@ export function MockLoginButton() {
         onClick={handleEnter}
         className="h-14 w-full rounded-full bg-[#FFFC00] text-lg font-bold text-black shadow-[0_4px_24px_rgba(255,252,0,0.4)] transition-transform active:scale-[0.98]"
       >
-        Enter Matchday
+        Enter LocalDerby
       </button>
       <p className="mt-3 text-center text-sm text-white/40">
         Demo mode — tap to jump in

@@ -16,13 +16,13 @@ const fredoka = Fredoka({
 });
 
 export const metadata: Metadata = {
-  title: "Matchday — Live Football Fan Meetups",
+  title: "LocalDerby — Live Football Fan Meetups",
   description:
     "Find SF pubs showing live football, pick your player identity, and join team chats.",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Matchday",
+    title: "LocalDerby",
   },
 };
 

@@ -26,7 +26,7 @@ export default function SignupPage() {
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_0%,rgba(255,252,0,0.12)_0%,transparent_55%)]" />
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_80%_80%,rgba(0,212,255,0.08)_0%,transparent_50%)]" />
       <AuthHero
-        title="Join Matchday"
+        title="Join LocalDerby"
         subtitle="Create your fan profile, pick a player, and find the pub squad in SF."
       />
       <Suspense fallback={null}>

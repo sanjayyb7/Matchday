@@ -123,7 +123,7 @@ export default function ProfilePage() {
 
       <section className="mb-8">
         <h2 className="mb-4 font-heading text-lg font-bold uppercase tracking-wide">
-          Matchday history
+          Match history
         </h2>
         <FanHistoryTimeline history={history} />
       </section>
