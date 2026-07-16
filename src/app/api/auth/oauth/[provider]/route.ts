@@ -31,6 +31,9 @@ export async function GET(
   const { data, error } = await client.auth.signInWithOAuth(provider, {
     redirectTo: oauthCallbackUrl(),
     skipBrowserRedirect: true,
+    // Force Google to show the account picker even when the user still has an
+    // active Google session, so logout reliably requires a fresh login.
+    additionalParams: { prompt: "select_account" },
   });
 
   if (error || !data?.url || !data.codeVerifier) {

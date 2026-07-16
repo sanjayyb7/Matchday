@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
-import { createInsForgeServerClient } from "@/lib/insforge/server";
+import {
+  clearInsForgeAuthCookies,
+  createInsForgeServerClient,
+} from "@/lib/insforge/server";
 import {
   deleteInsForgeUserDataAdmin,
   deleteInsForgeUserDataServer,
@@ -28,11 +31,16 @@ export async function POST() {
     return NextResponse.json({ error: message }, { status: 500 });
   }
 
-  await client.auth.signOut();
+  try {
+    await client.auth.signOut();
+  } catch {
+    // Data is already deleted; still clear cookies below to end the session.
+  }
 
-  const response = NextResponse.json({ ok: true });
-  response.cookies.delete("insforge_access_token");
-  response.cookies.delete("insforge_refresh_token");
-  response.cookies.delete("insforge_csrf_token");
+  const response = NextResponse.json(
+    { ok: true },
+    { headers: { "Cache-Control": "no-store" } },
+  );
+  clearInsForgeAuthCookies(response);
   return response;
 }

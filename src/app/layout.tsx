@@ -16,9 +16,29 @@ const fredoka = Fredoka({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://localderby.live"),
   title: "LocalDerby — Live Football Fan Meetups",
   description:
-    "Find SF pubs showing live football, pick your player identity, and join team chats.",
+    "LocalDerby helps football fans in San Francisco find pubs showing the match, pick a team and player identity for the World Cup, and join live squad chats with fans around them.",
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    type: "website",
+    url: "https://localderby.live",
+    siteName: "LocalDerby",
+    title: "LocalDerby — Live Football Fan Meetups",
+    description:
+      "Find the San Francisco pub showing the match, pick your player, and join your team's live squad chat.",
+    images: [
+      {
+        url: "/assets/landing-hero-pub.png",
+        width: 1200,
+        height: 630,
+        alt: "Fans watching football at a San Francisco sports bar",
+      },
+    ],
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",

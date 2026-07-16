@@ -9,6 +9,7 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
+import { clearLastActivity } from "@/lib/auth/activity";
 import { mockAuthAdapter, SESSION_KEY } from "@/lib/auth/mock-auth";
 import {
   mapInsForgeUser,
@@ -137,6 +138,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signOut = useCallback(async () => {
+    clearLastActivity();
     if (INSFORGE_ENABLED) {
       const client = getInsForgeBrowserClient();
       await client.auth.signOut();
@@ -150,6 +152,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const deleteAccount = useCallback(async () => {
+    clearLastActivity();
     if (INSFORGE_ENABLED && user) {
       const response = await fetch("/api/auth/delete-account", { method: "POST" });
       if (!response.ok) {

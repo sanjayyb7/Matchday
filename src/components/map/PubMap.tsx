@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Map, { Marker, type MapRef } from "react-map-gl/mapbox";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { DEFAULT_ZOOM } from "@/lib/mock/constants";
@@ -21,13 +21,16 @@ import {
 import { PubMarker } from "./PubMarker";
 import { UserPlayerMarkerContent } from "./UserPlayerMarker";
 import { UserLocationMarker } from "./UserLocationMarker";
+import { FanMarker } from "./FanMarker";
 import { Badge } from "@/components/ui/badge";
+import type { FanPresence } from "@/types";
 
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? "";
 
 export function PubMap() {
   const pubs = usePubs();
-  const { position, error, isWatching } = useGeolocation();
+  const { position, error, isWatching, permission, requestLocation } =
+    useGeolocation();
   const { user } = useAuth();
   const realtime = useRealtime();
   const identity = useMatchdayStore((s) => s.identity);
@@ -36,6 +39,21 @@ export function PubMap() {
   const mapRef = useRef<MapRef>(null);
   const hasFlownToUser = useRef(false);
   const lastPubIdRef = useRef<string | undefined>(undefined);
+  const [fans, setFans] = useState<FanPresence[]>([]);
+
+  useEffect(() => {
+    return realtime.subscribeToPresence(setFans);
+  }, [realtime]);
+
+  const otherFans = useMemo(
+    () => fans.filter((fan) => fan.userId !== user?.id),
+    [fans, user?.id],
+  );
+
+  // Depend on the match id, not the match object: getLiveOrUpcomingMatch()
+  // returns a fresh object every render, and publishing triggers a presence
+  // update that re-renders this component — an object dep would loop forever.
+  const liveMatchId = liveMatch?.id;
 
   const publishLocation = useCallback(() => {
     if (!user || !identity) return;
@@ -55,18 +73,18 @@ export function PubMap() {
       lng: position.lng,
       pubId,
     });
-    if (pubId && liveMatch) {
+    if (pubId && liveMatchId) {
       const pub = getPub(pubId);
       if (pub) {
         getHistoryAdapter().updatePubForMatch(
           user.id,
-          liveMatch.id,
+          liveMatchId,
           pubId,
           pub.name,
         );
       }
     }
-  }, [user, identity, position, realtime, liveMatch, pubs]);
+  }, [user, identity, position, realtime, liveMatchId, pubs]);
 
   useEffect(() => {
     publishLocation();
@@ -127,12 +145,23 @@ export function PubMap() {
           LIVE
         </Badge>
       )}
-      {error && (
+      {!isWatching && (error || permission !== "granted") && (
         <div className="absolute left-4 right-4 top-4 z-10 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100 backdrop-blur-sm">
-          <p className="font-semibold">Location unavailable</p>
-          <p className="mt-1 text-xs text-amber-100/80">
-            Enable location in your browser settings to see yourself on the map.
+          <p className="font-semibold">
+            {error ? "Location unavailable" : "See yourself on the map"}
           </p>
+          <p className="mt-1 text-xs text-amber-100/80">
+            {error
+              ? "Allow location access to see yourself on the map. If nothing happens, enable location for this site in your browser settings."
+              : "Allow location access so fans can find you at the pub."}
+          </p>
+          <button
+            type="button"
+            onClick={requestLocation}
+            className="mt-2 rounded-full bg-[#FFFC00] px-4 py-2 text-xs font-bold text-black transition-transform active:scale-[0.97]"
+          >
+            Enable location
+          </button>
         </div>
       )}
       <Map
@@ -151,6 +180,16 @@ export function PubMap() {
             anchor="bottom"
           >
             <PubMarker pub={pub} onClick={() => setSelectedPub(pub)} />
+          </Marker>
+        ))}
+        {otherFans.map((fan) => (
+          <Marker
+            key={fan.userId}
+            longitude={fan.lng}
+            latitude={fan.lat}
+            anchor="bottom"
+          >
+            <FanMarker fan={fan} />
           </Marker>
         ))}
         {showUserMarker && (

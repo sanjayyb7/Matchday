@@ -19,7 +19,7 @@ export function OAuthButtons({ mode = "login" }: OAuthButtonsProps) {
             window.location.assign("/api/auth/oauth/google");
           })
         }
-        className="flex h-14 w-full items-center justify-center rounded-full border border-white/15 bg-white/5 text-base font-semibold text-white transition-transform active:scale-[0.98] disabled:opacity-60"
+        className="flex h-14 w-full items-center justify-center rounded-full bg-[#FFFC00] text-base font-bold text-black shadow-[0_8px_28px_rgba(255,252,0,0.35)] transition-transform active:scale-[0.98] disabled:opacity-60"
       >
         Continue with Google
       </button>

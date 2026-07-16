@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createServerClient } from "@insforge/sdk/ssr";
+import { clearInsForgeAuthCookies } from "@/lib/insforge/server";
 import { INSFORGE_ANON_KEY, INSFORGE_URL } from "@/lib/insforge/config";
 
 export async function POST() {
@@ -11,11 +12,18 @@ export async function POST() {
     cookies: cookieStore,
   });
 
-  await client.auth.signOut();
+  // Revoke the session (and refresh token) on the InsForge backend. Even if
+  // this fails we still clear the cookies below so the browser is signed out.
+  try {
+    await client.auth.signOut();
+  } catch {
+    // Ignore — cookie invalidation below still logs the user out locally.
+  }
 
-  const response = NextResponse.json({ ok: true });
-  response.cookies.delete("insforge_access_token");
-  response.cookies.delete("insforge_refresh_token");
-  response.cookies.delete("insforge_csrf_token");
+  const response = NextResponse.json(
+    { ok: true },
+    { headers: { "Cache-Control": "no-store" } },
+  );
+  clearInsForgeAuthCookies(response);
   return response;
 }
