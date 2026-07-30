@@ -2,8 +2,8 @@ import type { Match, Player, Team } from "@/types";
 import {
   API_FOOTBALL_BASE_URL,
   getApiFootballKey,
-  getWcLeagueId,
-  getWcSeason,
+  MAX_FIXTURES_RETURNED,
+  MAX_SQUAD_TEAMS,
 } from "@/lib/matches/config";
 import { mapApiTeam, teamNameToSlug } from "@/lib/matches/team-utils";
 import { generateFallbackSquad } from "@/lib/matches/squad-fallback";
@@ -11,6 +11,7 @@ import { buildDevFallbackPayload } from "@/lib/matches/dev-fallback-fixtures";
 import {
   deriveMatchStatus,
   getActiveMatch,
+  getKickoffMs,
   hasSelectableFixtures,
 } from "@/lib/matches/match-window";
 
@@ -28,7 +29,7 @@ interface ApiFootballFixtureItem {
     timestamp: number;
     status: { short: string; elapsed?: number | null };
   };
-  league: { id: number; season: number };
+  league: { id: number; season: number; name?: string };
   teams: { home: ApiFootballFixtureTeam; away: ApiFootballFixtureTeam };
   venue?: { name?: string | null; city?: string | null };
 }
@@ -59,7 +60,7 @@ function apiHeaders(key: string): HeadersInit {
 async function apiFetch<T>(path: string, key: string): Promise<T> {
   const response = await fetch(`${API_FOOTBALL_BASE_URL}${path}`, {
     headers: apiHeaders(key),
-    next: { revalidate: 900 },
+    next: { revalidate: 60 },
   });
 
   if (!response.ok) {
@@ -87,12 +88,12 @@ function mapFixture(item: ApiFootballFixtureItem): {
   const awayTeam = mapApiTeam(item.teams.away);
   const kickoff = new Date(item.fixture.date).toISOString();
   const match: Match = {
-    id: `wc-${item.fixture.id}`,
+    id: `af-${item.fixture.id}`,
     homeTeamId: homeTeam.id,
     awayTeamId: awayTeam.id,
     kickoff,
     status: "upcoming",
-    venue: item.venue?.name ?? undefined,
+    venue: item.venue?.name ?? item.league.name ?? undefined,
     apiStatus: item.fixture.status.short,
     externalFixtureId: item.fixture.id,
   };
@@ -138,19 +139,11 @@ async function fetchFixturesForDate(
   key: string,
   date: string,
 ): Promise<ApiFootballFixtureItem[]> {
-  const path = `/fixtures?date=${date}`;
-  return apiFetch<ApiFootballFixtureItem[]>(path, key);
+  return apiFetch<ApiFootballFixtureItem[]>(`/fixtures?date=${date}`, key);
 }
 
 async function fetchLiveFixtures(key: string): Promise<ApiFootballFixtureItem[]> {
   return apiFetch<ApiFootballFixtureItem[]>(`/fixtures?live=all`, key);
-}
-
-function filterWorldCupFixtures(
-  items: ApiFootballFixtureItem[],
-): ApiFootballFixtureItem[] {
-  const leagueId = getWcLeagueId();
-  return items.filter((item) => item.league.id === leagueId);
 }
 
 function mergeFixtureItems(
@@ -171,51 +164,41 @@ function addUtcDays(dateStr: string, days: number): string {
   return date.toISOString().slice(0, 10);
 }
 
-async function fetchUpcomingWorldCupFixtures(
-  key: string,
-): Promise<ApiFootballFixtureItem[]> {
-  const start = todayUtcDate();
-  const batches = await Promise.all(
-    Array.from({ length: 14 }, (_, index) =>
-      fetchFixturesForDate(key, addUtcDays(start, index)),
-    ),
-  );
-  return filterWorldCupFixtures(batches.flat());
-}
-
-async function fetchUpcomingFixtures(key: string): Promise<ApiFootballFixtureItem[]> {
-  const upcoming = await fetchUpcomingWorldCupFixtures(key);
-  if (upcoming.length > 0) return upcoming;
-
-  // Legacy fallback — often empty for WC 2026 in API-Football.
-  const league = getWcLeagueId();
-  const season = getWcSeason();
-  // Free tier does not support the `next` query param — fetch by league + season only.
-  const path = `/fixtures?league=${league}&season=${season}`;
-  return apiFetch<ApiFootballFixtureItem[]>(path, key);
-}
-
-async function fetchSquads(
-  key: string,
-  teamApiId: number,
-): Promise<ApiFootballSquadPlayer[]> {
-  try {
-    // The squads endpoint rejects a season param ("The Season field do not exist").
-    const path = `/players/squads?team=${teamApiId}`;
-    const response = await apiFetch<
-      { team: ApiFootballFixtureTeam; players: ApiFootballSquadPlayer[] }[]
-    >(path, key);
-    return response[0]?.players ?? [];
-  } catch {
-    return [];
-  }
-}
-
 function todayUtcDate(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-export async function fetchWorldCupFixtures(): Promise<{
+function isFinishedApiStatus(short: string): boolean {
+  return ["FT", "AET", "PEN", "AWD", "WO", "CANC", "ABD"].includes(short);
+}
+
+/**
+ * Prefer any live match worldwide; if none, fall back to today's / next-day
+ * fixtures that are still upcoming (not finished).
+ */
+async function fetchSoccerFixtures(key: string): Promise<ApiFootballFixtureItem[]> {
+  const live = await fetchLiveFixtures(key);
+  if (live.length > 0) {
+    return live.slice(0, MAX_FIXTURES_RETURNED);
+  }
+
+  const start = todayUtcDate();
+  const [today, tomorrow] = await Promise.all([
+    fetchFixturesForDate(key, start),
+    fetchFixturesForDate(key, addUtcDays(start, 1)),
+  ]);
+
+  const upcoming = mergeFixtureItems(today, tomorrow)
+    .filter((item) => !isFinishedApiStatus(item.fixture.status.short))
+    .sort(
+      (a, b) =>
+        new Date(a.fixture.date).getTime() - new Date(b.fixture.date).getTime(),
+    );
+
+  return upcoming.slice(0, MAX_FIXTURES_RETURNED);
+}
+
+export async function fetchSoccerFixturesCatalog(): Promise<{
   fixtures: Match[];
   teams: Team[];
   fixtureItems: ApiFootballFixtureItem[];
@@ -225,35 +208,50 @@ export async function fetchWorldCupFixtures(): Promise<{
     throw new Error("API_FOOTBALL_KEY is not configured");
   }
 
-  let items = mergeFixtureItems(
-    filterWorldCupFixtures(await fetchFixturesForDate(key, todayUtcDate())),
-    filterWorldCupFixtures(await fetchLiveFixtures(key)),
-  );
-
-  if (items.length === 0) {
-    items = await fetchUpcomingFixtures(key);
-  }
-
+  const items = await fetchSoccerFixtures(key);
   const fixtures: Match[] = [];
   const teamMap = new Map<string, Team>();
 
+  const keptItems: ApiFootballFixtureItem[] = [];
+
   for (const item of items) {
     const mapped = mapFixture(item);
+    // Drop already-finished fixtures so the picker only shows playable games.
+    if (mapped.match.status === "finished") continue;
     fixtures.push(mapped.match);
+    keptItems.push(item);
     for (const team of mapped.teams) {
       teamMap.set(team.id, team);
     }
   }
 
-  fixtures.sort(
-    (a, b) => new Date(a.kickoff).getTime() - new Date(b.kickoff).getTime(),
-  );
+  fixtures.sort((a, b) => getKickoffMs(a) - getKickoffMs(b));
 
   return {
     fixtures,
     teams: [...teamMap.values()],
-    fixtureItems: items,
+    fixtureItems: keptItems,
   };
+}
+
+/** @deprecated Use fetchSoccerFixturesCatalog — kept for any older imports. */
+export async function fetchWorldCupFixtures() {
+  return fetchSoccerFixturesCatalog();
+}
+
+async function fetchSquads(
+  key: string,
+  teamApiId: number,
+): Promise<ApiFootballSquadPlayer[]> {
+  try {
+    const path = `/players/squads?team=${teamApiId}`;
+    const response = await apiFetch<
+      { team: ApiFootballFixtureTeam; players: ApiFootballSquadPlayer[] }[]
+    >(path, key);
+    return response[0]?.players ?? [];
+  } catch {
+    return [];
+  }
 }
 
 async function resolveTeamPlayers(
@@ -286,6 +284,7 @@ async function fetchPlayersForFixtures(
     ];
 
     for (const [apiTeam, slug] of pairs) {
+      if (loadedTeamIds.size >= MAX_SQUAD_TEAMS) return players;
       if (loadedTeamIds.has(slug)) continue;
       loadedTeamIds.add(slug);
 
@@ -308,7 +307,7 @@ export async function fetchSquadsForFixture(
 }
 
 export async function buildActiveMatchPayload(): Promise<ActiveMatchPayload> {
-  let { fixtures, teams, fixtureItems } = await fetchWorldCupFixtures();
+  let { fixtures, teams, fixtureItems } = await fetchSoccerFixturesCatalog();
 
   if (fixtures.length === 0) {
     const fallback = buildDevFallbackPayload();
@@ -331,7 +330,16 @@ export async function buildActiveMatchPayload(): Promise<ActiveMatchPayload> {
   }
 
   const active = getActiveMatch(fixtures);
-  const players = await fetchPlayersForFixtures(fixtureItems, teams);
+
+  // Prefer squads for the active match first, then fill remaining budget from
+  // other fixtures so the match picker still has players when possible.
+  const orderedItems = [...fixtureItems].sort((a, b) => {
+    const aActive = active && `af-${a.fixture.id}` === active.id ? 0 : 1;
+    const bActive = active && `af-${b.fixture.id}` === active.id ? 0 : 1;
+    return aActive - bActive;
+  });
+
+  const players = await fetchPlayersForFixtures(orderedItems, teams);
 
   return {
     match: active ?? null,

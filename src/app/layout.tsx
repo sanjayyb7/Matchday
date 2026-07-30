@@ -19,7 +19,7 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://localderby.live"),
   title: "LocalDerby — Live Football Fan Meetups",
   description:
-    "LocalDerby helps football fans in San Francisco find pubs showing the match, pick a team and player identity for the World Cup, and join live squad chats with fans around them.",
+    "LocalDerby helps football fans in San Francisco find pubs showing the match, pick a team and player identity for any live soccer game, and join live squad chats with fans around them.",
   alternates: {
     canonical: "/",
   },

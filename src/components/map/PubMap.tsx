@@ -29,7 +29,7 @@ const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? "";
 
 export function PubMap() {
   const pubs = usePubs();
-  const { position, error, isWatching, permission, requestLocation } =
+  const { position, error, errorKind, isWatching, isRequesting, permission, requestLocation } =
     useGeolocation();
   const { user } = useAuth();
   const realtime = useRealtime();
@@ -148,19 +148,30 @@ export function PubMap() {
       {!isWatching && (error || permission !== "granted") && (
         <div className="absolute left-4 right-4 top-4 z-10 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100 backdrop-blur-sm">
           <p className="font-semibold">
-            {error ? "Location unavailable" : "See yourself on the map"}
+            {errorKind === "denied"
+              ? "Location blocked"
+              : error
+                ? "Location unavailable"
+                : "See yourself on the map"}
           </p>
           <p className="mt-1 text-xs text-amber-100/80">
             {error
-              ? "Allow location access to see yourself on the map. If nothing happens, enable location for this site in your browser settings."
-              : "Allow location access so fans can find you at the pub."}
+              ? error
+              : "Tap below to allow location so fans can find you at the pub."}
           </p>
+          {errorKind === "denied" ? (
+            <p className="mt-2 text-[11px] leading-relaxed text-amber-100/70">
+              After enabling location for your browser in phone Settings, come
+              back here and tap the button.
+            </p>
+          ) : null}
           <button
             type="button"
             onClick={requestLocation}
-            className="mt-2 rounded-full bg-[#FFFC00] px-4 py-2 text-xs font-bold text-black transition-transform active:scale-[0.97]"
+            disabled={isRequesting}
+            className="mt-2 rounded-full bg-[#FFFC00] px-4 py-2 text-xs font-bold text-black transition-transform active:scale-[0.97] disabled:opacity-60"
           >
-            Enable location
+            {isRequesting ? "Getting location…" : "Enable location"}
           </button>
         </div>
       )}

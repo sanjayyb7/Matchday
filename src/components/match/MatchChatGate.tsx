@@ -106,7 +106,7 @@ export function MatchChatGate() {
           ? matchStatus === "finished"
             ? `Team selection for ${getMatchLabel(activeMatch)} has closed.`
             : `Team selection opens in ${formatTimeUntil(getSelectionOpensAt(activeMatch))} for ${getMatchLabel(activeMatch)}.`
-          : "No World Cup match scheduled right now. Check back on matchday."}
+          : "No live or upcoming soccer match right now. Check back soon."}
       </p>
     </div>
   );

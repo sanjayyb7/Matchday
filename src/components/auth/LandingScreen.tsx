@@ -72,7 +72,7 @@ export function LandingScreen() {
               className="mb-4 inline-flex w-fit items-center gap-2 rounded-full bg-black/40 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-white backdrop-blur-sm"
             >
               <span className="live-pulse h-2 w-2 rounded-full bg-[#FFFC00]" />
-              World Cup 2026 · Live in San Francisco
+              Live soccer · Find your SF pub
             </motion.div>
 
             <motion.h1
