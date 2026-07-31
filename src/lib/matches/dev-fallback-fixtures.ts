@@ -1,6 +1,7 @@
 import teamsData from "../../../data/teams.json";
 import { deriveMatchStatus, getActiveMatch } from "@/lib/matches/match-window";
-import type { Match, Team } from "@/types";
+import { generateFallbackSquad } from "@/lib/matches/squad-fallback";
+import type { Match, Player, Team } from "@/types";
 
 const teams = teamsData as Team[];
 
@@ -31,7 +32,7 @@ function buildMatch(
 export function buildDevFallbackPayload(): {
   match: Match | null;
   teams: Team[];
-  players: [];
+  players: Player[];
   fixtures: Match[];
 } {
   const fixtures: Match[] = [
@@ -52,11 +53,17 @@ export function buildDevFallbackPayload(): {
   ];
 
   const match = getActiveMatch(fixtures) ?? fixtures[0] ?? null;
+  const spain = teams.find((team) => team.id === "spain");
+  const france = teams.find((team) => team.id === "france");
+  const players: Player[] = [
+    ...(spain ? generateFallbackSquad(spain) : []),
+    ...(france ? generateFallbackSquad(france) : []),
+  ];
 
   return {
     match,
     teams: [...teams],
-    players: [],
+    players,
     fixtures,
   };
 }

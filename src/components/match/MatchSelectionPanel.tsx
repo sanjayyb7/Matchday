@@ -22,12 +22,26 @@ import {
   isEarlyTeamSelection,
   isTeamSelectionOpen,
 } from "@/lib/matches/match-window";
+import { generateFallbackSquad } from "@/lib/matches/squad-fallback";
 import { getHistoryAdapter } from "@/hooks/useHistory";
 import { INSFORGE_ENABLED } from "@/lib/insforge/config";
 import { upsertUserIdentity } from "@/lib/identity/insforge-identity";
 import type { Match, Player, Team } from "@/types";
 import { cn } from "@/lib/utils";
 import { BOTTOM_NAV_CLEARANCE } from "@/lib/layout/constants";
+
+function ensureLocalFallbackSquads(home?: Team, away?: Team): boolean {
+  const missing: Player[] = [];
+  if (home && getPlayersByTeam(home.id).length === 0) {
+    missing.push(...generateFallbackSquad(home));
+  }
+  if (away && getPlayersByTeam(away.id).length === 0) {
+    missing.push(...generateFallbackSquad(away));
+  }
+  if (missing.length === 0) return false;
+  mergeMatchSquads([], missing);
+  return true;
+}
 
 function formatKickoff(kickoff: string): string {
   return new Date(kickoff).toLocaleString(undefined, {
@@ -73,33 +87,58 @@ export function MatchSelectionPanel({
   const needsSquadLoad = homePlayers.length === 0 || awayPlayers.length === 0;
 
   useEffect(() => {
-    if (!needsSquadLoad || !match.id.startsWith("af-")) return;
+    if (!needsSquadLoad) return;
 
     let cancelled = false;
     setSquadLoading(true);
 
+    const finishWithFallback = () => {
+      if (cancelled) return;
+      if (ensureLocalFallbackSquads(getTeam(match.homeTeamId), getTeam(match.awayTeamId))) {
+        setSquadTick((value) => value + 1);
+      }
+      setSquadLoading(false);
+    };
+
+    if (!match.id.startsWith("af-")) {
+      finishWithFallback();
+      return () => {
+        cancelled = true;
+      };
+    }
+
     void fetch(`/api/matches/squads?matchId=${encodeURIComponent(match.id)}`)
       .then(async (response) => {
-        if (!response.ok) return;
+        if (!response.ok) {
+          finishWithFallback();
+          return;
+        }
         const payload = (await response.json()) as {
           teams?: Team[];
           players?: Player[];
         };
         if (cancelled) return;
         mergeMatchSquads(payload.teams ?? [], payload.players ?? []);
+        if (
+          getPlayersByTeam(match.homeTeamId).length === 0 ||
+          getPlayersByTeam(match.awayTeamId).length === 0
+        ) {
+          ensureLocalFallbackSquads(
+            getTeam(match.homeTeamId),
+            getTeam(match.awayTeamId),
+          );
+        }
         setSquadTick((value) => value + 1);
+        setSquadLoading(false);
       })
       .catch(() => {
-        // Keep empty state; bulk schedule may still fill in on next refresh.
-      })
-      .finally(() => {
-        if (!cancelled) setSquadLoading(false);
+        finishWithFallback();
       });
 
     return () => {
       cancelled = true;
     };
-  }, [match.id, needsSquadLoad]);
+  }, [match.id, match.homeTeamId, match.awayTeamId, needsSquadLoad]);
 
   const handleTeamSelect = (teamId: string) => {
     setSelectedTeamId(teamId);
