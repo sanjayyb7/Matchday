@@ -60,8 +60,8 @@ export function MatchSelectionPanel({
   const selectionOpen = isTeamSelectionOpen(match);
   const earlyPick = isEarlyTeamSelection(match, matches);
 
-  const homeTeam = getTeam(match.homeTeamId)!;
-  const awayTeam = getTeam(match.awayTeamId)!;
+  const homeTeam = getTeam(match.homeTeamId);
+  const awayTeam = getTeam(match.awayTeamId);
   const selectedTeam = selectedTeamId ? getTeam(selectedTeamId) : null;
   const players = selectedTeamId ? getPlayersByTeam(selectedTeamId) : [];
 
@@ -162,11 +162,18 @@ export function MatchSelectionPanel({
 
       <div className="flex-1 overflow-y-auto px-4 py-4">
         {step === "team" ? (
-          <TeamPicker
-            homeTeam={homeTeam}
-            awayTeam={awayTeam}
-            onSelect={handleTeamSelect}
-          />
+          homeTeam && awayTeam ? (
+            <TeamPicker
+              homeTeam={homeTeam}
+              awayTeam={awayTeam}
+              onSelect={handleTeamSelect}
+            />
+          ) : (
+            <p className="text-sm text-white/55">
+              Team details are still loading for this match. Go back and try
+              again in a moment.
+            </p>
+          )
         ) : (
           selectedTeam && (
             <PlayerPicker

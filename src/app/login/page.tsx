@@ -29,9 +29,9 @@ function LoginRedirect() {
 
 export default function LoginPage() {
   return (
-    <main className="h-dvh overflow-hidden bg-black p-5">
-      {/* Soft-edged hero container inset from every side */}
-      <div className="relative flex h-full w-full flex-col overflow-hidden rounded-[28px] shadow-[0_0_60px_rgba(0,0,0,0.6)]">
+    <main className="h-dvh overflow-hidden bg-black p-[5px]">
+      {/* Soft-edged hero container inset 5px from every side */}
+      <div className="relative flex h-full w-full flex-col overflow-hidden rounded-[20px] shadow-[0_0_60px_rgba(0,0,0,0.6)]">
         {/* Background: photo → grain → tint */}
         <div className="absolute inset-0">
           <Image

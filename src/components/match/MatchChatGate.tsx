@@ -9,13 +9,10 @@ import {
   getLastMatchFetchError,
   isActiveMatchHydrated,
   isUsingFallbackFixtures,
-  matches,
 } from "@/lib/mock/data";
 import {
-  canPromptTeamSelection,
   formatTimeUntil,
   getSelectionOpensAt,
-  isTeamSelectionOpen,
 } from "@/lib/matches/match-window";
 import { BOTTOM_NAV_CLEARANCE } from "@/lib/layout/constants";
 import { useAuth } from "@/hooks/useAuth";
@@ -34,9 +31,6 @@ export function MatchChatGate() {
   const hydrated = isActiveMatchHydrated();
   const activeMatch = getLiveOrUpcomingMatch();
   const upcoming = getDisplayableUpcomingMatches();
-  const canPrompt = activeMatch
-    ? canPromptTeamSelection(activeMatch, matches)
-    : false;
   const matchStatus = activeMatch ? getDerivedMatchStatus(activeMatch) : null;
   const fetchError = getLastMatchFetchError();
   const showFallbackBanner = isUsingFallbackFixtures() && !!fetchError;
@@ -74,15 +68,8 @@ export function MatchChatGate() {
     );
   }
 
-  if (activeMatch && isTeamSelectionOpen(activeMatch) && canPrompt) {
-    return (
-      <>
-        {fallbackBanner}
-        <MatchSelectionPanel match={activeMatch} />
-      </>
-    );
-  }
-
+  // Always show the full live/upcoming list when fixtures exist. Auto-opening
+  // the first live game (often an obscure league) hid every other match.
   if (upcoming.length > 0) {
     return (
       <>

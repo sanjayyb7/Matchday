@@ -1,6 +1,7 @@
 "use client";
 
 import { UpcomingMatchCard } from "./UpcomingMatchCard";
+import { getDerivedMatchStatus } from "@/lib/mock/data";
 import { BOTTOM_NAV_CLEARANCE } from "@/lib/layout/constants";
 import type { Match } from "@/types";
 
@@ -10,7 +11,17 @@ interface UpcomingMatchListProps {
 }
 
 export function UpcomingMatchList({ matches, onSelect }: UpcomingMatchListProps) {
-  const title = matches.length === 1 ? "Next match" : "Upcoming matches";
+  const hasLive = matches.some(
+    (match) => getDerivedMatchStatus(match) === "live",
+  );
+  const title =
+    matches.length === 1
+      ? hasLive
+        ? "Live match"
+        : "Next match"
+      : hasLive
+        ? "Live & upcoming"
+        : "Upcoming matches";
 
   return (
     <div
@@ -22,7 +33,7 @@ export function UpcomingMatchList({ matches, onSelect }: UpcomingMatchListProps)
           {title}
         </h1>
         <p className="mt-1 text-sm text-white/55">
-          Tap a match to pick your country and player
+          Tap a match to pick your team and player
         </p>
       </div>
       <div className="flex-1 overflow-y-auto px-4 py-4">

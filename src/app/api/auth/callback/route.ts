@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createServerClient, setAuthCookies } from "@insforge/sdk/ssr";
+import { sendWelcomeEmailIfNewUser } from "@/lib/auth/welcome-email";
 import { APP_URL, INSFORGE_ANON_KEY, INSFORGE_URL } from "@/lib/insforge/config";
 
 export async function GET(request: NextRequest) {
@@ -46,6 +47,11 @@ export async function GET(request: NextRequest) {
       new URL("/login?error=exchange_failed", APP_URL),
     );
   }
+
+  // Google OAuth does not send InsForge verification emails. Authenticate the
+  // SDK client and send a welcome email for brand-new accounts only.
+  client.setAccessToken(data.accessToken);
+  await sendWelcomeEmailIfNewUser(client, data.user);
 
   const response = NextResponse.redirect(new URL("/map", APP_URL));
   setAuthCookies(response.cookies, {
