@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -14,6 +14,7 @@ import {
   getPlayersByTeam,
   getTeam,
   matches,
+  mergeMatchSquads,
 } from "@/lib/mock/data";
 import {
   formatTimeUntil,
@@ -24,7 +25,7 @@ import {
 import { getHistoryAdapter } from "@/hooks/useHistory";
 import { INSFORGE_ENABLED } from "@/lib/insforge/config";
 import { upsertUserIdentity } from "@/lib/identity/insforge-identity";
-import type { Match, Player } from "@/types";
+import type { Match, Player, Team } from "@/types";
 import { cn } from "@/lib/utils";
 import { BOTTOM_NAV_CLEARANCE } from "@/lib/layout/constants";
 
@@ -55,15 +56,50 @@ export function MatchSelectionPanel({
   const closeMatchReminder = useMatchdayStore((s) => s.closeMatchReminder);
   const [step, setStep] = useState<"team" | "player">("team");
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
+  const [squadTick, setSquadTick] = useState(0);
+  const [squadLoading, setSquadLoading] = useState(false);
 
   const matchStatus = getDerivedMatchStatus(match);
   const selectionOpen = isTeamSelectionOpen(match);
   const earlyPick = isEarlyTeamSelection(match, matches);
 
+  void squadTick;
   const homeTeam = getTeam(match.homeTeamId);
   const awayTeam = getTeam(match.awayTeamId);
   const selectedTeam = selectedTeamId ? getTeam(selectedTeamId) : null;
   const players = selectedTeamId ? getPlayersByTeam(selectedTeamId) : [];
+  const homePlayers = getPlayersByTeam(match.homeTeamId);
+  const awayPlayers = getPlayersByTeam(match.awayTeamId);
+  const needsSquadLoad = homePlayers.length === 0 || awayPlayers.length === 0;
+
+  useEffect(() => {
+    if (!needsSquadLoad || !match.id.startsWith("af-")) return;
+
+    let cancelled = false;
+    setSquadLoading(true);
+
+    void fetch(`/api/matches/squads?matchId=${encodeURIComponent(match.id)}`)
+      .then(async (response) => {
+        if (!response.ok) return;
+        const payload = (await response.json()) as {
+          teams?: Team[];
+          players?: Player[];
+        };
+        if (cancelled) return;
+        mergeMatchSquads(payload.teams ?? [], payload.players ?? []);
+        setSquadTick((value) => value + 1);
+      })
+      .catch(() => {
+        // Keep empty state; bulk schedule may still fill in on next refresh.
+      })
+      .finally(() => {
+        if (!cancelled) setSquadLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [match.id, needsSquadLoad]);
 
   const handleTeamSelect = (teamId: string) => {
     setSelectedTeamId(teamId);
@@ -146,15 +182,18 @@ export function MatchSelectionPanel({
         </div>
         {earlyPick && matchStatus !== "finished" && (
           <p className="mt-3 text-xs text-[#FFFC00]/80">
-            No match in the next hour — pick your country and player for the next
+            No match in the next hour — pick your team and player for the next
             fixture.
           </p>
         )}
-        {!selectionOpen && !earlyPick && matchStatus !== "finished" && (
-          <p className="mt-3 text-xs text-[#FFFC00]/80">
-            Team selection opens in {formatTimeUntil(getSelectionOpensAt(match))}
-          </p>
-        )}
+        {!selectionOpen &&
+          !earlyPick &&
+          matchStatus === "upcoming" && (
+            <p className="mt-3 text-xs text-[#FFFC00]/80">
+              Team selection opens in{" "}
+              {formatTimeUntil(getSelectionOpensAt(match))}
+            </p>
+          )}
         <p className="mt-2 text-xs text-white/45">
           Join your team squad chat after you pick a player
         </p>
@@ -174,6 +213,8 @@ export function MatchSelectionPanel({
               again in a moment.
             </p>
           )
+        ) : squadLoading && players.length === 0 ? (
+          <p className="text-sm text-white/55">Loading players…</p>
         ) : (
           selectedTeam && (
             <PlayerPicker

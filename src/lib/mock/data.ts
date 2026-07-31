@@ -70,9 +70,24 @@ function upsertTeam(team: Team) {
   }
 }
 
-function mergePlayersForTeams(apiPlayers: Player[], teamIds: string[]) {
-  for (const teamId of teamIds) {
-    playersByTeam[teamId] = apiPlayers.filter((player) => player.teamId === teamId);
+function mergePlayersForTeams(apiPlayers: Player[]) {
+  const byTeam = new Map<string, Player[]>();
+  for (const player of apiPlayers) {
+    const list = byTeam.get(player.teamId) ?? [];
+    list.push(player);
+    byTeam.set(player.teamId, list);
+  }
+  for (const [teamId, list] of byTeam) {
+    playersByTeam[teamId] = list;
+  }
+}
+
+export function mergeMatchSquads(teams: Team[], players: Player[]): void {
+  for (const team of teams) {
+    upsertTeam(team);
+  }
+  if (players.length > 0) {
+    mergePlayersForTeams(players);
   }
 }
 
@@ -119,15 +134,7 @@ export async function refreshActiveMatchFromApi(): Promise<void> {
       }
 
       if (payload.players.length > 0) {
-        const teamIds = [
-          ...new Set(
-            payload.fixtures.flatMap((fixture) => [
-              fixture.homeTeamId,
-              fixture.awayTeamId,
-            ]),
-          ),
-        ];
-        mergePlayersForTeams(payload.players, teamIds);
+        mergePlayersForTeams(payload.players);
       }
 
       activeMatchHydrated = true;

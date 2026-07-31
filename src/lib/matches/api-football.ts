@@ -269,13 +269,16 @@ async function resolveTeamPlayers(
 async function fetchPlayersForFixtures(
   fixtureItems: ApiFootballFixtureItem[],
   teams: Team[],
+  options?: { maxApiSquads?: number },
 ): Promise<Player[]> {
   const key = getApiFootballKey();
   if (!key || fixtureItems.length === 0) return [];
 
+  const maxApiSquads = options?.maxApiSquads ?? MAX_SQUAD_TEAMS;
   const teamBySlug = new Map(teams.map((team) => [team.id, team]));
   const loadedTeamIds = new Set<string>();
   const players: Player[] = [];
+  let apiSquadCalls = 0;
 
   for (const item of fixtureItems) {
     const pairs: [ApiFootballFixtureTeam, string][] = [
@@ -284,15 +287,21 @@ async function fetchPlayersForFixtures(
     ];
 
     for (const [apiTeam, slug] of pairs) {
-      if (loadedTeamIds.size >= MAX_SQUAD_TEAMS) return players;
       if (loadedTeamIds.has(slug)) continue;
       loadedTeamIds.add(slug);
 
       const team = teamBySlug.get(slug) ?? mapApiTeam(apiTeam);
       teamBySlug.set(slug, team);
 
-      const teamPlayers = await resolveTeamPlayers(key, apiTeam, team);
-      players.push(...teamPlayers);
+      // Stay inside free-tier squad quotas for the bulk schedule, but always
+      // return a pickable roster (real or generated) so later fixtures aren't empty.
+      if (apiSquadCalls < maxApiSquads) {
+        apiSquadCalls += 1;
+        const teamPlayers = await resolveTeamPlayers(key, apiTeam, team);
+        players.push(...teamPlayers);
+      } else {
+        players.push(...generateFallbackSquad(team));
+      }
     }
   }
 
@@ -303,7 +312,39 @@ export async function fetchSquadsForFixture(
   item: ApiFootballFixtureItem,
   teams: Team[],
 ): Promise<Player[]> {
-  return fetchPlayersForFixtures([item], teams);
+  return fetchPlayersForFixtures([item], teams, { maxApiSquads: 2 });
+}
+
+/** Load (or generate) squads for one match when the user opens the picker. */
+export async function buildSquadsForMatchId(matchId: string): Promise<{
+  teams: Team[];
+  players: Player[];
+}> {
+  const key = getApiFootballKey();
+  if (!key) {
+    throw new Error("API_FOOTBALL_KEY is not configured");
+  }
+
+  const fixtureId = Number(String(matchId).replace(/^af-/, ""));
+  if (!Number.isFinite(fixtureId) || fixtureId <= 0) {
+    throw new Error("Invalid match id");
+  }
+
+  const items = await apiFetch<ApiFootballFixtureItem[]>(
+    `/fixtures?id=${fixtureId}`,
+    key,
+  );
+  const item = items[0];
+  if (!item) {
+    throw new Error("Match not found");
+  }
+
+  const mapped = mapFixture(item);
+  const players = await fetchPlayersForFixtures([item], mapped.teams, {
+    maxApiSquads: 2,
+  });
+
+  return { teams: mapped.teams, players };
 }
 
 export async function buildActiveMatchPayload(): Promise<ActiveMatchPayload> {

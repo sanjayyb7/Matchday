@@ -47,8 +47,12 @@ export function isTeamSelectionOpen(match: Match, now = new Date()): boolean {
   const kickoffMs = getKickoffMs(match);
   const opensAt = kickoffMs - SELECTION_OPENS_MS;
   const endMs = getFixtureEndMs(match, nowMs);
+  const status = deriveMatchStatus(match, now);
 
-  if (deriveMatchStatus(match, now) === "finished") return false;
+  if (status === "finished") return false;
+  // API still reports live (extra time / delayed wrap) — keep picking open
+  // even after our estimated 105-minute end window.
+  if (status === "live") return nowMs >= opensAt;
   return nowMs >= opensAt && nowMs < endMs;
 }
 
