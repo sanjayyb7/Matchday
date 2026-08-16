@@ -15,6 +15,7 @@ function buildMatch(
   awayTeamId: string,
   hoursFromNow: number,
   venue: string,
+  league: string,
 ): Match {
   const match: Match = {
     id,
@@ -23,6 +24,7 @@ function buildMatch(
     kickoff: kickoffFromNow(hoursFromNow),
     status: "upcoming",
     venue,
+    league,
   };
   match.status = deriveMatchStatus(match);
   return match;
@@ -42,6 +44,7 @@ export function buildDevFallbackPayload(): {
       "france",
       6,
       "Levi's Stadium",
+      "La Liga",
     ),
     buildMatch(
       "match-demo-2",
@@ -49,6 +52,7 @@ export function buildDevFallbackPayload(): {
       "spain",
       30,
       "Oracle Park Watch Party",
+      "Premier League",
     ),
   ];
 

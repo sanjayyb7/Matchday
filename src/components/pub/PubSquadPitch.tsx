@@ -29,6 +29,7 @@ import { cn } from "@/lib/utils";
 interface PubSquadPitchProps {
   squad: FanPresence[];
   pubName?: string;
+  pubId?: string;
 }
 
 const PITCH_WIDTH = "mx-auto w-full max-w-sm";
@@ -92,11 +93,25 @@ function BenchRow({
   if (players.length === 0) return null;
 
   return (
-    <div className={cn("rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-3", PITCH_WIDTH)}>
-      <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-white/40">
+    <div
+      className={cn(
+        "flex flex-col rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-3",
+        // Mobile: full width under the pitch.
+        "w-full max-w-sm",
+        // Desktop: same height as the pitch column (grid h-0/min-h-full trick).
+        "md:h-0 md:min-h-full md:w-[7.5rem] md:max-w-none md:shrink-0",
+      )}
+    >
+      <p className="mb-2 shrink-0 text-[10px] font-bold uppercase tracking-wider text-white/40 md:text-center">
         Bench
       </p>
-      <div className="flex flex-wrap items-end justify-center gap-3">
+      <div
+        className={cn(
+          "flex min-h-0 flex-1 items-end gap-3",
+          "flex-wrap justify-center",
+          "md:flex-col md:flex-nowrap md:items-center md:justify-start md:gap-3 md:overflow-y-auto",
+        )}
+      >
         {players.map((player) => {
           const fanCount = presentCounts.get(player.id) ?? 0;
           return (
@@ -127,7 +142,7 @@ function resolveDefaultTeamId(
   return identityTeamId ?? match?.homeTeamId ?? "spain";
 }
 
-export function PubSquadPitch({ squad, pubName }: PubSquadPitchProps) {
+export function PubSquadPitch({ squad, pubName, pubId }: PubSquadPitchProps) {
   const reduced = useReducedMotion() ?? false;
   const identity = useMatchdayStore((s) => s.identity);
   const teamsAtPub = useMemo(() => teamIdsByFanCount(squad), [squad]);
@@ -189,7 +204,13 @@ export function PubSquadPitch({ squad, pubName }: PubSquadPitchProps) {
         </div>
       )}
 
-      <div className={cn("flex items-center justify-between px-1 text-xs text-white/50", PITCH_WIDTH)}>
+      <div
+        className={cn(
+          "flex items-center justify-between px-1 text-xs text-white/50",
+          PITCH_WIDTH,
+          "md:max-w-none md:w-full md:max-w-xl md:mx-auto",
+        )}
+      >
         <span>{team?.name ?? "Squad"} · 4-4-2</span>
         <span>
           {presentCount} fan{presentCount === 1 ? "" : "s"} here ·{" "}
@@ -197,65 +218,80 @@ export function PubSquadPitch({ squad, pubName }: PubSquadPitchProps) {
         </span>
       </div>
 
-      <div className={PITCH_WIDTH}>
+      <div className={cn(PITCH_WIDTH, "md:max-w-none md:w-full")}>
         <SquadRewardPanel
           presentPlayers={presentPlayerCount}
           rosterSize={STARTING_XI_SIZE}
           presentFans={presentCount}
           pubName={pubName}
+          pubId={pubId}
         />
       </div>
 
-      <div className={cn("relative aspect-[3/4] max-h-[500px] overflow-hidden rounded-2xl", PITCH_WIDTH)}>
-        <div className="absolute inset-0 bg-[#1a4d35]" />
+      <div
+        className={cn(
+          "flex flex-col items-center gap-3",
+          // Desktop: pitch sets row height; bench matches via min-h-full
+          "md:mx-auto md:grid md:max-w-xl md:grid-cols-[minmax(0,24rem)_7.5rem] md:items-stretch md:justify-center md:gap-4",
+        )}
+      >
         <div
-          className="absolute inset-0 opacity-30"
-          style={{
-            backgroundImage:
-              "repeating-linear-gradient(90deg, transparent, transparent 48px, rgba(255,255,255,0.03) 48px, rgba(255,255,255,0.03) 49px)",
-          }}
-        />
-
-        <div className="absolute inset-3 rounded-lg border border-white/25" />
-        <div className="absolute left-3 right-3 top-1/2 h-px -translate-y-1/2 bg-white/25" />
-        <div className="absolute left-1/2 top-1/2 h-16 w-16 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/25" />
-        <div className="absolute bottom-3 left-1/2 h-20 w-[55%] -translate-x-1/2 rounded-t-lg border border-b-0 border-white/25" />
-        <div className="absolute top-3 left-1/2 h-20 w-[55%] -translate-x-1/2 rounded-b-lg border border-t-0 border-white/25" />
-
-        <div
-          key={selectedTeamId}
-          className="relative flex h-full flex-col justify-between px-3 py-4 sm:px-5"
+          className={cn(
+            "relative aspect-[3/4] max-h-[500px] w-full overflow-hidden rounded-2xl",
+            PITCH_WIDTH,
+            "md:mx-0 md:max-w-none",
+          )}
         >
-          <FormationRow
-            row="attack"
-            slots={starting.attack}
-            presentCounts={presentCounts}
-            reduced={reduced}
+          <div className="absolute inset-0 bg-[#1a4d35]" />
+          <div
+            className="absolute inset-0 opacity-30"
+            style={{
+              backgroundImage:
+                "repeating-linear-gradient(90deg, transparent, transparent 48px, rgba(255,255,255,0.03) 48px, rgba(255,255,255,0.03) 49px)",
+            }}
           />
-          <FormationRow
-            row="midfield"
-            slots={starting.midfield}
-            presentCounts={presentCounts}
-            reduced={reduced}
-          />
-          <FormationRow
-            row="defense"
-            slots={starting.defense}
-            presentCounts={presentCounts}
-            inverted
-            reduced={reduced}
-          />
-          <FormationRow
-            row="goalkeeper"
-            slots={starting.goalkeeper}
-            presentCounts={presentCounts}
-            inverted
-            reduced={reduced}
-          />
-        </div>
-      </div>
 
-      <BenchRow players={bench} presentCounts={presentCounts} />
+          <div className="absolute inset-3 rounded-lg border border-white/25" />
+          <div className="absolute left-3 right-3 top-1/2 h-px -translate-y-1/2 bg-white/25" />
+          <div className="absolute left-1/2 top-1/2 h-16 w-16 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/25" />
+          <div className="absolute bottom-3 left-1/2 h-20 w-[55%] -translate-x-1/2 rounded-t-lg border border-b-0 border-white/25" />
+          <div className="absolute top-3 left-1/2 h-20 w-[55%] -translate-x-1/2 rounded-b-lg border border-t-0 border-white/25" />
+
+          <div
+            key={selectedTeamId}
+            className="relative flex h-full flex-col justify-between px-3 py-4 sm:px-5"
+          >
+            <FormationRow
+              row="attack"
+              slots={starting.attack}
+              presentCounts={presentCounts}
+              reduced={reduced}
+            />
+            <FormationRow
+              row="midfield"
+              slots={starting.midfield}
+              presentCounts={presentCounts}
+              reduced={reduced}
+            />
+            <FormationRow
+              row="defense"
+              slots={starting.defense}
+              presentCounts={presentCounts}
+              inverted
+              reduced={reduced}
+            />
+            <FormationRow
+              row="goalkeeper"
+              slots={starting.goalkeeper}
+              presentCounts={presentCounts}
+              inverted
+              reduced={reduced}
+            />
+          </div>
+        </div>
+
+        <BenchRow players={bench} presentCounts={presentCounts} />
+      </div>
     </div>
   );
 }

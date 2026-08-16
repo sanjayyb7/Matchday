@@ -77,6 +77,26 @@ export async function upsertUserIdentity(identity: UserIdentity) {
   await client.database.from("user_identities").insert([payload]);
 }
 
+/** Remove team/player pick for a match so the fan can leave and rejoin later. */
+export async function deleteUserIdentityForMatch(
+  userId: string,
+  matchId: string,
+): Promise<void> {
+  const { getInsForgeBrowserClient } = await import("@/lib/insforge/client");
+  const client = getInsForgeBrowserClient();
+  await client.database
+    .from("user_identities")
+    .delete()
+    .eq("user_id", userId)
+    .eq("match_id", matchId);
+
+  await client.database
+    .from("fan_presence")
+    .delete()
+    .eq("user_id", userId)
+    .eq("match_id", matchId);
+}
+
 /**
  * Restore the user's team/player pick for the live or upcoming match from Postgres.
  * DB is source of truth when InsForge is enabled; local Zustand persist is updated in place.

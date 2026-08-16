@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { MoreHorizontal } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useMatchdayStore } from "@/store/matchday-store";
 import { useHistory } from "@/hooks/useHistory";
@@ -24,19 +25,38 @@ import { findNearestPubId } from "@/lib/geo/haversine";
 import { pubs } from "@/lib/mock/data";
 import { NEAR_PUB_RADIUS_METERS } from "@/lib/mock/constants";
 import { useGeolocation } from "@/hooks/useGeolocation";
+import { useRealtime } from "@/lib/realtime/context";
+import { INSFORGE_ENABLED } from "@/lib/insforge/config";
+import { deleteUserIdentityForMatch } from "@/lib/identity/insforge-identity";
 import { cn } from "@/lib/utils";
 
 export default function ProfilePage() {
   const { user, isAdmin, signOut, deleteAccount } = useAuth();
   const router = useRouter();
   const identity = useMatchdayStore((s) => s.identity);
+  const setIdentity = useMatchdayStore((s) => s.setIdentity);
+  const realtime = useRealtime();
   const [showDelete, setShowDelete] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [leaving, setLeaving] = useState(false);
   const [, setMatchTick] = useState(0);
+  const menuRef = useRef<HTMLDivElement>(null);
   const { position } = useGeolocation();
 
   useEffect(() => {
     void refreshActiveMatchFromApi().then(() => setMatchTick((value) => value + 1));
   }, []);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onPointerDown = (event: MouseEvent) => {
+      if (!menuRef.current?.contains(event.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", onPointerDown);
+    return () => document.removeEventListener("mousedown", onPointerDown);
+  }, [menuOpen]);
 
   const { history } = useHistory(user?.id);
   const liveMatch = getLiveOrUpcomingMatch();
@@ -63,6 +83,34 @@ export default function ProfilePage() {
     await deleteAccount();
     setShowDelete(false);
     router.replace("/login");
+  };
+
+  const handleLeaveMatch = async () => {
+    if (!user || !activeIdentity || leaving) return;
+    setLeaving(true);
+    setMenuOpen(false);
+
+    const matchId = activeIdentity.matchId;
+    setIdentity(null);
+    realtime.clearPresence(user.id);
+
+    if (INSFORGE_ENABLED) {
+      try {
+        await deleteUserIdentityForMatch(user.id, matchId);
+      } catch {
+        // Local leave already applied; DB cleanup can retry on next session.
+      }
+    }
+
+    // Allow rejoining via chat / reminder without a stuck dismiss flag.
+    try {
+      sessionStorage.removeItem(`matchday:reminder-dismissed:${matchId}`);
+    } catch {
+      // ignore
+    }
+
+    setLeaving(false);
+    router.replace("/chat");
   };
 
   return (
@@ -92,9 +140,40 @@ export default function ProfilePage() {
 
       {activeIdentity && liveMatch && player && team && (
         <section className="mb-8 rounded-2xl border border-primary/30 bg-primary/5 p-4">
-          <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-primary">
-            Current matchday identity
-          </p>
+          <div className="mb-3 flex items-start justify-between gap-2">
+            <p className="text-xs font-semibold uppercase tracking-wider text-primary">
+              Current matchday identity
+            </p>
+            <div className="relative" ref={menuRef}>
+              <button
+                type="button"
+                aria-label="Match options"
+                aria-expanded={menuOpen}
+                aria-haspopup="menu"
+                disabled={leaving}
+                onClick={() => setMenuOpen((open) => !open)}
+                className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-white/10 hover:text-foreground"
+              >
+                <MoreHorizontal className="h-5 w-5" />
+              </button>
+              {menuOpen && (
+                <div
+                  role="menu"
+                  className="absolute right-0 top-9 z-20 min-w-[9.5rem] overflow-hidden rounded-xl border border-white/10 bg-[#141A22] py-1 shadow-lg"
+                >
+                  <button
+                    type="button"
+                    role="menuitem"
+                    disabled={leaving}
+                    onClick={() => void handleLeaveMatch()}
+                    className="w-full px-3 py-2.5 text-left text-sm font-medium text-red-400 transition-colors hover:bg-white/5"
+                  >
+                    Leave match
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
           <div className="flex items-center gap-4">
             <div className="relative h-14 w-14 overflow-hidden rounded-xl">
               <Image
@@ -140,6 +219,35 @@ export default function ProfilePage() {
             Manage pub locations
           </Link>
         )}
+        {isAdmin && (
+          <Link
+            href="/admin/field-visits"
+            className={cn(
+              buttonVariants({ variant: "secondary", size: "lg" }),
+              "w-full rounded-xl",
+            )}
+          >
+            Field visit verification
+          </Link>
+        )}
+        <Link
+          href="/for-pubs"
+          className={cn(
+            buttonVariants({ variant: "outline", size: "lg" }),
+            "w-full rounded-xl",
+          )}
+        >
+          LocalDerby for Pubs ($10/mo)
+        </Link>
+        <Link
+          href="/partner"
+          className={cn(
+            buttonVariants({ variant: "outline", size: "lg" }),
+            "w-full rounded-xl",
+          )}
+        >
+          Partner dashboard
+        </Link>
         <Button
           variant="outline"
           className="w-full rounded-xl"

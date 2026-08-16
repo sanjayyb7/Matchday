@@ -95,6 +95,57 @@ export async function createPub(input: CreatePubInput): Promise<Pub> {
   return mapPubRow(created as Record<string, unknown>);
 }
 
+export async function createPubAsAdmin(input: CreatePubInput): Promise<Pub> {
+  const validationError = validateSfPubCoords(input.lat, input.lng);
+  if (validationError) {
+    throw new Error(validationError);
+  }
+
+  const { createInsForgeAdminClient } = await import("@/lib/insforge/admin");
+  const client = createInsForgeAdminClient();
+  const base =
+    input.name
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "")
+      .slice(0, 40) || "location";
+  let id = `pub-${base}`;
+  let suffix = 2;
+  while (true) {
+    const { data } = await client.database
+      .from("pubs")
+      .select("id")
+      .eq("id", id)
+      .maybeSingle();
+    if (!data) break;
+    id = `pub-${base}-${suffix}`;
+    suffix += 1;
+  }
+
+  const { data, error } = await client.database
+    .from("pubs")
+    .insert([
+      {
+        id,
+        name: input.name.trim(),
+        image_url: input.imageUrl?.trim() || DEFAULT_PUB_IMAGE,
+        lat: input.lat,
+        lng: input.lng,
+        address: input.address.trim(),
+        neighborhood: input.neighborhood.trim(),
+      },
+    ])
+    .select("*");
+
+  if (error) {
+    throw new Error(error.message ?? "Failed to create pub");
+  }
+  const created = data?.[0];
+  if (!created) throw new Error("Failed to create pub");
+  return mapPubRow(created as Record<string, unknown>);
+}
+
 export async function listPubsFromDatabase(): Promise<Pub[]> {
   const client = getInsForgeBrowserClient();
   const { data, error } = await client.database
@@ -134,6 +185,40 @@ export async function updatePub(id: string, input: UpdatePubInput): Promise<Pub>
     throw new Error("Failed to update pub");
   }
 
+  return mapPubRow(updated as Record<string, unknown>);
+}
+
+/** Server-side pub update (partner claim dashboard). */
+export async function updatePubAsAdmin(
+  id: string,
+  input: Partial<UpdatePubInput> & { name?: string; address?: string },
+): Promise<Pub> {
+  const { createInsForgeAdminClient } = await import("@/lib/insforge/admin");
+  const client = createInsForgeAdminClient();
+
+  const patch: Record<string, unknown> = {};
+  if (input.name != null) patch.name = input.name.trim();
+  if (input.address != null) patch.address = input.address.trim();
+  if (input.neighborhood != null) patch.neighborhood = input.neighborhood.trim();
+  if (input.imageUrl != null) {
+    patch.image_url = input.imageUrl.trim() || DEFAULT_PUB_IMAGE;
+  }
+  if (input.lat != null) patch.lat = input.lat;
+  if (input.lng != null) patch.lng = input.lng;
+
+  if (Object.keys(patch).length === 0) {
+    throw new Error("No pub fields to update");
+  }
+
+  const { data, error } = await client.database
+    .from("pubs")
+    .update(patch)
+    .eq("id", id)
+    .select("*");
+
+  if (error) throw new Error(error.message ?? "Failed to update pub");
+  const updated = data?.[0];
+  if (!updated) throw new Error("Failed to update pub");
   return mapPubRow(updated as Record<string, unknown>);
 }
 

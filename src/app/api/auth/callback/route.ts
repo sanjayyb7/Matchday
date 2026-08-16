@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createServerClient, setAuthCookies } from "@insforge/sdk/ssr";
-import { sendWelcomeEmailIfNewUser } from "@/lib/auth/welcome-email";
+import { sendGoogleSignInAlert } from "@/lib/auth/login-email";
 import { APP_URL, INSFORGE_ANON_KEY, INSFORGE_URL } from "@/lib/insforge/config";
 
 export async function GET(request: NextRequest) {
@@ -48,10 +48,10 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  // Google OAuth does not send InsForge verification emails. Authenticate the
-  // SDK client and send a welcome email for brand-new accounts only.
+  // Bumble-style: email the user on EVERY successful Google sign-in.
+  // Delivery uses Resend (RESEND_API_KEY) or paid InsForge email.
   client.setAccessToken(data.accessToken);
-  await sendWelcomeEmailIfNewUser(client, data.user);
+  await sendGoogleSignInAlert(data.user, data.accessToken);
 
   const response = NextResponse.redirect(new URL("/map", APP_URL));
   setAuthCookies(response.cookies, {

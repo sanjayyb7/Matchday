@@ -24,7 +24,7 @@ export function PubSquadSheet() {
     <Sheet open={!!selectedPub} onOpenChange={(open) => !open && setSelectedPub(null)}>
       <SheetContent
         side="bottom"
-        className="max-h-[90vh] rounded-t-3xl border-white/10 bg-[#0B0F14] px-4 pb-8"
+        className="max-h-[90vh] overflow-y-auto rounded-t-3xl border-white/10 bg-[#0B0F14] px-4 pb-8 md:mx-auto md:max-w-3xl"
       >
         {selectedPub && (
           <>
@@ -68,7 +68,11 @@ export function PubSquadSheet() {
               </div>
             </SheetHeader>
             <div className="mt-4">
-              <PubSquadPitch squad={squad} pubName={selectedPub.name} />
+              <PubSquadPitch
+                squad={squad}
+                pubName={selectedPub.name}
+                pubId={selectedPub.id}
+              />
             </div>
           </>
         )}

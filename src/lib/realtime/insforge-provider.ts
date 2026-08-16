@@ -144,6 +144,11 @@ class InsForgeRealtimeEngine implements RealtimeAdapter {
     });
   }
 
+  clearPresence(userId: string) {
+    this.presence.delete(userId);
+    this.notifyPresence();
+  }
+
   subscribeToPresence(callback: (presence: FanPresence[]) => void) {
     this.presenceListeners.add(callback);
     void this.ensureInitialized().then(() => {
@@ -231,6 +236,10 @@ class InsForgeRealtimeEngine implements RealtimeAdapter {
 
   sendChatMessage(message: Omit<ChatMessage, "id" | "createdAt">) {
     void this.ensureInitialized().then(async () => {
+      const { prepareOutgoingChatMessage } = await import("@/lib/chat/safety");
+      const prepared = prepareOutgoingChatMessage(message.text);
+      if (!prepared.ok) return;
+
       const client = getInsForgeBrowserClient();
       await client.database.from("chat_messages").insert([
         {
@@ -238,7 +247,7 @@ class InsForgeRealtimeEngine implements RealtimeAdapter {
           match_id: message.matchId,
           user_id: message.userId,
           player_id: message.playerId,
-          text: message.text,
+          text: prepared.text,
         },
       ]);
     });
@@ -259,6 +268,9 @@ function getEngine() {
 export const insforgeRealtimeAdapter: RealtimeAdapter = {
   publishLocation(p) {
     getEngine().publishLocation(p);
+  },
+  clearPresence(userId) {
+    getEngine().clearPresence(userId);
   },
   subscribeToPresence(cb) {
     return getEngine().subscribeToPresence(cb);

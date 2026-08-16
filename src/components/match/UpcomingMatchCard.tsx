@@ -90,6 +90,11 @@ export function UpcomingMatchCard({ match, onSelect }: UpcomingMatchCardProps) {
         <p className="font-heading text-base font-bold uppercase tracking-wide text-white">
           {getMatchLabel(match)}
         </p>
+        {match.league && (
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-white/40">
+            {match.league}
+          </p>
+        )}
         <p className="text-xs text-white/50">{formatKickoff(match.kickoff)}</p>
         <p
           className={`text-xs font-semibold ${canPick ? "text-[#FFFC00]" : "text-white/40"}`}

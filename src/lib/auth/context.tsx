@@ -28,6 +28,7 @@ interface AuthContextValue {
   user: AuthUser | null;
   isAuthenticated: boolean;
   isAdmin: boolean;
+  isPartner: boolean;
   isLoading: boolean;
   signUp: (input: SignUpInput) => AuthUser;
   signIn: () => AuthUser | null;
@@ -124,6 +125,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const user = INSFORGE_ENABLED ? insforgeUser : mockUser;
   const isAdmin = user?.role === "admin";
+  const isPartner = user?.role === "partner" || isAdmin;
 
   const signUp = useCallback((input: SignUpInput) => {
     const session = mockAuthAdapter.signUp(input);
@@ -177,13 +179,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       user,
       isAuthenticated: !!user,
       isAdmin,
+      isPartner,
       isLoading,
       signUp,
       signIn,
       signOut,
       deleteAccount,
     }),
-    [user, isAdmin, isLoading, signUp, signIn, signOut, deleteAccount],
+    [user, isAdmin, isPartner, isLoading, signUp, signIn, signOut, deleteAccount],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

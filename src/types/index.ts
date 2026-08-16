@@ -25,6 +25,10 @@ export interface Match {
   kickoff: string;
   status: MatchStatus;
   venue?: string;
+  /** Competition name from the schedule source (e.g. Premier League). */
+  league?: string;
+  /** API-Football league id when available. */
+  leagueId?: number;
   /** Raw API-Football fixture status short code (e.g. FT, 1H). */
   apiStatus?: string;
   /** When the fixture ended (from API or computed). */
@@ -93,7 +97,7 @@ export interface MatchHistoryEntry {
   matchLabel: string;
 }
 
-export type UserRole = "fan" | "admin";
+export type UserRole = "fan" | "admin" | "partner";
 
 export interface AuthUser {
   id: string;

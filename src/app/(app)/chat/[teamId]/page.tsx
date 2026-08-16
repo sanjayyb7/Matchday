@@ -50,8 +50,13 @@ export default function ChatPage({
   }, [user, match, hasActiveIdentity, identity, teamId, router]);
 
   const handleSend = (text: string) => {
-    if (!user || !identity || !hasActiveIdentity) return;
-    sendMessage(text, user.id, identity.playerId);
+    if (!user || !identity || !hasActiveIdentity) {
+      return {
+        ok: false as const,
+        warning: "Join a match squad before chatting.",
+      };
+    }
+    return sendMessage(text, user.id, identity.playerId);
   };
 
   const matchLabel = match ? getMatchLabel(match) : null;

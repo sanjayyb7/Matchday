@@ -93,7 +93,9 @@ function mapFixture(item: ApiFootballFixtureItem): {
     awayTeamId: awayTeam.id,
     kickoff,
     status: "upcoming",
-    venue: item.venue?.name ?? item.league.name ?? undefined,
+    venue: item.venue?.name ?? undefined,
+    league: item.league.name?.trim() || undefined,
+    leagueId: item.league.id,
     apiStatus: item.fixture.status.short,
     externalFixtureId: item.fixture.id,
   };

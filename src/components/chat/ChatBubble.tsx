@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { motion, useReducedMotion } from "framer-motion";
 import { getPlayer } from "@/lib/mock/data";
+import { sanitizeChatText } from "@/lib/chat/safety";
 import { getTeamChatThemeFromTeam } from "@/lib/chat/team-theme";
 import { enterVariants } from "@/lib/motion/tokens";
 import { useMatchdayStore } from "@/store/matchday-store";
@@ -71,7 +72,7 @@ export function ChatBubble({ message, isOwn, showAvatar = false, team }: ChatBub
               : undefined
           }
         >
-          {message.text}
+          {sanitizeChatText(message.text)}
         </button>
       </div>
     </motion.div>
