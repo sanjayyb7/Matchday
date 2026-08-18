@@ -7,6 +7,7 @@ import {
   walkSimulatedFan,
   type SimulatedFan,
 } from "@/lib/mock/simulatedFans";
+import { prepareOutgoingChatMessage } from "@/lib/chat/safety";
 import { getPub, pubs } from "@/lib/mock/data";
 import { haversine } from "@/lib/geo/haversine";
 import { NEAR_PUB_RADIUS_METERS } from "@/lib/mock/constants";
@@ -102,7 +103,8 @@ class MockRealtimeEngine implements RealtimeAdapter {
     const pub = getPub(pubId);
     if (!pub) return [];
     return all.filter((p) => {
-      if (p.pubId === pubId) return true;
+      // Trust the assigned pub so a fan never appears at two adjacent pubs.
+      if (p.pubId) return p.pubId === pubId;
       return haversine(p.lat, p.lng, pub.lat, pub.lng) <= NEAR_PUB_RADIUS_METERS;
     });
   }
@@ -110,6 +112,12 @@ class MockRealtimeEngine implements RealtimeAdapter {
   publishLocation(presence: FanPresence) {
     this.presence.set(presence.userId, presence);
     this.broadcast("presence", presence);
+    this.notifyPresence();
+  }
+
+  clearPresence(userId: string) {
+    if (!this.presence.has(userId)) return;
+    this.presence.delete(userId);
     this.notifyPresence();
   }
 
@@ -146,8 +154,12 @@ class MockRealtimeEngine implements RealtimeAdapter {
   }
 
   sendChatMessage(message: Omit<ChatMessage, "id" | "createdAt">) {
+    const prepared = prepareOutgoingChatMessage(message.text);
+    if (!prepared.ok) return;
+
     const full: ChatMessage = {
       ...message,
+      text: prepared.text,
       id: `msg-${crypto.randomUUID().slice(0, 8)}`,
       createdAt: new Date().toISOString(),
     };
@@ -179,6 +191,9 @@ export function getMockRealtimeEngine(): MockRealtimeEngine {
 export const mockRealtimeAdapter: RealtimeAdapter = {
   publishLocation(p) {
     getMockRealtimeEngine().publishLocation(p);
+  },
+  clearPresence(userId) {
+    getMockRealtimeEngine().clearPresence(userId);
   },
   subscribeToPresence(cb) {
     return getMockRealtimeEngine().subscribeToPresence(cb);

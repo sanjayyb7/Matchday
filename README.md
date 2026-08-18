@@ -10,6 +10,7 @@ Find nearby pubs, pick a team and player identity, join team chats, and see who'
 npm install
 cp .env.example .env.local
 # Add NEXT_PUBLIC_MAPBOX_TOKEN from https://account.mapbox.com/
+# Add API_FOOTBALL_KEY from https://www.api-football.com/ for live World Cup fixtures
 npm run dev
 ```
 
@@ -31,6 +32,10 @@ Leave `NEXT_PUBLIC_USE_INSFORGE=false`. Use **Log in** / **Create account** with
    NEXT_PUBLIC_APP_URL=http://localhost:3002
    ```
 4. Sign in with **Google** or **GitHub** OAuth on `/login`
+
+## Deploying
+
+Production is deployed manually via `npx @insforge/cli deployments deploy .` — pushing to GitHub does not affect the live site. See [`docs/DEPLOY.md`](docs/DEPLOY.md) for the safe test-then-deploy workflow.
 
 ## Parallel frontend + backend workflow
 

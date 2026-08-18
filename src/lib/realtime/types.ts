@@ -2,6 +2,7 @@ import type { ChatMessage, FanPresence } from "@/types";
 
 export interface RealtimeAdapter {
   publishLocation(presence: FanPresence): void;
+  clearPresence(userId: string): void;
   subscribeToPresence(callback: (presence: FanPresence[]) => void): () => void;
   subscribeToPubSquad(
     pubId: string,

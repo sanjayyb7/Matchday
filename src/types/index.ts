@@ -25,6 +25,20 @@ export interface Match {
   kickoff: string;
   status: MatchStatus;
   venue?: string;
+  /** Competition name from the schedule source (e.g. Premier League). */
+  league?: string;
+  /** API-Football league id when available. */
+  leagueId?: number;
+  /** Raw API-Football fixture status short code (e.g. FT, 1H). */
+  apiStatus?: string;
+  /** Live / FT score when known. */
+  homeScore?: number | null;
+  awayScore?: number | null;
+  /** Minutes elapsed for live matches. */
+  elapsedMinutes?: number | null;
+  /** When the fixture ended (from API or computed). */
+  fixtureEndAt?: string;
+  externalFixtureId?: number;
 }
 
 export interface PlayerStats {
@@ -88,12 +102,15 @@ export interface MatchHistoryEntry {
   matchLabel: string;
 }
 
+export type UserRole = "fan" | "admin" | "partner";
+
 export interface AuthUser {
   id: string;
   name: string;
   email?: string;
   avatarUrl: string;
   fanSince: string;
+  role: UserRole;
 }
 
 export interface SignUpInput {

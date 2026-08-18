@@ -1,17 +1,23 @@
 "use client";
 
-import { use } from "react";
+import { use, useEffect } from "react";
 import Image from "next/image";
 import { ChevronLeft } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ChatThread } from "@/components/chat/ChatThread";
 import { ChatInput } from "@/components/chat/ChatInput";
 import { ChatStoriesRow } from "@/components/chat/ChatStoriesRow";
-import { ChatTeamBackground } from "@/components/chat/ChatTeamBackground";
 import { useTeamChat } from "@/hooks/useTeamChat";
 import { useAuth } from "@/hooks/useAuth";
 import { useMatchdayStore } from "@/store/matchday-store";
-import { getLiveOrUpcomingMatch, getTeam } from "@/lib/mock/data";
+import {
+  getLiveOrUpcomingMatch,
+  getMatchLabel,
+  getTeam,
+  getDerivedMatchStatus,
+  identityMatchesActiveMatch,
+} from "@/lib/mock/data";
 import { getTeamChatThemeFromTeam } from "@/lib/chat/team-theme";
 import { CHAT_INPUT_CLEARANCE } from "@/lib/layout/constants";
 
@@ -21,6 +27,7 @@ export default function ChatPage({
   params: Promise<{ teamId: string }>;
 }) {
   const { teamId } = use(params);
+  const router = useRouter();
   const { user } = useAuth();
   const identity = useMatchdayStore((s) => s.identity);
   const match = getLiveOrUpcomingMatch();
@@ -29,15 +36,33 @@ export default function ChatPage({
   const { messages, sendMessage } = useTeamChat(teamId, matchId);
   const chatTheme = getTeamChatThemeFromTeam(team);
 
+  const hasActiveIdentity = identityMatchesActiveMatch(identity, user?.id, match);
+
+  useEffect(() => {
+    if (!user || !match) return;
+    if (!hasActiveIdentity) {
+      router.replace("/chat");
+      return;
+    }
+    if (identity && identity.teamId !== teamId) {
+      router.replace(`/chat/${identity.teamId}`);
+    }
+  }, [user, match, hasActiveIdentity, identity, teamId, router]);
+
   const handleSend = (text: string) => {
-    if (!user || !identity) return;
-    sendMessage(text, user.id, identity.playerId);
+    if (!user || !identity || !hasActiveIdentity) {
+      return {
+        ok: false as const,
+        warning: "Join a match squad before chatting.",
+      };
+    }
+    return sendMessage(text, user.id, identity.playerId);
   };
 
-  return (
-    <div className="relative flex h-dvh flex-col overflow-hidden">
-      <ChatTeamBackground team={team} />
+  const matchLabel = match ? getMatchLabel(match) : null;
 
+  return (
+    <div className="relative flex h-dvh flex-col overflow-hidden bg-[#0B0F14]">
       <header className="relative z-10 flex items-center gap-3 border-b border-white/10 bg-[#0B0F14]/80 px-3 py-3 backdrop-blur-md">
         <Link
           href="/map"
@@ -58,8 +83,11 @@ export default function ChatPage({
             {team?.name ?? "Team"} Squad
           </h1>
           <p className="text-xs text-white/50">
-            {messages.length > 0 ? `${messages.length} messages` : "No chats yet"}
-            {match?.status === "live" && " · LIVE"}
+            {matchLabel
+              ? `${matchLabel}${match && getDerivedMatchStatus(match) === "live" ? " · LIVE" : ""}`
+              : messages.length > 0
+                ? `${messages.length} messages`
+                : "No chats yet"}
           </p>
         </div>
       </header>
@@ -71,7 +99,11 @@ export default function ChatPage({
         <ChatStoriesRow messages={messages} teamId={teamId} team={team} />
         <ChatThread messages={messages} currentUserId={user?.id} team={team} />
       </div>
-      <ChatInput onSend={handleSend} disabled={!identity} team={team} />
+      <ChatInput
+        onSend={handleSend}
+        disabled={!hasActiveIdentity}
+        team={team}
+      />
     </div>
   );
 }

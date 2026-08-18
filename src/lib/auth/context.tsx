@@ -9,8 +9,17 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
+import { clearLastActivity } from "@/lib/auth/activity";
 import { mockAuthAdapter, SESSION_KEY } from "@/lib/auth/mock-auth";
-import { mapInsForgeUser, type InsForgeAuthUser } from "@/lib/auth/insforge-auth";
+import {
+  mapInsForgeUser,
+  syncInsForgeProfile,
+  type InsForgeAuthUser,
+} from "@/lib/auth/insforge-auth";
+import { loadInsForgeUserFromSession } from "@/lib/auth/insforge-session";
+import { loadUserRole } from "@/lib/auth/load-user-role";
+import { ensureUserProfile } from "@/lib/auth/ensure-user-profile";
+import { bootstrapInsForgeBackend } from "@/lib/insforge/bootstrap";
 import { getInsForgeBrowserClient, resetInsForgeBrowserClient } from "@/lib/insforge/client";
 import { INSFORGE_ENABLED } from "@/lib/insforge/config";
 import type { AuthUser, SignUpInput } from "@/types";
@@ -18,6 +27,8 @@ import type { AuthUser, SignUpInput } from "@/types";
 interface AuthContextValue {
   user: AuthUser | null;
   isAuthenticated: boolean;
+  isAdmin: boolean;
+  isPartner: boolean;
   isLoading: boolean;
   signUp: (input: SignUpInput) => AuthUser;
   signIn: () => AuthUser | null;
@@ -50,7 +61,8 @@ function getAuthServerSnapshot(): string {
 function parseSession(raw: string): AuthUser | null {
   if (!raw) return null;
   try {
-    return JSON.parse(raw) as AuthUser;
+    const parsed = JSON.parse(raw) as AuthUser;
+    return { ...parsed, role: parsed.role ?? "fan" };
   } catch {
     return null;
   }
@@ -78,16 +90,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     async function loadUser() {
       try {
-        const client = getInsForgeBrowserClient();
-        const { data } = await client.auth.getCurrentUser();
+        resetInsForgeBrowserClient();
+        const insForgeUser = await loadInsForgeUserFromSession();
         if (cancelled) return;
-        setInsforgeUser(
-          data.user ? mapInsForgeUser(data.user as InsForgeAuthUser) : null,
-        );
+
+        if (insForgeUser) {
+          const authUser = mapInsForgeUser(insForgeUser);
+          resetInsForgeBrowserClient();
+          await ensureUserProfile(insForgeUser);
+          const role = await loadUserRole(authUser.id);
+          if (cancelled) return;
+          setInsforgeUser({ ...authUser, role });
+          if (!cancelled) setIsLoading(false);
+          void bootstrapInsForgeBackend().catch(() => {});
+          void syncInsForgeProfile(insForgeUser).catch(() => {});
+          void bootstrapInsForgeBackend(authUser.id).catch(() => {});
+        } else {
+          setInsforgeUser(null);
+          if (!cancelled) setIsLoading(false);
+        }
       } catch {
-        if (!cancelled) setInsforgeUser(null);
-      } finally {
-        if (!cancelled) setIsLoading(false);
+        if (!cancelled) {
+          setInsforgeUser(null);
+          setIsLoading(false);
+        }
       }
     }
 
@@ -98,6 +124,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const user = INSFORGE_ENABLED ? insforgeUser : mockUser;
+  const isAdmin = user?.role === "admin";
+  const isPartner = user?.role === "partner" || isAdmin;
 
   const signUp = useCallback((input: SignUpInput) => {
     const session = mockAuthAdapter.signUp(input);
@@ -112,6 +140,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signOut = useCallback(async () => {
+    clearLastActivity();
     if (INSFORGE_ENABLED) {
       const client = getInsForgeBrowserClient();
       await client.auth.signOut();
@@ -125,19 +154,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const deleteAccount = useCallback(async () => {
+    clearLastActivity();
     if (INSFORGE_ENABLED && user) {
-      const client = getInsForgeBrowserClient();
-      await client.database
-        .from("match_history")
-        .delete()
-        .eq("user_id", user.id);
-      await client.database
-        .from("user_identities")
-        .delete()
-        .eq("user_id", user.id);
-      await client.database.from("fan_presence").delete().eq("user_id", user.id);
-      await client.auth.signOut();
-      await fetch("/api/auth/sign-out", { method: "POST" });
+      const response = await fetch("/api/auth/delete-account", { method: "POST" });
+      if (!response.ok) {
+        const { deleteInsForgeUserDataClient } = await import(
+          "@/lib/auth/delete-account-client"
+        );
+        await deleteInsForgeUserDataClient(user.id);
+        const client = getInsForgeBrowserClient();
+        await client.auth.signOut();
+        await fetch("/api/auth/sign-out", { method: "POST" });
+      }
       resetInsForgeBrowserClient();
       setInsforgeUser(null);
       return;
@@ -150,13 +178,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     () => ({
       user,
       isAuthenticated: !!user,
+      isAdmin,
+      isPartner,
       isLoading,
       signUp,
       signIn,
       signOut,
       deleteAccount,
     }),
-    [user, isLoading, signUp, signIn, signOut, deleteAccount],
+    [user, isAdmin, isPartner, isLoading, signUp, signIn, signOut, deleteAccount],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

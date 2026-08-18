@@ -23,12 +23,18 @@ function SheetPortal({ ...props }: SheetPrimitive.Portal.Props) {
   return <SheetPrimitive.Portal data-slot="sheet-portal" {...props} />
 }
 
-function SheetOverlay({ className, ...props }: SheetPrimitive.Backdrop.Props) {
+function SheetOverlay({
+  className,
+  forceRender = false,
+  ...props
+}: SheetPrimitive.Backdrop.Props) {
   return (
     <SheetPrimitive.Backdrop
       data-slot="sheet-overlay"
+      forceRender={forceRender}
       className={cn(
-        "fixed inset-0 z-50 bg-black/10 transition-opacity duration-150 data-ending-style:opacity-0 data-starting-style:opacity-0 supports-backdrop-filter:backdrop-blur-xs",
+        // Solid dim first — reliable on iOS. Blur is progressive enhancement.
+        "fixed inset-0 z-50 bg-black/70 [-webkit-backdrop-filter:blur(12px)] backdrop-blur-md transition-opacity duration-150 data-ending-style:opacity-0 data-starting-style:opacity-0",
         className
       )}
       {...props}
@@ -42,16 +48,23 @@ function SheetContent({
   side = "right",
   showCloseButton = true,
   elevated = false,
+  overlayClassName,
   ...props
 }: SheetPrimitive.Popup.Props & {
   side?: "top" | "right" | "bottom" | "left"
   showCloseButton?: boolean
+  /** Use for sheets opened on top of another sheet (forces nested backdrop). */
   elevated?: boolean
+  overlayClassName?: string
 }) {
-  const layer = elevated ? "z-[60]" : "z-50"
+  const layer = elevated ? "z-[70]" : "z-50"
   return (
     <SheetPortal>
-      <SheetOverlay className={layer} />
+      {/* Nested dialogs skip Backdrop unless forceRender — required for pub rewards. */}
+      <SheetOverlay
+        forceRender={elevated}
+        className={cn(layer, overlayClassName)}
+      />
       <SheetPrimitive.Popup
         data-slot="sheet-content"
         data-side={side}
@@ -69,13 +82,12 @@ function SheetContent({
             render={
               <Button
                 variant="ghost"
-                className="absolute top-3 right-3"
+                className="absolute top-3 right-3 z-20 h-10 w-10 rounded-full bg-white/15 text-white ring-1 ring-white/30 hover:bg-white/25 hover:text-white"
                 size="icon-sm"
               />
             }
           >
-            <XIcon
-            />
+            <XIcon className="h-5 w-5" strokeWidth={2.5} />
             <span className="sr-only">Close</span>
           </SheetPrimitive.Close>
         )}

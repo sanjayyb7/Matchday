@@ -119,6 +119,7 @@ export function SquadCouponsSheet({
       <SheetContent
         side="bottom"
         elevated
+        overlayClassName="bg-black/75 [-webkit-backdrop-filter:blur(16px)] backdrop-blur-lg"
         className="max-h-[min(72vh,520px)] rounded-t-3xl border-white/10 bg-[#0B0F14] px-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-2"
       >
         <SheetHeader className="border-b border-white/10 pb-3 text-left">

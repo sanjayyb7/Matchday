@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ChevronRight, Gift, Sparkles } from "lucide-react";
 import { SquadCouponsSheet } from "./SquadCouponsSheet";
+import { ClaimCouponButton } from "./ClaimCouponButton";
 import { cn } from "@/lib/utils";
 
 const COUPON_VALUE = 5;
@@ -12,6 +13,7 @@ interface SquadRewardPanelProps {
   rosterSize: number;
   presentFans: number;
   pubName?: string;
+  pubId?: string;
 }
 
 export function SquadRewardPanel({
@@ -19,6 +21,7 @@ export function SquadRewardPanel({
   rosterSize,
   presentFans,
   pubName,
+  pubId,
 }: SquadRewardPanelProps) {
   const [couponsOpen, setCouponsOpen] = useState(false);
   const isFullSquad = presentPlayers >= rosterSize && rosterSize > 0;
@@ -84,6 +87,7 @@ export function SquadRewardPanel({
         context={{ presentPlayers, rosterSize, presentFans }}
         pubName={pubName}
       />
+      {pubId ? <ClaimCouponButton pubId={pubId} /> : null}
     </>
   );
 }

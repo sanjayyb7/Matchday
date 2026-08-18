@@ -1,32 +1,59 @@
 "use client";
 
-import { useCallback, useEffect, useMemo } from "react";
-import Map, { Marker } from "react-map-gl/mapbox";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Map, { Marker, type MapRef } from "react-map-gl/mapbox";
 import "mapbox-gl/dist/mapbox-gl.css";
-import { pubs } from "@/lib/mock/data";
 import { DEFAULT_ZOOM } from "@/lib/mock/constants";
 import { findNearestPubId } from "@/lib/geo/haversine";
 import { NEAR_PUB_RADIUS_METERS } from "@/lib/mock/constants";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { useAuth } from "@/hooks/useAuth";
+import { usePubs } from "@/hooks/usePubs";
 import { useRealtime } from "@/lib/realtime/context";
 import { useMatchdayStore } from "@/store/matchday-store";
 import { getHistoryAdapter } from "@/hooks/useHistory";
-import { getPub } from "@/lib/mock/data";
+import {
+  getPub,
+  getLiveOrUpcomingMatch,
+  getDerivedMatchStatus,
+} from "@/lib/mock/data";
+
 import { PubMarker } from "./PubMarker";
 import { UserPlayerMarkerContent } from "./UserPlayerMarker";
+import { UserLocationMarker } from "./UserLocationMarker";
+import { FanMarker } from "./FanMarker";
 import { Badge } from "@/components/ui/badge";
-import { getLiveOrUpcomingMatch } from "@/lib/mock/data";
+import type { FanPresence } from "@/types";
 
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? "";
 
 export function PubMap() {
-  const { position } = useGeolocation();
+  const pubs = usePubs();
+  const { position, error, errorKind, isWatching, isRequesting, permission, requestLocation } =
+    useGeolocation();
   const { user } = useAuth();
   const realtime = useRealtime();
   const identity = useMatchdayStore((s) => s.identity);
   const setSelectedPub = useMatchdayStore((s) => s.setSelectedPub);
   const liveMatch = getLiveOrUpcomingMatch();
+  const mapRef = useRef<MapRef>(null);
+  const hasFlownToUser = useRef(false);
+  const lastPubIdRef = useRef<string | undefined>(undefined);
+  const [fans, setFans] = useState<FanPresence[]>([]);
+
+  useEffect(() => {
+    return realtime.subscribeToPresence(setFans);
+  }, [realtime]);
+
+  const otherFans = useMemo(
+    () => fans.filter((fan) => fan.userId !== user?.id),
+    [fans, user?.id],
+  );
+
+  // Depend on the match id, not the match object: getLiveOrUpcomingMatch()
+  // returns a fresh object every render, and publishing triggers a presence
+  // update that re-renders this component — an object dep would loop forever.
+  const liveMatchId = liveMatch?.id;
 
   const publishLocation = useCallback(() => {
     if (!user || !identity) return;
@@ -35,7 +62,9 @@ export function PubMap() {
       position.lng,
       pubs,
       NEAR_PUB_RADIUS_METERS,
+      lastPubIdRef.current,
     );
+    lastPubIdRef.current = pubId;
     realtime.publishLocation({
       userId: user.id,
       playerId: identity.playerId,
@@ -44,22 +73,32 @@ export function PubMap() {
       lng: position.lng,
       pubId,
     });
-    if (pubId && liveMatch) {
+    if (pubId && liveMatchId) {
       const pub = getPub(pubId);
       if (pub) {
         getHistoryAdapter().updatePubForMatch(
           user.id,
-          liveMatch.id,
+          liveMatchId,
           pubId,
           pub.name,
         );
       }
     }
-  }, [user, identity, position, realtime, liveMatch]);
+  }, [user, identity, position, realtime, liveMatchId, pubs]);
 
   useEffect(() => {
     publishLocation();
   }, [publishLocation]);
+
+  useEffect(() => {
+    if (!isWatching || hasFlownToUser.current) return;
+    hasFlownToUser.current = true;
+    mapRef.current?.flyTo({
+      center: [position.lng, position.lat],
+      zoom: DEFAULT_ZOOM,
+      duration: 1200,
+    });
+  }, [isWatching, position.lat, position.lng]);
 
   const initialViewState = useMemo(
     () => ({
@@ -69,6 +108,8 @@ export function PubMap() {
     }),
     [position.lat, position.lng],
   );
+
+  const showUserMarker = isWatching && !error;
 
   if (!MAPBOX_TOKEN) {
     return (
@@ -96,13 +137,46 @@ export function PubMap() {
 
   return (
     <div className="relative h-dvh w-full">
-      {liveMatch?.status === "live" && (
-        <Badge className="absolute left-4 top-4 z-10 gap-2 bg-accent text-accent-foreground">
+      {liveMatch && getDerivedMatchStatus(liveMatch) === "live" && (
+        <Badge
+          className={`absolute z-10 gap-2 bg-accent text-accent-foreground ${error ? "right-4 top-4" : "left-4 top-4"}`}
+        >
           <span className="live-pulse h-2 w-2 rounded-full bg-red-500" />
           LIVE
         </Badge>
       )}
+      {!isWatching && (error || permission !== "granted") && (
+        <div className="absolute left-4 right-4 top-4 z-10 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100 backdrop-blur-sm">
+          <p className="font-semibold">
+            {errorKind === "denied"
+              ? "Location blocked"
+              : error
+                ? "Location unavailable"
+                : "See yourself on the map"}
+          </p>
+          <p className="mt-1 text-xs text-amber-100/80">
+            {error
+              ? error
+              : "Tap below to allow location so fans can find you at the pub."}
+          </p>
+          {errorKind === "denied" ? (
+            <p className="mt-2 text-[11px] leading-relaxed text-amber-100/70">
+              After enabling location for your browser in phone Settings, come
+              back here and tap the button.
+            </p>
+          ) : null}
+          <button
+            type="button"
+            onClick={requestLocation}
+            disabled={isRequesting}
+            className="mt-2 rounded-full bg-[#FFFC00] px-4 py-2 text-xs font-bold text-black transition-transform active:scale-[0.97] disabled:opacity-60"
+          >
+            {isRequesting ? "Getting location…" : "Enable location"}
+          </button>
+        </div>
+      )}
       <Map
+        ref={mapRef}
         mapboxAccessToken={MAPBOX_TOKEN}
         initialViewState={initialViewState}
         style={{ width: "100%", height: "100%" }}
@@ -119,13 +193,30 @@ export function PubMap() {
             <PubMarker pub={pub} onClick={() => setSelectedPub(pub)} />
           </Marker>
         ))}
-        {identity && (
+        {otherFans.map((fan) => (
+          <Marker
+            key={fan.userId}
+            longitude={fan.lng}
+            latitude={fan.lat}
+            anchor="bottom"
+          >
+            <FanMarker fan={fan} />
+          </Marker>
+        ))}
+        {showUserMarker && (
           <Marker
             longitude={position.lng}
             latitude={position.lat}
             anchor="bottom"
           >
-            <UserPlayerMarkerContent playerId={identity.playerId} />
+            {identity ? (
+              <UserPlayerMarkerContent
+                playerId={identity.playerId}
+                fallbackAvatarUrl={user?.avatarUrl}
+              />
+            ) : (
+              <UserLocationMarker />
+            )}
           </Marker>
         )}
       </Map>

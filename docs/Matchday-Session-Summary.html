@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Matchday — Session Summary</title>
+  <style>
+    @page { margin: 1in; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      font-size: 11pt;
+      line-height: 1.45;
+      color: #1a1a1a;
+      max-width: 7in;
+      margin: 0 auto;
+    }
+    h1 { font-size: 22pt; margin: 0 0 0.25em; }
+    h2 { font-size: 14pt; margin: 1.4em 0 0.4em; border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+    p, li { margin: 0.4em 0; }
+    ul { padding-left: 1.2em; }
+    table { border-collapse: collapse; width: 100%; margin: 0.6em 0; font-size: 10pt; }
+    th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; vertical-align: top; }
+    th { background: #f5f5f5; }
+    code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 9pt; }
+    pre { background: #f8f8f8; padding: 8px 10px; border-radius: 4px; overflow-x: auto; }
+    hr { border: none; border-top: 1px solid #ddd; margin: 1.2em 0; }
+    .meta { color: #555; font-size: 10pt; margin-bottom: 1em; }
+    .footer { margin-top: 2em; font-size: 9pt; color: #666; font-style: italic; }
+  </style>
+</head>
+<body>
+  <h1>Matchday — Session Summary</h1>
+  <p class="meta"><strong>Project:</strong> Matchday (Next.js + InsForge + Mapbox)<br />
+  <strong>Path:</strong> /Users/sanjay/Documents/Matchday<br />
+  <strong>Branch:</strong> backend/insforge-v2<br />
+  <strong>Date:</strong> June 2026</p>
+
+  <h2>What Matchday Is</h2>
+  <p>A mobile-first web app for SF football fan meetups: pub map, team/player identity, team chat, and live squad views. Backend uses <strong>InsForge</strong> (Postgres, auth, realtime). Toggle with <code>NEXT_PUBLIC_USE_INSFORGE=true</code> in <code>.env.local</code>.</p>
+
+  <h2>Environment Setup</h2>
+  <table>
+    <tr><th>Item</th><th>Location / value</th></tr>
+    <tr><td>Env file</td><td><code>.env.local</code> (hidden — Cmd+Shift+. in Finder)</td></tr>
+    <tr><td>Template</td><td><code>.env.example</code></td></tr>
+    <tr><td>Dev server</td><td><code>npm run dev</code> → http://localhost:3002</td></tr>
+    <tr><td>Mapbox</td><td><code>NEXT_PUBLIC_MAPBOX_TOKEN</code> required</td></tr>
+    <tr><td>InsForge</td><td>URL, anon key, API key in <code>.env.local</code></td></tr>
+  </table>
+  <p><strong>Important:</strong> Use <code>http://localhost:3002</code> (not <code>127.0.0.1</code>) so auth cookies work.</p>
+
+  <h2>Authentication &amp; Sessions</h2>
+  <ul>
+    <li><strong>InsForge mode:</strong> Google OAuth → cookies → session via <code>/api/auth/refresh</code></li>
+    <li><strong>Mock mode:</strong> <code>localStorage</code> key <code>matchday:session</code></li>
+    <li>Profiles in <code>public.profiles</code>; roles: <code>fan</code> or <code>admin</code></li>
+  </ul>
+  <p>Promote to admin:</p>
+  <pre>npx @insforge/cli db query "UPDATE public.profiles SET role = 'admin' WHERE id = '&lt;your-uuid&gt;';"</pre>
+  <p>Then sign out and back in.</p>
+
+  <h2>Admin: Pub Management (/matchday-matcha)</h2>
+  <ul>
+    <li>Admin-only route — add pubs with lat/lng to Postgres <code>public.pubs</code></li>
+    <li>RLS: only <code>role = admin</code> can write pubs</li>
+    <li><strong>Coordinate rule:</strong> SF longitude must be negative (e.g. <code>-122.4148</code>)</li>
+  </ul>
+
+  <h2>Map &amp; New Pubs</h2>
+  <ul>
+    <li><code>usePubs()</code> keeps the map in sync after admin adds pubs</li>
+    <li>Migration fixed existing pubs with positive longitudes</li>
+  </ul>
+
+  <h2>Pre-Match Flow &amp; Team Chat</h2>
+  <ul>
+    <li>Bottom sheet: pick team → player before each match</li>
+    <li>Unlocks team group chat at <code>/chat/{teamId}</code></li>
+  </ul>
+
+  <h2>Key URLs (local)</h2>
+  <table>
+    <tr><th>URL</th><th>Purpose</th></tr>
+    <tr><td>/login</td><td>Sign in (Google)</td></tr>
+    <tr><td>/map</td><td>Pub map</td></tr>
+    <tr><td>/matchday-matcha</td><td>Admin pub management</td></tr>
+    <tr><td>/chat</td><td>Team chat (after pick)</td></tr>
+    <tr><td>/profile</td><td>Profile, logout, admin link</td></tr>
+  </table>
+
+  <h2>Git</h2>
+  <p>Latest work on <code>backend/insforge-v2</code>: OAuth/session fixes, admin pubs + RLS, pre-match chat, map pub sync + coordinate validation.</p>
+
+  <h2>Troubleshooting</h2>
+  <table>
+    <tr><th>Problem</th><th>Fix</th></tr>
+    <tr><td>Can't see <code>.env.local</code></td><td>Cmd+Shift+. in Finder, or Cmd+P in Cursor</td></tr>
+    <tr><td>OAuth fails</td><td>Use <code>localhost:3002</code> consistently</td></tr>
+    <tr><td>Admin redirect</td><td>Promote profile to admin, re-login</td></tr>
+    <tr><td>Pub not on map</td><td>Check lng is negative (~-122.x)</td></tr>
+  </table>
+
+  <p class="footer">Generated from Cursor session. Do not share .env.local or API keys.</p>
+</body>
+</html>

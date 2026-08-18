@@ -33,8 +33,13 @@ class InsForgeRealtimeEngine implements RealtimeAdapter {
   private presenceListeners = new Set<(p: FanPresence[]) => void>();
   private squadListeners = new Map<string, Set<(s: FanPresence[]) => void>>();
   private chatListeners = new Map<string, Set<(m: ChatMessage[]) => void>>();
-  private matchId = getLiveOrUpcomingMatch()?.id ?? "match-spain-france";
-  private presenceChannel = `presence:match:${this.matchId}`;
+  private getMatchId(): string {
+    return getLiveOrUpcomingMatch()?.id ?? "match-spain-france";
+  }
+
+  private get presenceChannel(): string {
+    return `presence:match:${this.getMatchId()}`;
+  }
   private initialized = false;
   private initPromise: Promise<void> | null = null;
 
@@ -72,7 +77,7 @@ class InsForgeRealtimeEngine implements RealtimeAdapter {
     const { data } = await client.database
       .from("fan_presence")
       .select("*")
-      .eq("match_id", this.matchId);
+      .eq("match_id", this.getMatchId());
 
     if (data) {
       for (const row of data) {
@@ -110,7 +115,8 @@ class InsForgeRealtimeEngine implements RealtimeAdapter {
     const pub = getPub(pubId);
     if (!pub) return [];
     return all.filter((p) => {
-      if (p.pubId === pubId) return true;
+      // Trust the assigned pub so a fan never appears at two adjacent pubs.
+      if (p.pubId) return p.pubId === pubId;
       return (
         haversine(p.lat, p.lng, pub.lat, pub.lng) <= NEAR_PUB_RADIUS_METERS
       );
@@ -123,17 +129,24 @@ class InsForgeRealtimeEngine implements RealtimeAdapter {
       this.presence.set(presence.userId, presence);
       this.notifyPresence();
 
-      await client.database.from("fan_presence").upsert({
-        user_id: presence.userId,
-        match_id: this.matchId,
-        player_id: presence.playerId,
-        team_id: presence.teamId,
-        lat: presence.lat,
-        lng: presence.lng,
-        pub_id: presence.pubId ?? null,
-        updated_at: new Date().toISOString(),
-      });
+      await client.database.from("fan_presence").upsert([
+        {
+          user_id: presence.userId,
+          match_id: this.getMatchId(),
+          player_id: presence.playerId,
+          team_id: presence.teamId,
+          lat: presence.lat,
+          lng: presence.lng,
+          pub_id: presence.pubId ?? null,
+          updated_at: new Date().toISOString(),
+        },
+      ]);
     });
+  }
+
+  clearPresence(userId: string) {
+    this.presence.delete(userId);
+    this.notifyPresence();
   }
 
   subscribeToPresence(callback: (presence: FanPresence[]) => void) {
@@ -223,14 +236,20 @@ class InsForgeRealtimeEngine implements RealtimeAdapter {
 
   sendChatMessage(message: Omit<ChatMessage, "id" | "createdAt">) {
     void this.ensureInitialized().then(async () => {
+      const { prepareOutgoingChatMessage } = await import("@/lib/chat/safety");
+      const prepared = prepareOutgoingChatMessage(message.text);
+      if (!prepared.ok) return;
+
       const client = getInsForgeBrowserClient();
-      await client.database.from("chat_messages").insert({
-        team_id: message.teamId,
-        match_id: message.matchId,
-        user_id: message.userId,
-        player_id: message.playerId,
-        text: message.text,
-      });
+      await client.database.from("chat_messages").insert([
+        {
+          team_id: message.teamId,
+          match_id: message.matchId,
+          user_id: message.userId,
+          player_id: message.playerId,
+          text: prepared.text,
+        },
+      ]);
     });
   }
 
@@ -249,6 +268,9 @@ function getEngine() {
 export const insforgeRealtimeAdapter: RealtimeAdapter = {
   publishLocation(p) {
     getEngine().publishLocation(p);
+  },
+  clearPresence(userId) {
+    getEngine().clearPresence(userId);
   },
   subscribeToPresence(cb) {
     return getEngine().subscribeToPresence(cb);

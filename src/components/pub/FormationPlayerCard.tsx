@@ -31,10 +31,10 @@ export function FormationPlayerCard({
   );
 
   const teamColor = team?.color ?? "#00C853";
-  const borderColor = isPresent ? teamColor : "rgba(255,255,255,0.22)";
   const label = formatPlayerLabel(player.name);
   const gk = isGoalkeeper(player);
   const flip = inverted || gk;
+  const size = compact ? "h-11 w-11" : "h-14 w-14";
 
   return (
     <motion.button
@@ -50,13 +50,16 @@ export function FormationPlayerCard({
     >
       <div
         className={cn(
-          "relative transition-[transform,filter] duration-200 ease-[var(--ease-out-strong)] group-hover:scale-105",
-          compact ? "h-[52px] w-[42px]" : "h-[72px] w-[58px]",
+          "relative rounded-full transition-[transform,filter] duration-200 ease-[var(--ease-out-strong)] group-hover:scale-105",
+          size,
           flip && "order-2",
         )}
         style={{
+          boxShadow: isPresent
+            ? `0 0 0 2px ${teamColor}, 0 0 12px ${teamColor}aa`
+            : "0 0 0 1.5px rgba(255,255,255,0.28)",
           filter: isPresent
-            ? `drop-shadow(0 0 10px ${teamColor}aa) drop-shadow(0 4px 12px ${teamColor}66)`
+            ? `drop-shadow(0 4px 10px ${teamColor}66)`
             : undefined,
         }}
       >
@@ -65,40 +68,17 @@ export function FormationPlayerCard({
             initial={reduced ? false : { opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={uiTransition(reduced, 0.16)}
-            className="absolute -right-1 -top-1 z-10 rounded-md bg-[#FFFC00] px-1 py-0.5 text-[9px] font-bold leading-none text-black"
+            className="absolute -right-1 -top-1 z-10 rounded-full bg-[#FFFC00] px-1 py-0.5 text-[9px] font-bold leading-none text-black"
           >
             ×{fanCount}
           </motion.span>
         )}
-        {/* Hexagon border — highlight when a fan is present */}
-        <div
-          className="absolute inset-0"
-          style={{
-            clipPath: flip
-              ? "polygon(50% 100%, 92% 72%, 92% 18%, 50% 0%, 8% 18%, 8% 72%)"
-              : "polygon(50% 0%, 92% 28%, 92% 82%, 50% 100%, 8% 82%, 8% 28%)",
-            background: isPresent
-              ? `linear-gradient(160deg, ${teamColor} 0%, ${teamColor}dd 100%)`
-              : "linear-gradient(160deg, rgba(255,255,255,0.28) 0%, rgba(255,255,255,0.12) 100%)",
-            boxShadow: isPresent ? `0 0 0 1px ${teamColor}` : undefined,
-          }}
-        />
-        <div
-          className={cn(
-            "absolute overflow-hidden bg-black",
-            isPresent ? "inset-[4px]" : "inset-[3px]",
-          )}
-          style={{
-            clipPath: flip
-              ? "polygon(50% 98%, 89% 73%, 89% 21%, 50% 3%, 11% 21%, 11% 73%)"
-              : "polygon(50% 2%, 89% 29%, 89% 79%, 50% 97%, 11% 79%, 11% 29%)",
-          }}
-        >
+        <div className="absolute inset-0 overflow-hidden rounded-full bg-black">
           <Image
             src={player.imageUrl}
             alt={player.name}
             fill
-            className="object-cover object-top scale-110"
+            className="object-cover object-top"
             unoptimized
           />
         </div>

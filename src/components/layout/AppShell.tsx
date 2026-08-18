@@ -3,19 +3,28 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
+import { useInactivityLogout } from "@/hooks/useInactivityLogout";
+import { refreshActiveMatchFromApi } from "@/lib/mock/data";
 import { BottomNav } from "./BottomNav";
-import { MatchNotification } from "@/components/match/MatchNotification";
+import { MatchReminderSheet } from "@/components/match/MatchReminderSheet";
 import { PlayerProfileModal } from "@/components/player/PlayerProfileModal";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
 
+  useInactivityLogout();
+
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       router.replace("/login");
     }
   }, [isAuthenticated, isLoading, router]);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    void refreshActiveMatchFromApi();
+  }, [isAuthenticated]);
 
   if (isLoading) {
     return (
@@ -31,7 +40,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div className="relative min-h-dvh">
       {children}
       <BottomNav />
-      <MatchNotification />
+      <MatchReminderSheet />
       <PlayerProfileModal />
     </div>
   );

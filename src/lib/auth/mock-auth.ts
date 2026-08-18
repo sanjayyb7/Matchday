@@ -27,6 +27,7 @@ export const mockAuthAdapter: AuthAdapter = {
       email: email?.trim() || undefined,
       avatarUrl: avatarForName(trimmed),
       fanSince: new Date().toISOString(),
+      role: "fan",
     };
     localStorage.setItem(SESSION_KEY, JSON.stringify(user));
     return user;

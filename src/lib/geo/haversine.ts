@@ -25,18 +25,45 @@ export function isNearPub(
   return haversine(userLat, userLng, pubLat, pubLng) <= radiusMeters;
 }
 
+/** How much farther than the entry radius a user can drift before leaving their current pub. */
+const STAY_RADIUS_MULTIPLIER = 1.5;
+
+/**
+ * Pick the pub the user should be assigned to.
+ *
+ * - Returns the closest pub within `radiusMeters` (not merely the first match),
+ *   so adjacent pubs resolve to the right one.
+ * - Sticky: if `currentPubId` is still within a larger stay radius, keep it.
+ *   This prevents imprecise GPS from flip-flopping users between two nearby pubs.
+ */
 export function findNearestPubId(
   userLat: number,
   userLng: number,
   pubs: { id: string; lat: number; lng: number }[],
   radiusMeters: number,
+  currentPubId?: string,
 ): string | undefined {
-  for (const pub of pubs) {
-    if (isNearPub(userLat, userLng, pub.lat, pub.lng, radiusMeters)) {
-      return pub.id;
+  if (currentPubId) {
+    const current = pubs.find((pub) => pub.id === currentPubId);
+    if (
+      current &&
+      haversine(userLat, userLng, current.lat, current.lng) <=
+        radiusMeters * STAY_RADIUS_MULTIPLIER
+    ) {
+      return current.id;
     }
   }
-  return undefined;
+
+  let nearestId: string | undefined;
+  let nearestDistance = Infinity;
+  for (const pub of pubs) {
+    const distance = haversine(userLat, userLng, pub.lat, pub.lng);
+    if (distance <= radiusMeters && distance < nearestDistance) {
+      nearestId = pub.id;
+      nearestDistance = distance;
+    }
+  }
+  return nearestId;
 }
 
 export function jitterPosition(

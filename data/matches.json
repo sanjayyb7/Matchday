@@ -5,7 +5,8 @@
     "awayTeamId": "france",
     "kickoff": "2026-06-12T20:00:00Z",
     "status": "live",
-    "venue": "Levi's Stadium"
+    "venue": "Levi's Stadium",
+    "league": "La Liga"
   },
   {
     "id": "match-england-germany",
@@ -13,6 +14,7 @@
     "awayTeamId": "france",
     "kickoff": "2026-06-19T18:00:00Z",
     "status": "upcoming",
-    "venue": "Oracle Park Watch Party"
+    "venue": "Oracle Park Watch Party",
+    "league": "Premier League"
   }
 ]
