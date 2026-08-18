@@ -180,10 +180,14 @@ export function MatchSelectionPanel({
         "flex flex-col bg-[#0B0F14]",
         embedded ? "min-h-0 flex-1" : "h-dvh",
       )}
-      style={embedded ? undefined : { paddingBottom: BOTTOM_NAV_CLEARANCE }}
     >
-      <div className="border-b border-white/10 px-4 pb-4 pt-6">
-        <div className="flex items-start justify-between gap-3">
+      <div
+        className={cn(
+          "shrink-0 border-b border-white/10 px-4 pb-4",
+          embedded ? "pr-14 pt-10" : "pt-6",
+        )}
+      >
+        <div className="flex items-start gap-3">
           <div className="min-w-0 flex-1">
             {step === "team" && onBack && (
               <button
@@ -205,19 +209,23 @@ export function MatchSelectionPanel({
                 Change team
               </button>
             )}
-            <h1 className="font-heading text-2xl uppercase tracking-wide text-white">
-              {step === "team" ? "Pick your side" : "Pick your player"}
-            </h1>
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="font-heading text-2xl uppercase tracking-wide text-white">
+                {step === "team" ? "Pick your side" : "Pick your player"}
+              </h1>
+              {matchStatus === "live" && !embedded && (
+                <Badge className="gap-1.5 bg-[#E11D2E] text-white">
+                  <span className="live-pulse h-2 w-2 rounded-full bg-white" />
+                  LIVE
+                </Badge>
+              )}
+            </div>
             <p className="mt-1 text-sm text-white/60">
-              {getMatchLabel(match)} · {formatKickoff(match.kickoff)}
+              {match.league
+                ? `${match.league} · ${formatKickoff(match.kickoff)}`
+                : formatKickoff(match.kickoff)}
             </p>
           </div>
-          {matchStatus === "live" && (
-            <Badge className="shrink-0 gap-1.5 bg-accent text-accent-foreground">
-              <span className="live-pulse h-2 w-2 rounded-full bg-red-500" />
-              LIVE
-            </Badge>
-          )}
         </div>
         {earlyPick && matchStatus !== "finished" && (
           <p className="mt-3 text-xs text-[#FFFC00]/80">
@@ -238,10 +246,18 @@ export function MatchSelectionPanel({
         </p>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 py-4">
+      <div
+        className="min-h-0 flex-1 overflow-y-auto px-4 pt-4"
+        style={
+          embedded
+            ? { paddingBottom: "1.5rem" }
+            : { paddingBottom: BOTTOM_NAV_CLEARANCE }
+        }
+      >
         {step === "team" ? (
           homeTeam && awayTeam ? (
             <TeamPicker
+              match={match}
               homeTeam={homeTeam}
               awayTeam={awayTeam}
               onSelect={handleTeamSelect}

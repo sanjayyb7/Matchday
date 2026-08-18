@@ -15,8 +15,6 @@ import {
 } from "@/lib/matches/match-window";
 import { useMatchdayStore } from "@/store/matchday-store";
 
-const REFRESH_INTERVAL_MS = 60_000;
-
 function reminderDismissKey(matchId: string): string {
   return `matchday:reminder-dismissed:${matchId}`;
 }
@@ -30,22 +28,14 @@ export function useMatchIdentity(userId?: string) {
   const pathname = usePathname();
   const [tick, setTick] = useState(0);
 
+  // One hydrate only — day schedule is shared server-side; no score polling.
   useEffect(() => {
     let cancelled = false;
-
-    const refresh = async () => {
-      await refreshActiveMatchFromApi();
+    void refreshActiveMatchFromApi().then(() => {
       if (!cancelled) setTick((value) => value + 1);
-    };
-
-    void refresh();
-    const interval = window.setInterval(() => {
-      void refresh();
-    }, REFRESH_INTERVAL_MS);
-
+    });
     return () => {
       cancelled = true;
-      window.clearInterval(interval);
     };
   }, []);
 

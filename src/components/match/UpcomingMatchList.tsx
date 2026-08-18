@@ -37,16 +37,13 @@ export function UpcomingMatchList({ matches, onSelect }: UpcomingMatchListProps)
         : "Upcoming matches";
 
   return (
-    <div
-      className="flex h-dvh flex-col bg-[#0B0F14]"
-      style={{ paddingBottom: BOTTOM_NAV_CLEARANCE }}
-    >
-      <div className="border-b border-white/10 px-4 pb-4 pt-6">
+    <div className="flex h-dvh flex-col bg-[#0B0F14]">
+      <div className="shrink-0 border-b border-white/10 px-4 pb-4 pt-6">
         <h1 className="font-heading text-2xl uppercase tracking-wide text-white">
           {title}
         </h1>
         <p className="mt-1 text-sm text-white/55">
-          Tap a match to pick your team and player
+          Live matches show a Live badge — tap a card, then pick your team
         </p>
 
         {leagues.length > 1 && (
@@ -90,13 +87,16 @@ export function UpcomingMatchList({ matches, onSelect }: UpcomingMatchListProps)
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 py-4">
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 pt-4">
         {filtered.length === 0 ? (
           <p className="py-10 text-center text-sm text-white/50">
             No matches in {activeLeague ?? "this filter"} right now.
           </p>
         ) : (
-          <div className="flex flex-col gap-3">
+          <div
+            className="flex flex-col gap-3"
+            style={{ paddingBottom: BOTTOM_NAV_CLEARANCE }}
+          >
             {filtered.map((match) => (
               <UpcomingMatchCard
                 key={match.id}

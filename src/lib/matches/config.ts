@@ -14,10 +14,12 @@ export function getFixtureDurationMinutes(): number {
 export const SELECTION_OPENS_MS = 60 * 60 * 1000;
 export const ONE_HOUR_MS = 60 * 60 * 1000;
 
-export const ACTIVE_MATCH_CACHE_SECONDS = 15 * 60;
+/** Legacy HTTP hint — day schedule now uses SF date cache in InsForge. */
+export const ACTIVE_MATCH_CACHE_SECONDS = 6 * 60 * 60;
 
 /** Cap how many live/upcoming fixtures we surface from API-Football. */
 export const MAX_FIXTURES_RETURNED = 40;
 
 /** Cap squad API calls (2 teams per fixture) to stay within free-tier limits. */
 export const MAX_SQUAD_TEAMS = 8;
+

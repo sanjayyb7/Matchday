@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { buildSquadsForMatchId } from "@/lib/matches/api-football";
+import { getOrFetchSquadsForMatch } from "@/lib/matches/day-cache";
 import { getApiFootballKey } from "@/lib/matches/config";
 
 export async function GET(request: NextRequest) {
@@ -19,10 +19,10 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const payload = await buildSquadsForMatchId(matchId);
+    const payload = await getOrFetchSquadsForMatch(matchId);
     return NextResponse.json(payload, {
       headers: {
-        "Cache-Control": "private, max-age=120",
+        "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=60",
       },
     });
   } catch (error) {

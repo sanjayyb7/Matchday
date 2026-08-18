@@ -31,6 +31,11 @@ export interface Match {
   leagueId?: number;
   /** Raw API-Football fixture status short code (e.g. FT, 1H). */
   apiStatus?: string;
+  /** Live / FT score when known. */
+  homeScore?: number | null;
+  awayScore?: number | null;
+  /** Minutes elapsed for live matches. */
+  elapsedMinutes?: number | null;
   /** When the fixture ended (from API or computed). */
   fixtureEndAt?: string;
   externalFixtureId?: number;

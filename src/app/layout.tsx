@@ -1,18 +1,51 @@
 import type { Metadata, Viewport } from "next";
-import { Fredoka, Nunito_Sans } from "next/font/google";
+import localFont from "next/font/local";
+import { Nunito_Sans } from "next/font/google";
 import { Providers } from "@/components/layout/Providers";
 import "./globals.css";
 
 const nunito = Nunito_Sans({
-  variable: "--font-sans",
+  variable: "--font-body",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
 });
 
-const fredoka = Fredoka({
-  variable: "--font-heading",
-  subsets: ["latin"],
-  weight: ["500", "600", "700"],
+/** Coolvetica Condensed — display headings (closest free match to Bold Condensed). */
+const coolvetica = localFont({
+  src: [
+    {
+      path: "../fonts/coolvetica/CoolveticaRgCond.otf",
+      weight: "400",
+      style: "normal",
+    },
+    {
+      path: "../fonts/coolvetica/CoolveticaRgCond.otf",
+      weight: "500",
+      style: "normal",
+    },
+    {
+      path: "../fonts/coolvetica/CoolveticaRgCond.otf",
+      weight: "600",
+      style: "normal",
+    },
+    {
+      path: "../fonts/coolvetica/CoolveticaRgCond.otf",
+      weight: "700",
+      style: "normal",
+    },
+    {
+      path: "../fonts/coolvetica/CoolveticaHvComp.otf",
+      weight: "800",
+      style: "normal",
+    },
+    {
+      path: "../fonts/coolvetica/CoolveticaHvComp.otf",
+      weight: "900",
+      style: "normal",
+    },
+  ],
+  variable: "--font-coolvetica",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -62,7 +95,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="h-full dark" suppressHydrationWarning>
       <body
-        className={`${nunito.variable} ${fredoka.variable} min-h-full bg-background font-sans antialiased`}
+        className={`${nunito.variable} ${coolvetica.variable} min-h-full bg-background font-sans antialiased`}
       >
         <Providers>{children}</Providers>
       </body>

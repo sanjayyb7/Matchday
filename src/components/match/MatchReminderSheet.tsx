@@ -58,7 +58,7 @@ export function MatchReminderSheet() {
       <SheetContent
         side="bottom"
         elevated
-        className="flex max-h-[90vh] flex-col rounded-t-3xl border-white/10 bg-[#0B0F14] px-0 pb-8 pt-2"
+        className="flex max-h-[90vh] flex-col gap-0 rounded-t-3xl border-white/10 bg-[#0B0F14] px-0 pb-[max(1rem,env(safe-area-inset-bottom))] pt-2"
       >
         <MatchSelectionPanel match={activeMatch} embedded />
       </SheetContent>

@@ -2,10 +2,7 @@
 
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { ChevronRight } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import {
-  getMatchLabel,
   getDerivedMatchStatus,
   getTeam,
   isUsingFallbackFixtures,
@@ -18,15 +15,26 @@ import {
   isTeamSelectionOpen,
 } from "@/lib/matches/match-window";
 import type { Match } from "@/types";
+import { cn } from "@/lib/utils";
 
 function formatKickoff(kickoff: string): string {
   return new Date(kickoff).toLocaleString(undefined, {
     weekday: "short",
-    month: "short",
     day: "numeric",
+    month: "short",
     hour: "numeric",
     minute: "2-digit",
   });
+}
+
+function formatScore(value: number | null | undefined): string {
+  if (value == null || Number.isNaN(value)) return "—";
+  return String(value).padStart(2, "0");
+}
+
+function formatElapsed(minutes: number | null | undefined): string | null {
+  if (minutes == null || minutes < 0) return null;
+  return `${minutes}'`;
 }
 
 interface UpcomingMatchCardProps {
@@ -38,29 +46,42 @@ export function UpcomingMatchCard({ match, onSelect }: UpcomingMatchCardProps) {
   const homeTeam = getTeam(match.homeTeamId);
   const awayTeam = getTeam(match.awayTeamId);
   const matchStatus = getDerivedMatchStatus(match);
+  const isLive = matchStatus === "live";
   const canPick = canPromptTeamSelection(match, matches);
   const selectionOpen = isTeamSelectionOpen(match);
   const isDemo = isUsingFallbackFixtures() || match.id.startsWith("match-demo-");
+  const elapsed = formatElapsed(match.elapsedMinutes);
 
-  const actionLabel = isDemo
-    ? "Demo — try the pick flow"
+  const footerLabel = isDemo
+    ? "Demo — pick a side"
     : canPick
       ? selectionOpen
-        ? "Pick now"
-        : "Pick early"
+        ? "Tap to pick your team"
+        : "Early pick available"
       : `Opens in ${formatTimeUntil(getSelectionOpensAt(match))}`;
 
   return (
     <motion.button
       type="button"
-      whileTap={{ scale: 0.98 }}
+      whileTap={{ scale: 0.985 }}
       onClick={() => onSelect(match)}
-      className="flex w-full items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-left transition-colors hover:border-white/20 hover:bg-white/[0.06]"
+      className={cn(
+        "relative w-full overflow-visible rounded-3xl border border-white/10 bg-[#141A22] px-4 pb-4 pt-6 text-left transition-colors",
+        "hover:border-white/20 hover:bg-[#171E28]",
+        isLive && "border-red-500/35",
+      )}
     >
-      <div className="flex min-w-0 flex-1 flex-col gap-2">
-        <div className="flex items-center gap-2">
-          {homeTeam && (
-            <div className="relative h-8 w-8 shrink-0 overflow-hidden rounded-full ring-1 ring-white/20">
+      {isLive && (
+        <span className="absolute left-1/2 top-0 z-10 flex -translate-x-1/2 -translate-y-1/2 items-center gap-1.5 rounded-full bg-[#E11D2E] px-3 py-1 text-[10px] font-bold uppercase tracking-wide text-white shadow-lg shadow-red-900/40">
+          <span className="live-pulse h-1.5 w-1.5 rounded-full bg-white" />
+          Live
+        </span>
+      )}
+
+      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+        <div className="flex min-w-0 flex-col items-center gap-2 text-center">
+          {homeTeam ? (
+            <div className="relative h-14 w-14 overflow-hidden rounded-full ring-2 ring-white/15">
               <Image
                 src={homeTeam.flagUrl}
                 alt={homeTeam.name}
@@ -68,10 +89,38 @@ export function UpcomingMatchCard({ match, onSelect }: UpcomingMatchCardProps) {
                 className="object-cover"
               />
             </div>
+          ) : (
+            <div className="h-14 w-14 rounded-full bg-white/10" />
           )}
-          <span className="text-xs font-bold uppercase text-white/40">vs</span>
-          {awayTeam && (
-            <div className="relative h-8 w-8 shrink-0 overflow-hidden rounded-full ring-1 ring-white/20">
+          <p className="line-clamp-2 font-heading text-sm font-bold uppercase leading-tight tracking-wide text-white">
+            {homeTeam?.name ?? "Home"}
+          </p>
+          {isLive && (
+            <p className="font-heading text-2xl font-bold tabular-nums text-white">
+              {formatScore(match.homeScore)}
+            </p>
+          )}
+        </div>
+
+        <div className="flex min-w-[5.5rem] flex-col items-center gap-1 px-1 text-center">
+          <p className="line-clamp-2 text-[11px] font-semibold uppercase leading-snug tracking-wide text-white/75">
+            {match.league || "Matchday"}
+          </p>
+          {isLive ? (
+            <p className="flex items-center gap-1.5 text-xs font-semibold text-red-400">
+              <span className="live-pulse h-1.5 w-1.5 rounded-full bg-red-500" />
+              {elapsed ?? "Live"}
+            </p>
+          ) : (
+            <p className="text-[11px] font-medium text-white/45">
+              {formatKickoff(match.kickoff)}
+            </p>
+          )}
+        </div>
+
+        <div className="flex min-w-0 flex-col items-center gap-2 text-center">
+          {awayTeam ? (
+            <div className="relative h-14 w-14 overflow-hidden rounded-full ring-2 ring-white/15">
               <Image
                 src={awayTeam.flagUrl}
                 alt={awayTeam.name}
@@ -79,30 +128,28 @@ export function UpcomingMatchCard({ match, onSelect }: UpcomingMatchCardProps) {
                 className="object-cover"
               />
             </div>
+          ) : (
+            <div className="h-14 w-14 rounded-full bg-white/10" />
           )}
-          {matchStatus === "live" && (
-            <Badge className="ml-auto gap-1 bg-accent text-[10px] text-accent-foreground">
-              <span className="live-pulse h-1.5 w-1.5 rounded-full bg-red-500" />
-              LIVE
-            </Badge>
+          <p className="line-clamp-2 font-heading text-sm font-bold uppercase leading-tight tracking-wide text-white">
+            {awayTeam?.name ?? "Away"}
+          </p>
+          {isLive && (
+            <p className="font-heading text-2xl font-bold tabular-nums text-white">
+              {formatScore(match.awayScore)}
+            </p>
           )}
         </div>
-        <p className="font-heading text-base font-bold uppercase tracking-wide text-white">
-          {getMatchLabel(match)}
-        </p>
-        {match.league && (
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-white/40">
-            {match.league}
-          </p>
-        )}
-        <p className="text-xs text-white/50">{formatKickoff(match.kickoff)}</p>
-        <p
-          className={`text-xs font-semibold ${canPick ? "text-[#FFFC00]" : "text-white/40"}`}
-        >
-          {actionLabel}
-        </p>
       </div>
-      <ChevronRight className="h-5 w-5 shrink-0 text-white/30" />
+
+      <p
+        className={cn(
+          "mt-4 text-center text-[11px] font-semibold uppercase tracking-wide",
+          canPick ? "text-[#FFFC00]" : "text-white/40",
+        )}
+      >
+        {footerLabel}
+      </p>
     </motion.button>
   );
 }

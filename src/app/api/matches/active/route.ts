@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
-import { buildActiveMatchPayload } from "@/lib/matches/api-football";
-import { buildDevFallbackPayload } from "@/lib/matches/dev-fallback-fixtures";
 import {
-  ACTIVE_MATCH_CACHE_SECONDS,
-  getApiFootballKey,
-} from "@/lib/matches/config";
-import { deriveMatchStatus } from "@/lib/matches/match-window";
+  getOrFetchDaySchedule,
+  secondsUntilSfMidnight,
+} from "@/lib/matches/day-cache";
+import { buildDevFallbackPayload } from "@/lib/matches/dev-fallback-fixtures";
+import { getApiFootballKey } from "@/lib/matches/config";
 import { syncActiveMatchToInsForge } from "@/lib/matches/sync-to-insforge";
 
 function fallbackResponse(error: string) {
@@ -19,7 +18,7 @@ function fallbackResponse(error: string) {
     {
       status: 200,
       headers: {
-        "Cache-Control": `public, s-maxage=60, stale-while-revalidate=30`,
+        "Cache-Control": `public, s-maxage=${secondsUntilSfMidnight()}, stale-while-revalidate=60`,
       },
     },
   );
@@ -31,38 +30,14 @@ export async function GET() {
   }
 
   try {
-    const payload = await buildActiveMatchPayload();
+    const payload = await getOrFetchDaySchedule();
 
-    if (payload.match && !payload.demoSchedule) {
-      await syncActiveMatchToInsForge(
-        payload.match,
-        payload.teams,
-        payload.players,
-      );
+    // Optional write-through of active match row (not the day schedule source).
+    if (payload.match && !payload.demoSchedule && payload.teams.length > 0) {
+      void syncActiveMatchToInsForge(payload.match, payload.teams, []);
     }
 
-    const hasLive = payload.fixtures.some(
-      (fixture) => deriveMatchStatus(fixture) === "live",
-    );
-    const cacheSeconds = hasLive ? 60 : ACTIVE_MATCH_CACHE_SECONDS;
-
-    if (payload.demoSchedule) {
-      return NextResponse.json(
-        {
-          match: payload.match,
-          teams: payload.teams,
-          players: payload.players,
-          fixtures: payload.fixtures,
-          source: "fallback",
-          error: payload.demoReason,
-        },
-        {
-          headers: {
-            "Cache-Control": `public, s-maxage=60, stale-while-revalidate=30`,
-          },
-        },
-      );
-    }
+    const cacheSeconds = secondsUntilSfMidnight();
 
     return NextResponse.json(
       {
@@ -70,11 +45,13 @@ export async function GET() {
         teams: payload.teams,
         players: payload.players,
         fixtures: payload.fixtures,
-        source: "api-football",
+        source: payload.source,
+        cacheDate: payload.cacheDate,
+        ...(payload.demoReason ? { error: payload.demoReason } : {}),
       },
       {
         headers: {
-          "Cache-Control": `public, s-maxage=${cacheSeconds}, stale-while-revalidate=30`,
+          "Cache-Control": `public, s-maxage=${cacheSeconds}, stale-while-revalidate=60`,
         },
       },
     );

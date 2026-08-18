@@ -5,6 +5,18 @@ import {
   MAX_FIXTURES_RETURNED,
   MAX_SQUAD_TEAMS,
 } from "@/lib/matches/config";
+import {
+  fetchSportmonksFixturesCatalog,
+  getSportmonksApiKey,
+} from "@/lib/matches/sportmonks-fixtures";
+import {
+  fetchFootballDataFixturesCatalog,
+  getFootballDataApiKey,
+} from "@/lib/matches/football-data-fixtures";
+import {
+  fetchTestWeekendFixturesCatalog,
+  isMatchTestWeekendEnabled,
+} from "@/lib/matches/test-weekend-fixtures";
 import { mapApiTeam, teamNameToSlug } from "@/lib/matches/team-utils";
 import { generateFallbackSquad } from "@/lib/matches/squad-fallback";
 import { buildDevFallbackPayload } from "@/lib/matches/dev-fallback-fixtures";
@@ -14,6 +26,28 @@ import {
   getKickoffMs,
   hasSelectableFixtures,
 } from "@/lib/matches/match-window";
+
+export class ApiFootballQuotaError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ApiFootballQuotaError";
+  }
+}
+
+export function isApiFootballQuotaError(error: unknown): boolean {
+  if (error instanceof ApiFootballQuotaError) return true;
+  if (!(error instanceof Error)) return false;
+  const msg = error.message.toLowerCase();
+  return (
+    msg.includes("request limit") ||
+    msg.includes("rate limit") ||
+    msg.includes("rate_limit") ||
+    msg.includes("quota") ||
+    msg.includes("credits") ||
+    msg.includes("too many requests") ||
+    /\(429\)/.test(error.message)
+  );
+}
 
 interface ApiFootballFixtureTeam {
   id: number;
@@ -31,6 +65,7 @@ interface ApiFootballFixtureItem {
   };
   league: { id: number; season: number; name?: string };
   teams: { home: ApiFootballFixtureTeam; away: ApiFootballFixtureTeam };
+  goals?: { home: number | null; away: number | null };
   venue?: { name?: string | null; city?: string | null };
 }
 
@@ -63,6 +98,12 @@ async function apiFetch<T>(path: string, key: string): Promise<T> {
     next: { revalidate: 60 },
   });
 
+  if (response.status === 429) {
+    throw new ApiFootballQuotaError(
+      "API-Football request failed (429): rate or credit limit",
+    );
+  }
+
   if (!response.ok) {
     throw new Error(`API-Football request failed (${response.status})`);
   }
@@ -74,6 +115,9 @@ async function apiFetch<T>(path: string, key: string): Promise<T> {
 
   if (payload.errors && Object.keys(payload.errors).length > 0) {
     const message = Object.values(payload.errors).join("; ");
+    if (isApiFootballQuotaError(new Error(message))) {
+      throw new ApiFootballQuotaError(message);
+    }
     throw new Error(message || "API-Football returned errors");
   }
 
@@ -97,6 +141,9 @@ function mapFixture(item: ApiFootballFixtureItem): {
     league: item.league.name?.trim() || undefined,
     leagueId: item.league.id,
     apiStatus: item.fixture.status.short,
+    homeScore: item.goals?.home ?? null,
+    awayScore: item.goals?.away ?? null,
+    elapsedMinutes: item.fixture.status.elapsed ?? null,
     externalFixtureId: item.fixture.id,
   };
   match.status = deriveMatchStatus(match);
@@ -200,20 +247,15 @@ async function fetchSoccerFixtures(key: string): Promise<ApiFootballFixtureItem[
   return upcoming.slice(0, MAX_FIXTURES_RETURNED);
 }
 
-export async function fetchSoccerFixturesCatalog(): Promise<{
+async function fetchApiFootballFixturesCatalog(key: string): Promise<{
   fixtures: Match[];
   teams: Team[];
   fixtureItems: ApiFootballFixtureItem[];
+  source: "api-football";
 }> {
-  const key = getApiFootballKey();
-  if (!key) {
-    throw new Error("API_FOOTBALL_KEY is not configured");
-  }
-
   const items = await fetchSoccerFixtures(key);
   const fixtures: Match[] = [];
   const teamMap = new Map<string, Team>();
-
   const keptItems: ApiFootballFixtureItem[] = [];
 
   for (const item of items) {
@@ -233,7 +275,122 @@ export async function fetchSoccerFixturesCatalog(): Promise<{
     fixtures,
     teams: [...teamMap.values()],
     fixtureItems: keptItems,
+    source: "api-football",
   };
+}
+
+async function fetchSportmonksFixturesAsCatalog(): Promise<{
+  fixtures: Match[];
+  teams: Team[];
+  fixtureItems: ApiFootballFixtureItem[];
+  source: "sportmonks";
+}> {
+  const { fixtures, teams } = await fetchSportmonksFixturesCatalog();
+  return {
+    fixtures,
+    teams,
+    fixtureItems: [],
+    source: "sportmonks",
+  };
+}
+
+async function fetchFootballDataFixturesAsCatalog(): Promise<{
+  fixtures: Match[];
+  teams: Team[];
+  fixtureItems: ApiFootballFixtureItem[];
+  source: "football-data";
+}> {
+  const { fixtures, teams } = await fetchFootballDataFixturesCatalog();
+  return {
+    fixtures,
+    teams,
+    fixtureItems: [],
+    source: "football-data",
+  };
+}
+
+type FixtureCatalogSource =
+  | "api-football"
+  | "football-data"
+  | "sportmonks"
+  | "test-weekend";
+
+/**
+ * Try providers in order. When one fails (credits, auth, network), switch to the next.
+ * All providers map into the same Match/Team shape.
+ *
+ * MATCH_TEST_WEEKEND=1 forces a local PL/La Liga/Bundesliga/MLS weekend slate first.
+ */
+export async function fetchSoccerFixturesCatalog(): Promise<{
+  fixtures: Match[];
+  teams: Team[];
+  fixtureItems: ApiFootballFixtureItem[];
+  source: FixtureCatalogSource;
+}> {
+  if (isMatchTestWeekendEnabled()) {
+    const { fixtures, teams } = fetchTestWeekendFixturesCatalog();
+    return {
+      fixtures,
+      teams,
+      fixtureItems: [],
+      source: "test-weekend",
+    };
+  }
+
+  const providers: {
+    name: Exclude<FixtureCatalogSource, "test-weekend">;
+    available: boolean;
+    run: () => Promise<{
+      fixtures: Match[];
+      teams: Team[];
+      fixtureItems: ApiFootballFixtureItem[];
+      source: FixtureCatalogSource;
+    }>;
+  }[] = [
+    {
+      name: "api-football",
+      available: Boolean(getApiFootballKey()),
+      run: async () => {
+        const key = getApiFootballKey();
+        if (!key) throw new Error("API_FOOTBALL_KEY is not configured");
+        return fetchApiFootballFixturesCatalog(key);
+      },
+    },
+    {
+      name: "football-data",
+      available: Boolean(getFootballDataApiKey()),
+      run: () => fetchFootballDataFixturesAsCatalog(),
+    },
+    {
+      name: "sportmonks",
+      available: Boolean(getSportmonksApiKey()),
+      run: () => fetchSportmonksFixturesAsCatalog(),
+    },
+  ];
+
+  const errors: string[] = [];
+
+  for (const provider of providers) {
+    if (!provider.available) continue;
+    try {
+      return await provider.run();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      errors.push(`${provider.name}: ${message}`);
+      console.warn(
+        `[matches] ${provider.name} failed; trying next provider:`,
+        message,
+      );
+    }
+  }
+
+  if (errors.length === 0) {
+    throw new Error(
+      "No football API keys configured (API_FOOTBALL_KEY / FOOTBALL_DATA_API_KEY / SPORTMONKS_API_KEY)",
+    );
+  }
+
+  throw new Error(`All football providers failed — ${errors.join(" | ")}`);
 }
 
 /** @deprecated Use fetchSoccerFixturesCatalog — kept for any older imports. */
