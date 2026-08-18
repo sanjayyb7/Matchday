@@ -5,7 +5,15 @@ import {
 } from "@/lib/matches/day-cache";
 import { buildDevFallbackPayload } from "@/lib/matches/dev-fallback-fixtures";
 import { getApiFootballKey } from "@/lib/matches/config";
+import { getFootballDataApiKey } from "@/lib/matches/football-data-fixtures";
+import { getSportmonksApiKey } from "@/lib/matches/sportmonks-fixtures";
 import { syncActiveMatchToInsForge } from "@/lib/matches/sync-to-insforge";
+
+function hasAnyProviderKey(): boolean {
+  return Boolean(
+    getApiFootballKey() || getFootballDataApiKey() || getSportmonksApiKey(),
+  );
+}
 
 function fallbackResponse(error: string) {
   const payload = buildDevFallbackPayload();
@@ -17,16 +25,19 @@ function fallbackResponse(error: string) {
     },
     {
       status: 200,
+      // Never CDN-cache demo/error so failover can recover within the same day.
       headers: {
-        "Cache-Control": `public, s-maxage=${secondsUntilSfMidnight()}, stale-while-revalidate=60`,
+        "Cache-Control": "private, no-store",
       },
     },
   );
 }
 
 export async function GET() {
-  if (!getApiFootballKey()) {
-    return fallbackResponse("API_FOOTBALL_KEY is not configured");
+  if (!hasAnyProviderKey()) {
+    return fallbackResponse(
+      "No football API key configured (API_FOOTBALL_KEY / FOOTBALL_DATA_API_KEY / SPORTMONKS_API_KEY)",
+    );
   }
 
   try {
@@ -37,6 +48,7 @@ export async function GET() {
       void syncActiveMatchToInsForge(payload.match, payload.teams, []);
     }
 
+    const isDemo = Boolean(payload.demoSchedule);
     const cacheSeconds = secondsUntilSfMidnight();
 
     return NextResponse.json(
@@ -48,10 +60,14 @@ export async function GET() {
         source: payload.source,
         cacheDate: payload.cacheDate,
         ...(payload.demoReason ? { error: payload.demoReason } : {}),
+        ...(isDemo ? { demoSchedule: true } : {}),
       },
       {
         headers: {
-          "Cache-Control": `public, s-maxage=${cacheSeconds}, stale-while-revalidate=60`,
+          // Live schedule can be edge-cached for the SF day; demo must not stick.
+          "Cache-Control": isDemo
+            ? "private, no-store"
+            : `public, s-maxage=${cacheSeconds}, stale-while-revalidate=60`,
         },
       },
     );

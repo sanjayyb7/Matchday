@@ -347,6 +347,12 @@ export async function fetchSoccerFixturesCatalog(): Promise<{
       source: FixtureCatalogSource;
     }>;
   }[] = [
+    // Prefer football-data.org while API-Football free tier is exhausted / season-gated.
+    {
+      name: "football-data",
+      available: Boolean(getFootballDataApiKey()),
+      run: () => fetchFootballDataFixturesAsCatalog(),
+    },
     {
       name: "api-football",
       available: Boolean(getApiFootballKey()),
@@ -355,11 +361,6 @@ export async function fetchSoccerFixturesCatalog(): Promise<{
         if (!key) throw new Error("API_FOOTBALL_KEY is not configured");
         return fetchApiFootballFixturesCatalog(key);
       },
-    },
-    {
-      name: "football-data",
-      available: Boolean(getFootballDataApiKey()),
-      run: () => fetchFootballDataFixturesAsCatalog(),
     },
     {
       name: "sportmonks",
