@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { TeamPicker } from "./TeamPicker";
 import { PlayerPicker } from "./PlayerPicker";
 import { useMatchdayStore } from "@/store/matchday-store";
@@ -100,7 +99,10 @@ export function MatchSelectionPanel({
       setSquadLoading(false);
     };
 
-    if (!match.id.startsWith("af-")) {
+    const hasSquadApi =
+      match.id.startsWith("af-") || match.id.startsWith("fd-");
+
+    if (!hasSquadApi) {
       finishWithFallback();
       return () => {
         cancelled = true;
@@ -183,67 +185,61 @@ export function MatchSelectionPanel({
     >
       <div
         className={cn(
-          "shrink-0 border-b border-white/10 px-4 pb-4",
+          "shrink-0 px-4 pb-4",
           embedded ? "pr-14 pt-10" : "pt-6",
         )}
       >
-        <div className="flex items-start gap-3">
-          <div className="min-w-0 flex-1">
-            {step === "team" && onBack && (
-              <button
-                type="button"
-                onClick={onBack}
-                className="mb-3 flex items-center gap-1 text-sm text-white/60 hover:text-white"
-              >
-                <ChevronLeft className="h-4 w-4" />
-                Back to matches
-              </button>
-            )}
-            {step === "player" && (
-              <button
-                type="button"
-                onClick={() => setStep("team")}
-                className="mb-3 flex items-center gap-1 text-sm text-white/60 hover:text-white"
-              >
-                <ChevronLeft className="h-4 w-4" />
-                Change team
-              </button>
-            )}
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="font-heading text-2xl uppercase tracking-wide text-white">
-                {step === "team" ? "Pick your side" : "Pick your player"}
-              </h1>
-              {matchStatus === "live" && !embedded && (
-                <Badge className="gap-1.5 bg-[#E11D2E] text-white">
-                  <span className="live-pulse h-2 w-2 rounded-full bg-white" />
-                  LIVE
-                </Badge>
-              )}
-            </div>
-            <p className="mt-1 text-sm text-white/60">
+        <div className="flex items-center gap-3">
+          {step === "team" && onBack && (
+            <button
+              type="button"
+              onClick={onBack}
+              aria-label="Back to matches"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/15 text-white ring-1 ring-white/30 transition-colors hover:bg-white/25"
+            >
+              <ChevronLeft className="h-5 w-5" strokeWidth={2.5} />
+            </button>
+          )}
+          {step === "player" && (
+            <button
+              type="button"
+              onClick={() => setStep("team")}
+              aria-label="Change team"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/15 text-white ring-1 ring-white/30 transition-colors hover:bg-white/25"
+            >
+              <ChevronLeft className="h-5 w-5" strokeWidth={2.5} />
+            </button>
+          )}
+          <div className="min-w-0 flex-1 text-center">
+            <h1 className="font-heading text-lg font-semibold uppercase tracking-wide text-white">
+              Match
+            </h1>
+            <p className="mt-0.5 truncate text-xs text-white/55">
               {match.league
-                ? `${match.league} · ${formatKickoff(match.kickoff)}`
-                : formatKickoff(match.kickoff)}
+                ? `${match.league} · ${
+                    matchStatus === "live" ? "Live now" : formatKickoff(match.kickoff)
+                  }`
+                : matchStatus === "live"
+                  ? "Live now"
+                  : formatKickoff(match.kickoff)}
             </p>
           </div>
+          {/* Spacer for header symmetry — mirrors the back button width. */}
+          <div className="h-10 w-10 shrink-0" aria-hidden />
         </div>
-        {earlyPick && matchStatus !== "finished" && (
-          <p className="mt-3 text-xs text-[#FFFC00]/80">
-            No match in the next hour — pick your team and player for the next
-            fixture.
+
+        {step === "player" && (
+          <p className="mt-4 text-center text-xs font-semibold uppercase tracking-widest text-white/45">
+            Pick your player
           </p>
         )}
-        {!selectionOpen &&
-          !earlyPick &&
-          matchStatus === "upcoming" && (
-            <p className="mt-3 text-xs text-[#FFFC00]/80">
-              Team selection opens in{" "}
-              {formatTimeUntil(getSelectionOpensAt(match))}
-            </p>
-          )}
-        <p className="mt-2 text-xs text-white/45">
-          Join your team squad chat after you pick a player
-        </p>
+
+        {!selectionOpen && !earlyPick && matchStatus === "upcoming" && (
+          <p className="mt-3 text-center text-xs text-[#FFFC00]/80">
+            Team selection opens in{" "}
+            {formatTimeUntil(getSelectionOpensAt(match))}
+          </p>
+        )}
       </div>
 
       <div

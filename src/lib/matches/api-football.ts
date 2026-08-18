@@ -2,6 +2,7 @@ import type { Match, Player, Team } from "@/types";
 import {
   API_FOOTBALL_BASE_URL,
   getApiFootballKey,
+  getApiFootballKeys,
   MAX_FIXTURES_RETURNED,
   MAX_SQUAD_TEAMS,
 } from "@/lib/matches/config";
@@ -45,6 +46,9 @@ export function isApiFootballQuotaError(error: unknown): boolean {
     msg.includes("quota") ||
     msg.includes("credits") ||
     msg.includes("too many requests") ||
+    msg.includes("suspended") ||
+    msg.includes("access") ||
+    msg.includes("unauthorized") ||
     /\(429\)/.test(error.message)
   );
 }
@@ -92,7 +96,7 @@ function apiHeaders(key: string): HeadersInit {
   return { "x-apisports-key": key };
 }
 
-async function apiFetch<T>(path: string, key: string): Promise<T> {
+async function apiFetchWithKey<T>(path: string, key: string): Promise<T> {
   const response = await fetch(`${API_FOOTBALL_BASE_URL}${path}`, {
     headers: apiHeaders(key),
     next: { revalidate: 60 },
@@ -122,6 +126,33 @@ async function apiFetch<T>(path: string, key: string): Promise<T> {
   }
 
   return payload.response;
+}
+
+/**
+ * Fetch that transparently rotates through every configured API-Football key
+ * when one hits its daily quota / credit limit. Non-quota errors bubble up
+ * from the first attempt so we don't waste keys chasing a bad request.
+ */
+async function apiFetch<T>(path: string, key: string): Promise<T> {
+  const configured = getApiFootballKeys();
+  const orderedKeys = [key, ...configured.filter((k) => k !== key)];
+  let lastQuotaError: unknown = null;
+  for (const candidate of orderedKeys) {
+    try {
+      return await apiFetchWithKey<T>(path, candidate);
+    } catch (error) {
+      if (isApiFootballQuotaError(error)) {
+        lastQuotaError = error;
+        console.warn(
+          "[matches] API-Football key exhausted; trying next key if available",
+        );
+        continue;
+      }
+      throw error;
+    }
+  }
+  throw lastQuotaError ??
+    new ApiFootballQuotaError("All API-Football keys are exhausted");
 }
 
 function mapFixture(item: ApiFootballFixtureItem): {

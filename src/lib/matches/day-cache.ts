@@ -9,6 +9,7 @@ import {
   getActiveMatch,
   hasSelectableFixtures,
 } from "@/lib/matches/match-window";
+import { fetchFootballDataSquadForMatch } from "@/lib/matches/football-data-fixtures";
 import { generateFallbackSquad } from "@/lib/matches/squad-fallback";
 import {
   isMatchTestWeekendEnabled,
@@ -143,6 +144,17 @@ async function writeDayCache(input: {
   }
 }
 
+function isStaleFallbackSquad(players: Player[]): boolean {
+  if (players.length === 0) return true;
+  if (players.every((player) => player.id.includes("-fallback-"))) return true;
+  // Previously-cached fd-* squads had dicebear-only photos; refresh once so
+  // API-Football enrichment (real headshots) can populate the cache.
+  const dicebearOnly = players.every((player) =>
+    player.imageUrl.includes("dicebear.com"),
+  );
+  return dicebearOnly;
+}
+
 async function readTeamSquad(teamId: string): Promise<Player[] | null> {
   if (!canUseInsForgeCache()) return null;
   try {
@@ -152,9 +164,11 @@ async function readTeamSquad(teamId: string): Promise<Player[] | null> {
       .eq("team_id", teamId)
       .maybeSingle();
     if (error || !data) return null;
-    return Array.isArray(data.players_json)
+    const players = Array.isArray(data.players_json)
       ? (data.players_json as Player[])
       : [];
+    if (isStaleFallbackSquad(players)) return null;
+    return players;
   } catch {
     return null;
   }
@@ -319,12 +333,22 @@ export async function getOrFetchSquadsForMatch(matchId: string): Promise<{
       }
     }
 
-    // Only API-Football match ids (af-*) have real squad endpoints.
-    const useFallbackSquads = !matchId.startsWith("af-");
-
     let payload: { teams: Team[]; players: Player[] };
 
-    if (useFallbackSquads && match) {
+    try {
+      if (matchId.startsWith("af-")) {
+        payload = await buildSquadsForMatchId(matchId);
+      } else if (matchId.startsWith("fd-")) {
+        payload = await fetchFootballDataSquadForMatch(matchId);
+      } else {
+        throw new Error("No squad provider for this match id");
+      }
+    } catch (error) {
+      console.warn(
+        "[matches] squad fetch failed; falling back to generated squad:",
+        error instanceof Error ? error.message : error,
+      );
+      if (!match) throw error;
       const teams = schedule.teams.filter(
         (t) => t.id === match.homeTeamId || t.id === match.awayTeamId,
       );
@@ -337,8 +361,6 @@ export async function getOrFetchSquadsForMatch(matchId: string): Promise<{
           ...(away ? generateFallbackSquad(away) : []),
         ],
       };
-    } else {
-      payload = await buildSquadsForMatchId(matchId);
     }
 
     const byTeam = new Map<string, Player[]>();

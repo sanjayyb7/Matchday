@@ -41,7 +41,7 @@ export function TeamPicker({
       : null;
 
   return (
-    <div className="relative overflow-visible rounded-3xl border border-white/10 bg-[#141A22] px-3 pb-5 pt-7">
+    <div className="relative overflow-visible rounded-3xl border border-white/10 bg-[#141A22] p-3">
       {isLive && (
         <span className="absolute left-1/2 top-0 z-10 flex -translate-x-1/2 -translate-y-1/2 items-center gap-1.5 rounded-full bg-[#E11D2E] px-3 py-1 text-[10px] font-bold uppercase tracking-wide text-white shadow-lg shadow-red-900/40">
           <span className="live-pulse h-1.5 w-1.5 rounded-full bg-white" />
@@ -70,12 +70,12 @@ export function TeamPicker({
             <span className="text-[10px] font-semibold uppercase tracking-wider text-white/40">
               {side}
             </span>
-            <div className="relative h-16 w-16 overflow-hidden rounded-full ring-2 ring-white/20">
+            <div className="relative h-16 w-16">
               <Image
                 src={team.flagUrl}
                 alt={team.name}
                 fill
-                className="object-cover"
+                className="object-contain"
               />
             </div>
             <span className="font-heading text-lg font-bold uppercase leading-tight tracking-wide text-white">

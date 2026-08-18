@@ -296,7 +296,7 @@ export function getUpcomingMatchesNext24Hours(): Match[] {
   return getUpcomingMatchesWithinHours(matches, 24).map(withDerivedStatus);
 }
 
-/** Matches to show on the chat gate: live first, then upcoming within 24h, then next 3. */
+/** Matches to show on the chat gate: live first, then everything upcoming within a week. */
 export function getDisplayableUpcomingMatches(): Match[] {
   const now = new Date();
   const live = matches
@@ -304,15 +304,17 @@ export function getDisplayableUpcomingMatches(): Match[] {
     .map(withDerivedStatus)
     .sort((a, b) => getKickoffMs(a) - getKickoffMs(b));
 
-  const within24h = getUpcomingMatchesNext24Hours();
+  const withinWeek = getUpcomingMatchesWithinHours(matches, 24 * 7, now).map(
+    withDerivedStatus,
+  );
   const liveIds = new Set(live.map((m) => m.id));
-  const upcomingOnly = within24h.filter((m) => !liveIds.has(m.id));
+  const upcomingOnly = withinWeek.filter((m) => !liveIds.has(m.id));
 
   if (live.length > 0 || upcomingOnly.length > 0) {
     return [...live, ...upcomingOnly];
   }
 
-  return getNextUpcomingMatches(matches, 3).map(withDerivedStatus);
+  return getNextUpcomingMatches(matches, 10).map(withDerivedStatus);
 }
 
 export function getDerivedMatchStatus(match: Match): MatchStatus {

@@ -1,15 +1,13 @@
 "use client";
 
 import Image from "next/image";
-import { Navigation } from "lucide-react";
+import { ArrowUpRight, MapPin } from "lucide-react";
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
-  SheetDescription,
 } from "@/components/ui/sheet";
-import { Button } from "@/components/ui/button";
 import { useMatchdayStore } from "@/store/matchday-store";
 import { usePubSquad } from "@/hooks/usePubSquad";
 import { PubSquadPitch } from "./PubSquadPitch";
@@ -24,36 +22,38 @@ export function PubSquadSheet() {
     <Sheet open={!!selectedPub} onOpenChange={(open) => !open && setSelectedPub(null)}>
       <SheetContent
         side="bottom"
-        className="max-h-[90vh] overflow-y-auto rounded-t-3xl border-white/10 bg-[#0B0F14] px-4 pb-8 md:mx-auto md:max-w-3xl"
+        className="max-h-[90vh] overflow-y-auto rounded-t-3xl border-white/10 bg-[#0B0F14] px-4 pb-8 pt-10 md:mx-auto md:max-w-3xl"
       >
         {selectedPub && (
           <>
-            <SheetHeader className="text-left">
-              <div className="flex items-start justify-between gap-3 pr-8">
-                <div className="flex min-w-0 items-center gap-4">
-                  <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-2xl ring-2 ring-primary/30">
-                    <Image
-                      src={selectedPub.imageUrl}
-                      alt={selectedPub.name}
-                      fill
-                      className="object-cover"
-                      unoptimized
-                    />
-                  </div>
-                  <div className="min-w-0">
-                    <SheetTitle className="font-heading text-xl uppercase text-white">
-                      {selectedPub.name}
-                    </SheetTitle>
-                    <SheetDescription className="text-white/60">
-                      {selectedPub.neighborhood} · Live squad · {squad.length} fans
-                    </SheetDescription>
-                  </div>
+            {/* Drag handle so the top of the sheet reads as a sheet, not
+                as content colliding with the close button. */}
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-x-0 top-2 mx-auto h-1 w-10 rounded-full bg-white/20"
+            />
+            <SheetHeader className="gap-2 text-left">
+              <div className="flex items-center gap-3 pr-14">
+                <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-xl ring-2 ring-primary/30">
+                  <Image
+                    src={selectedPub.imageUrl}
+                    alt={selectedPub.name}
+                    fill
+                    className="object-cover"
+                    unoptimized
+                  />
                 </div>
-                <Button
+                <SheetTitle className="min-w-0 flex-1 truncate font-heading text-xl uppercase text-white">
+                  {selectedPub.name}
+                </SheetTitle>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <p className="min-w-0 flex-1 truncate text-xs text-white/45">
+                  Live squad · {squad.length}{" "}
+                  {squad.length === 1 ? "fan" : "fans"}
+                </p>
+                <button
                   type="button"
-                  variant="outline"
-                  size="sm"
-                  className="shrink-0 rounded-lg border-white/15 bg-white/5 text-white hover:bg-white/10 hover:text-white"
                   onClick={() =>
                     window.open(
                       googleMapsDirectionsUrl(selectedPub),
@@ -61,10 +61,21 @@ export function PubSquadSheet() {
                       "noopener,noreferrer",
                     )
                   }
+                  aria-label={`Open ${selectedPub.address || selectedPub.name} in Maps`}
+                  className="group inline-flex max-w-[65%] shrink-0 items-center gap-1.5 rounded-full bg-white/[0.06] px-3 py-1.5 text-xs font-medium text-white/80 ring-1 ring-white/10 transition-[background-color,transform] duration-150 ease-[var(--ease-out-strong)] hover:bg-white/10 hover:text-white active:scale-[0.97]"
                 >
-                  <Navigation />
-                  Open in Maps
-                </Button>
+                  <MapPin
+                    className="h-3.5 w-3.5 shrink-0 text-white/70"
+                    strokeWidth={2}
+                  />
+                  <span className="min-w-0 truncate">
+                    {selectedPub.address || selectedPub.neighborhood}
+                  </span>
+                  <ArrowUpRight
+                    className="h-3.5 w-3.5 shrink-0 text-white/60 transition-transform duration-150 group-hover:translate-x-[1px] group-hover:-translate-y-[1px]"
+                    strokeWidth={2}
+                  />
+                </button>
               </div>
             </SheetHeader>
             <div className="mt-4">

@@ -1,8 +1,8 @@
 "use client";
 
-import { use, useEffect } from "react";
+import { use, useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, MoreHorizontal } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChatThread } from "@/components/chat/ChatThread";
@@ -11,15 +11,23 @@ import { ChatStoriesRow } from "@/components/chat/ChatStoriesRow";
 import { useTeamChat } from "@/hooks/useTeamChat";
 import { useAuth } from "@/hooks/useAuth";
 import { useMatchdayStore } from "@/store/matchday-store";
+import { useRealtime } from "@/lib/realtime/context";
+import { INSFORGE_ENABLED } from "@/lib/insforge/config";
+import { deleteUserIdentityForMatch } from "@/lib/identity/insforge-identity";
 import {
   getLiveOrUpcomingMatch,
+  getMatch,
   getMatchLabel,
+  getPlayersByTeam,
   getTeam,
   getDerivedMatchStatus,
   identityMatchesActiveMatch,
+  mergeMatchSquads,
 } from "@/lib/mock/data";
+import { generateFallbackSquad } from "@/lib/matches/squad-fallback";
 import { getTeamChatThemeFromTeam } from "@/lib/chat/team-theme";
 import { CHAT_INPUT_CLEARANCE } from "@/lib/layout/constants";
+import type { Player, Team } from "@/types";
 
 export default function ChatPage({
   params,
@@ -30,11 +38,20 @@ export default function ChatPage({
   const router = useRouter();
   const { user } = useAuth();
   const identity = useMatchdayStore((s) => s.identity);
-  const match = getLiveOrUpcomingMatch();
+  const setIdentity = useMatchdayStore((s) => s.setIdentity);
+  const realtime = useRealtime();
+  // Prefer the match the user actually joined (identity.matchId) so the squad
+  // rail hydrates for that match, not whichever match happens to be featured.
+  const identityMatch = identity?.matchId ? getMatch(identity.matchId) : undefined;
+  const match = identityMatch ?? getLiveOrUpcomingMatch();
   const team = getTeam(teamId);
-  const matchId = match?.id ?? "match-spain-france";
+  const matchId = match?.id ?? identity?.matchId ?? "match-spain-france";
   const { messages, sendMessage } = useTeamChat(teamId, matchId);
   const chatTheme = getTeamChatThemeFromTeam(team);
+  const [, setSquadTick] = useState(0);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [leaving, setLeaving] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   const hasActiveIdentity = identityMatchesActiveMatch(identity, user?.id, match);
 
@@ -48,6 +65,96 @@ export default function ChatPage({
       router.replace(`/chat/${identity.teamId}`);
     }
   }, [user, match, hasActiveIdentity, identity, teamId, router]);
+
+  // Rehydrate the squad on direct navigation / refresh so the "Live squad"
+  // rail always shows the roster instead of just the current user.
+  useEffect(() => {
+    if (getPlayersByTeam(teamId).length > 0) return;
+
+    let cancelled = false;
+    const hasSquadApi =
+      matchId.startsWith("af-") || matchId.startsWith("fd-");
+
+    const finishWithFallback = () => {
+      if (cancelled) return;
+      const currentTeam = getTeam(teamId);
+      if (currentTeam && getPlayersByTeam(teamId).length === 0) {
+        mergeMatchSquads([], generateFallbackSquad(currentTeam));
+        setSquadTick((tick) => tick + 1);
+      }
+    };
+
+    if (!hasSquadApi) {
+      finishWithFallback();
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    void fetch(`/api/matches/squads?matchId=${encodeURIComponent(matchId)}`)
+      .then(async (response) => {
+        if (!response.ok) {
+          finishWithFallback();
+          return;
+        }
+        const payload = (await response.json()) as {
+          teams?: Team[];
+          players?: Player[];
+        };
+        if (cancelled) return;
+        mergeMatchSquads(payload.teams ?? [], payload.players ?? []);
+        if (getPlayersByTeam(teamId).length === 0) {
+          finishWithFallback();
+        } else {
+          setSquadTick((tick) => tick + 1);
+        }
+      })
+      .catch(finishWithFallback);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [matchId, teamId]);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onPointerDown = (event: MouseEvent) => {
+      if (!menuRef.current?.contains(event.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", onPointerDown);
+    return () => document.removeEventListener("mousedown", onPointerDown);
+  }, [menuOpen]);
+
+  const handleLeaveMatch = async () => {
+    if (!user || !identity || leaving) return;
+    setLeaving(true);
+    setMenuOpen(false);
+
+    const leavingMatchId = identity.matchId;
+    setIdentity(null);
+    realtime.clearPresence(user.id);
+
+    if (INSFORGE_ENABLED) {
+      try {
+        await deleteUserIdentityForMatch(user.id, leavingMatchId);
+      } catch {
+        // Local leave already applied; DB cleanup can retry on next session.
+      }
+    }
+
+    try {
+      sessionStorage.removeItem(
+        `matchday:reminder-dismissed:${leavingMatchId}`,
+      );
+    } catch {
+      // ignore
+    }
+
+    setLeaving(false);
+    router.replace("/chat");
+  };
 
   const handleSend = (text: string) => {
     if (!user || !identity || !hasActiveIdentity) {
@@ -63,12 +170,13 @@ export default function ChatPage({
 
   return (
     <div className="relative flex h-dvh flex-col overflow-hidden bg-[#0B0F14]">
-      <header className="relative z-10 flex items-center gap-3 border-b border-white/10 bg-[#0B0F14]/80 px-3 py-3 backdrop-blur-md">
+      <header className="relative z-10 flex items-center gap-3 bg-[#0B0F14]/80 px-3 py-3 backdrop-blur-md">
         <Link
           href="/map"
-          className="flex h-9 w-9 items-center justify-center rounded-full text-white/70 hover:bg-white/10"
+          aria-label="Back"
+          className="flex h-9 w-9 items-center justify-center rounded-full text-white transition-colors hover:bg-white/10"
         >
-          <ChevronLeft className="h-5 w-5" />
+          <ChevronLeft className="h-6 w-6" strokeWidth={2.5} />
         </Link>
         {team && (
           <div
@@ -78,11 +186,11 @@ export default function ChatPage({
             <Image src={team.flagUrl} alt={team.name} fill className="object-cover" />
           </div>
         )}
-        <div className="flex-1">
-          <h1 className="font-heading text-base font-bold text-white">
+        <div className="min-w-0 flex-1">
+          <h1 className="truncate font-heading text-base font-bold text-white">
             {team?.name ?? "Team"} Squad
           </h1>
-          <p className="text-xs text-white/50">
+          <p className="truncate text-xs text-white/50">
             {matchLabel
               ? `${matchLabel}${match && getDerivedMatchStatus(match) === "live" ? " · LIVE" : ""}`
               : messages.length > 0
@@ -90,6 +198,38 @@ export default function ChatPage({
                 : "No chats yet"}
           </p>
         </div>
+
+        {hasActiveIdentity && (
+          <div className="relative shrink-0" ref={menuRef}>
+            <button
+              type="button"
+              aria-label="Match options"
+              aria-expanded={menuOpen}
+              aria-haspopup="menu"
+              disabled={leaving}
+              onClick={() => setMenuOpen((open) => !open)}
+              className="flex h-9 w-9 items-center justify-center rounded-full text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+            >
+              <MoreHorizontal className="h-5 w-5" strokeWidth={2.25} />
+            </button>
+            {menuOpen && (
+              <div
+                role="menu"
+                className="absolute right-0 top-11 z-30 min-w-[10rem] overflow-hidden rounded-xl border border-white/10 bg-[#141A22] py-1 shadow-lg"
+              >
+                <button
+                  type="button"
+                  role="menuitem"
+                  disabled={leaving}
+                  onClick={() => void handleLeaveMatch()}
+                  className="w-full px-3 py-2.5 text-left text-sm font-medium text-red-400 transition-colors hover:bg-white/5"
+                >
+                  Leave match
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </header>
 
       <div

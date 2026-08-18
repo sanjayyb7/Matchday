@@ -72,8 +72,10 @@ export function UpcomingMatchCard({ match, onSelect }: UpcomingMatchCardProps) {
       )}
     >
       {isLive && (
-        <span className="absolute left-1/2 top-0 z-10 flex -translate-x-1/2 -translate-y-1/2 items-center gap-1.5 rounded-full bg-[#E11D2E] px-3 py-1 text-[10px] font-bold uppercase tracking-wide text-white shadow-lg shadow-red-900/40">
-          <span className="live-pulse h-1.5 w-1.5 rounded-full bg-white" />
+        <span
+          className="absolute left-1/2 top-0 z-10 flex -translate-x-1/2 -translate-y-1/2 items-center gap-1.5 rounded-full bg-[#E11D2E] px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-wider text-white shadow-[0_4px_16px_rgba(220,38,46,0.55)] ring-1 ring-white/10"
+        >
+          <span className="live-pulse h-2 w-2 rounded-full bg-white" />
           Live
         </span>
       )}
@@ -81,18 +83,18 @@ export function UpcomingMatchCard({ match, onSelect }: UpcomingMatchCardProps) {
       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
         <div className="flex min-w-0 flex-col items-center gap-2 text-center">
           {homeTeam ? (
-            <div className="relative h-14 w-14 overflow-hidden rounded-full ring-2 ring-white/15">
+            <div className="relative h-14 w-14">
               <Image
                 src={homeTeam.flagUrl}
                 alt={homeTeam.name}
                 fill
-                className="object-cover"
+                className="object-contain"
               />
             </div>
           ) : (
-            <div className="h-14 w-14 rounded-full bg-white/10" />
+            <div className="h-14 w-14" />
           )}
-          <p className="line-clamp-2 font-heading text-sm font-bold uppercase leading-tight tracking-wide text-white">
+          <p className="line-clamp-2 min-h-[2.25rem] font-heading text-sm font-bold uppercase leading-tight tracking-wide text-white">
             {homeTeam?.name ?? "Home"}
           </p>
           {isLive && (
@@ -103,7 +105,7 @@ export function UpcomingMatchCard({ match, onSelect }: UpcomingMatchCardProps) {
         </div>
 
         <div className="flex min-w-[5.5rem] flex-col items-center gap-1 px-1 text-center">
-          <p className="line-clamp-2 text-[11px] font-semibold uppercase leading-snug tracking-wide text-white/75">
+          <p className="line-clamp-2 min-h-[2.1rem] text-[11px] font-semibold uppercase leading-snug tracking-wide text-white/75">
             {match.league || "Matchday"}
           </p>
           {isLive ? (
@@ -120,18 +122,18 @@ export function UpcomingMatchCard({ match, onSelect }: UpcomingMatchCardProps) {
 
         <div className="flex min-w-0 flex-col items-center gap-2 text-center">
           {awayTeam ? (
-            <div className="relative h-14 w-14 overflow-hidden rounded-full ring-2 ring-white/15">
+            <div className="relative h-14 w-14">
               <Image
                 src={awayTeam.flagUrl}
                 alt={awayTeam.name}
                 fill
-                className="object-cover"
+                className="object-contain"
               />
             </div>
           ) : (
-            <div className="h-14 w-14 rounded-full bg-white/10" />
+            <div className="h-14 w-14" />
           )}
-          <p className="line-clamp-2 font-heading text-sm font-bold uppercase leading-tight tracking-wide text-white">
+          <p className="line-clamp-2 min-h-[2.25rem] font-heading text-sm font-bold uppercase leading-tight tracking-wide text-white">
             {awayTeam?.name ?? "Away"}
           </p>
           {isLive && (

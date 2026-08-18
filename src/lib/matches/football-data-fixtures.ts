@@ -1,5 +1,7 @@
-import type { Match, Team } from "@/types";
+import type { Match, Player, Team } from "@/types";
 import { MAX_FIXTURES_RETURNED } from "@/lib/matches/config";
+import { enrichPlayersWithApiFootballPhotos } from "@/lib/matches/api-football-photos";
+import { enrichPlayersWithTheSportsDbPhotos } from "@/lib/matches/thesportsdb-photos";
 import {
   deriveMatchStatus,
   getKickoffMs,
@@ -184,17 +186,18 @@ function exclusiveEndDateThroughSunday(fromDate: string): string {
   return monday.toISOString().slice(0, 10);
 }
 
-async function footballDataFetch(
+async function footballDataGet<T>(
   path: string,
   key: string,
-): Promise<{ matches: FdMatch[]; throttle: ThrottleInfo }> {
+  init?: { revalidate?: number },
+): Promise<{ data: T; throttle: ThrottleInfo }> {
   const url = `${FOOTBALL_DATA_BASE_URL}${path}`;
   const response = await fetch(url, {
     headers: {
       "X-Auth-Token": key,
       Accept: "application/json",
     },
-    next: { revalidate: 60 },
+    next: { revalidate: init?.revalidate ?? 60 },
   });
 
   const throttle = readThrottleHeaders(response.headers);
@@ -243,9 +246,20 @@ async function footballDataFetch(
     );
   }
 
-  const payload = (await response.json()) as { matches?: FdMatch[] };
+  const data = (await response.json()) as T;
+  return { data, throttle };
+}
+
+async function footballDataFetch(
+  path: string,
+  key: string,
+): Promise<{ matches: FdMatch[]; throttle: ThrottleInfo }> {
+  const { data, throttle } = await footballDataGet<{ matches?: FdMatch[] }>(
+    path,
+    key,
+  );
   return {
-    matches: Array.isArray(payload.matches) ? payload.matches : [],
+    matches: Array.isArray(data.matches) ? data.matches : [],
     throttle,
   };
 }
@@ -295,4 +309,154 @@ export async function fetchFootballDataFixturesCatalog(): Promise<{
     fixtures: fixtures.slice(0, MAX_FIXTURES_RETURNED),
     teams: [...teamMap.values()],
   };
+}
+
+interface FdSquadPlayer {
+  id: number;
+  name: string;
+  position?: string | null;
+  dateOfBirth?: string | null;
+  nationality?: string | null;
+  shirtNumber?: number | null;
+}
+
+interface FdTeamDetail extends FdTeam {
+  squad?: FdSquadPlayer[];
+}
+
+interface FdMatchDetail {
+  id: number;
+  homeTeam: FdTeam;
+  awayTeam: FdTeam;
+}
+
+function normalizePosition(position: string | null | undefined): string {
+  if (!position) return "Midfielder";
+  const raw = position.toLowerCase();
+  if (raw.includes("goal")) return "Goalkeeper";
+  if (raw.includes("def") || raw.includes("back")) return "Defender";
+  if (raw.includes("mid")) return "Midfielder";
+  if (
+    raw.includes("forward") ||
+    raw.includes("attack") ||
+    raw.includes("wing") ||
+    raw.includes("strik") ||
+    raw.includes("centre-forward")
+  ) {
+    return "Forward";
+  }
+  return "Midfielder";
+}
+
+function ageFromDob(dob?: string | null): number {
+  if (!dob) return 0;
+  const parsed = new Date(dob);
+  if (Number.isNaN(parsed.getTime())) return 0;
+  const diff = Date.now() - parsed.getTime();
+  return Math.max(0, Math.floor(diff / (365.25 * 24 * 60 * 60 * 1000)));
+}
+
+function playerAvatarUrl(playerName: string, team: Team): string {
+  const seed = encodeURIComponent(`${team.id}-${playerName}`);
+  const color = team.color.replace("#", "");
+  return `https://api.dicebear.com/7.x/personas/svg?seed=${seed}&backgroundColor=${color}`;
+}
+
+function mapFdSquadPlayer(
+  apiPlayer: FdSquadPlayer,
+  team: Team,
+  index: number,
+): Player {
+  return {
+    id: `fd-${team.id}-${apiPlayer.id}`,
+    teamId: team.id,
+    name: apiPlayer.name.trim(),
+    number: apiPlayer.shirtNumber ?? index + 1,
+    imageUrl: playerAvatarUrl(apiPlayer.name, team),
+    age: ageFromDob(apiPlayer.dateOfBirth),
+    country: apiPlayer.nationality?.trim() || team.name,
+    position: normalizePosition(apiPlayer.position),
+    club: team.name,
+    stats: { goals: 0, assists: 0, caps: 0 },
+  };
+}
+
+/**
+ * Load squads for a football-data.org fixture. Costs up to three API requests
+ * (match + two team lookups); free tier caps at 10/min so this is fine when
+ * called on-demand from the match picker.
+ */
+export async function fetchFootballDataSquadForMatch(
+  matchId: string,
+): Promise<{ teams: Team[]; players: Player[] }> {
+  const key = getFootballDataApiKey();
+  if (!key) {
+    throw new Error("FOOTBALL_DATA_API_KEY is not configured");
+  }
+
+  const fixtureId = Number(String(matchId).replace(/^fd-/, ""));
+  if (!Number.isFinite(fixtureId) || fixtureId <= 0) {
+    throw new Error("Invalid football-data match id");
+  }
+
+  const matchResp = await footballDataGet<FdMatchDetail | { match?: FdMatchDetail }>(
+    `/matches/${fixtureId}`,
+    key,
+    { revalidate: 3600 },
+  );
+
+  const match =
+    "homeTeam" in matchResp.data
+      ? (matchResp.data as FdMatchDetail)
+      : (matchResp.data as { match?: FdMatchDetail }).match;
+
+  if (!match?.homeTeam?.id || !match?.awayTeam?.id) {
+    throw new Error("football-data match missing teams");
+  }
+
+  const [homeResp, awayResp] = await Promise.all([
+    footballDataGet<FdTeamDetail>(`/teams/${match.homeTeam.id}`, key, {
+      revalidate: 24 * 3600,
+    }),
+    footballDataGet<FdTeamDetail>(`/teams/${match.awayTeam.id}`, key, {
+      revalidate: 24 * 3600,
+    }),
+  ]);
+
+  const teams: Team[] = [];
+  const players: Player[] = [];
+
+  const teamSquadPairs: { team: Team; rawSquad: FdSquadPlayer[] }[] = [];
+  for (const teamPayload of [homeResp.data, awayResp.data]) {
+    const mappedTeam: Team = {
+      id: teamNameToSlug(teamPayload.shortName || teamPayload.name),
+      name: (teamPayload.shortName || teamPayload.name).trim(),
+      flagUrl:
+        teamPayload.crest?.trim() ||
+        `/assets/flags/${teamNameToSlug(teamPayload.name)}.svg`,
+      countryCode: guessCountryCode(teamPayload.name, teamPayload.tla),
+      color: teamColorForSlug(teamNameToSlug(teamPayload.name)),
+    };
+    teams.push(mappedTeam);
+    teamSquadPairs.push({ team: mappedTeam, rawSquad: teamPayload.squad ?? [] });
+  }
+
+  const enrichedGroups = await Promise.all(
+    teamSquadPairs.map(async ({ team, rawSquad }) => {
+      const mapped = rawSquad.map((squadPlayer, index) =>
+        mapFdSquadPlayer(squadPlayer, team, index),
+      );
+      const withApiFootball = await enrichPlayersWithApiFootballPhotos(
+        mapped,
+        team,
+      );
+      return enrichPlayersWithTheSportsDbPhotos(withApiFootball, team);
+    }),
+  );
+
+  for (const group of enrichedGroups) {
+    players.push(...group);
+  }
+
+  return { teams, players };
 }

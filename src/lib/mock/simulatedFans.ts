@@ -41,6 +41,14 @@ export const CHAT_TEMPLATES = [
   "Who's bringing the flags?",
 ];
 
+// Short, generic prompts shown to the user under the chat input.
+// Kept intentionally short so the whole pill fits without clipping.
+export const QUICK_REPLIES = [
+  "Where's everyone?",
+  "We're here 👋",
+  "On my way!",
+];
+
 export function createSimulatedFans(count = 20): SimulatedFan[] {
   const fans: SimulatedFan[] = [];
 

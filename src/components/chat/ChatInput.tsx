@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Send } from "lucide-react";
-import { CHAT_TEMPLATES } from "@/lib/mock/simulatedFans";
+import { QUICK_REPLIES } from "@/lib/mock/simulatedFans";
 import {
   BOTTOM_NAV_CLEARANCE,
   BOTTOM_SAFE_CLEARANCE,
@@ -71,8 +71,8 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
           )}
         </AnimatePresence>
 
-        <div className="flex gap-2 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {CHAT_TEMPLATES.slice(0, 4).map((template) => (
+        <div className="flex gap-2 overflow-x-auto pr-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {QUICK_REPLIES.map((template) => (
             <button
               key={template}
               type="button"

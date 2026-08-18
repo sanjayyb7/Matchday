@@ -40,27 +40,27 @@ export function BottomNav() {
   if (/^\/chat\/[^/]+/.test(pathname)) return null;
 
   return (
-    <nav className="pointer-events-none fixed bottom-0 left-0 right-0 z-50 px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-2">
-      <div className="pointer-events-auto mx-auto flex w-full max-w-md items-center justify-around rounded-full bg-[#141a22]/75 px-6 py-2.5 shadow-[0_8px_32px_rgba(0,0,0,0.45)] ring-1 ring-white/10 backdrop-blur-xl">
+    <nav className="pointer-events-none fixed bottom-0 left-0 right-0 z-50 flex justify-center px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-2">
+      <div className="pointer-events-auto flex w-full max-w-[230px] items-center justify-between rounded-full bg-black/30 p-1 shadow-[0_8px_32px_rgba(0,0,0,0.45)] ring-1 ring-white/15 backdrop-blur-2xl">
         {resolvedTabs.map(({ href, icon: Icon, label }) => {
           const active = pathname.startsWith(href.split("/").slice(0, 2).join("/"));
           return (
             <motion.div
               key={href}
-              layout={!reduced}
               transition={uiTransition(reduced, 0.2)}
               className="flex shrink-0"
             >
               <Link
                 href={href}
                 className={cn(
-                  "flex h-11 shrink-0 items-center justify-center rounded-full transition-[background-color,color,box-shadow] duration-200 ease-[var(--ease-out-strong)] active:scale-[0.97]",
-                  active && "min-w-[72px] bg-white/15 px-5 text-[#F1BF00] shadow-sm",
-                  !active && "w-11 text-white/45 hover:bg-white/10",
+                  "flex h-12 w-12 shrink-0 items-center justify-center rounded-full transition-[background-color,color] duration-200 ease-[var(--ease-out-strong)] active:scale-[0.97]",
+                  active
+                    ? "bg-[#FFFC00] text-black"
+                    : "text-white/70 hover:bg-white/10 hover:text-white",
                 )}
                 aria-label={label}
               >
-                <Icon className="h-5 w-5" strokeWidth={active ? 2.5 : 2} />
+                <Icon className="h-6 w-6" strokeWidth={active ? 1.75 : 1.5} />
               </Link>
             </motion.div>
           );

@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getOrFetchSquadsForMatch } from "@/lib/matches/day-cache";
 import { getApiFootballKey } from "@/lib/matches/config";
+import { getFootballDataApiKey } from "@/lib/matches/football-data-fixtures";
+import { getSportmonksApiKey } from "@/lib/matches/sportmonks-fixtures";
+
+function hasAnyProviderKey(): boolean {
+  return Boolean(
+    getApiFootballKey() || getFootballDataApiKey() || getSportmonksApiKey(),
+  );
+}
 
 export async function GET(request: NextRequest) {
   const matchId = request.nextUrl.searchParams.get("matchId")?.trim();
@@ -11,9 +19,12 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  if (!getApiFootballKey()) {
+  if (!hasAnyProviderKey()) {
     return NextResponse.json(
-      { error: "API_FOOTBALL_KEY is not configured" },
+      {
+        error:
+          "No football API key configured (API_FOOTBALL_KEY / FOOTBALL_DATA_API_KEY / SPORTMONKS_API_KEY)",
+      },
       { status: 503 },
     );
   }

@@ -1,8 +1,24 @@
 /** API-Football base URL — https://v3.football.api-sports.io */
 export const API_FOOTBALL_BASE_URL = "https://v3.football.api-sports.io";
 
+/**
+ * Returns all configured API-Football keys, in order.
+ * Supports API_FOOTBALL_KEY, API_FOOTBALL_KEY_2, API_FOOTBALL_KEY_3, ... so a
+ * second (or third) free-tier account can act as automatic daily-quota backup.
+ */
+export function getApiFootballKeys(): string[] {
+  const keys: string[] = [];
+  const primary = process.env.API_FOOTBALL_KEY?.trim();
+  if (primary) keys.push(primary);
+  for (let i = 2; i <= 10; i++) {
+    const extra = process.env[`API_FOOTBALL_KEY_${i}`]?.trim();
+    if (extra) keys.push(extra);
+  }
+  return keys;
+}
+
 export function getApiFootballKey(): string | undefined {
-  return process.env.API_FOOTBALL_KEY;
+  return getApiFootballKeys()[0];
 }
 
 export function getFixtureDurationMinutes(): number {
