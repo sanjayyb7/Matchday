@@ -6,35 +6,72 @@ import { getPlayer, getTeam } from "@/lib/mock/data";
 import { getTeamChatThemeFromTeam } from "@/lib/chat/team-theme";
 import { useMatchdayStore } from "@/store/matchday-store";
 import { useRealtime } from "@/lib/realtime/context";
+import { INSFORGE_ENABLED } from "@/lib/insforge/config";
+import { fetchSquadIdentities } from "@/lib/identity/insforge-identity";
 import { cn } from "@/lib/utils";
-import type { ChatMessage, FanPresence, Player, Team } from "@/types";
+import type { ChatMessage, FanPresence, Player, Team, UserIdentity } from "@/types";
 
 interface ChatStoriesRowProps {
   messages: ChatMessage[];
   teamId: string;
+  matchId: string;
   team?: Team;
 }
 
-export function ChatStoriesRow({ messages, teamId, team }: ChatStoriesRowProps) {
+export function ChatStoriesRow({
+  messages,
+  teamId,
+  matchId,
+  team,
+}: ChatStoriesRowProps) {
   const identity = useMatchdayStore((s) => s.identity);
   const setSelectedPlayerProfile = useMatchdayStore(
     (s) => s.setSelectedPlayerProfile,
   );
   const realtime = useRealtime();
   const [presence, setPresence] = useState<FanPresence[]>([]);
+  const [squadIdentities, setSquadIdentities] = useState<UserIdentity[]>([]);
 
   useEffect(() => {
     return realtime.subscribeToPresence(setPresence);
   }, [realtime]);
 
+  // Poll the identities table so both accounts see each other in the rail,
+  // even if realtime presence hasn't published yet.
+  useEffect(() => {
+    if (!INSFORGE_ENABLED || !matchId || !teamId) return;
+    let cancelled = false;
+
+    const load = async () => {
+      try {
+        const rows = await fetchSquadIdentities(matchId, teamId);
+        if (!cancelled) setSquadIdentities(rows);
+      } catch (err) {
+        console.error("[squad] failed to load identities", err);
+      }
+    };
+
+    void load();
+    const interval = window.setInterval(load, 8000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
+  }, [matchId, teamId]);
+
   const resolvedTeam = team ?? getTeam(teamId);
   const chatTheme = getTeamChatThemeFromTeam(resolvedTeam);
 
   // Only real fans who joined this squad show up. Sources of truth:
-  //  1. Fan presence rows for this team (people who picked a player).
-  //  2. Current user's identity (in case presence hasn't landed yet).
-  //  3. Chat participants for this team.
+  //  1. `user_identities` rows for this match+team (authoritative — anyone who
+  //     picked a player is here, even if they never opened the map).
+  //  2. Realtime presence for this team (fresh joiners between polls).
+  //  3. Current user's identity (immediate self-display).
+  //  4. Chat participants (safety net).
   const joinedPlayerIds = new Set<string>();
+  for (const row of squadIdentities) {
+    joinedPlayerIds.add(row.playerId);
+  }
   for (const p of presence) {
     if (p.teamId === teamId) joinedPlayerIds.add(p.playerId);
   }

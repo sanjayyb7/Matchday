@@ -236,7 +236,12 @@ export default function ChatPage({
         className="relative z-10 flex min-h-0 flex-1 flex-col"
         style={{ paddingBottom: CHAT_INPUT_CLEARANCE }}
       >
-        <ChatStoriesRow messages={messages} teamId={teamId} team={team} />
+        <ChatStoriesRow
+          messages={messages}
+          teamId={teamId}
+          matchId={matchId}
+          team={team}
+        />
         <ChatThread messages={messages} currentUserId={user?.id} team={team} />
       </div>
       <ChatInput

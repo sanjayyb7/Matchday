@@ -31,6 +31,23 @@ export async function fetchUserIdentities(userId: string): Promise<UserIdentity[
   return data.map((row) => rowToIdentity(row as IdentityRow));
 }
 
+/** Everyone who picked a player on a given team for a given match. */
+export async function fetchSquadIdentities(
+  matchId: string,
+  teamId: string,
+): Promise<UserIdentity[]> {
+  const { getInsForgeBrowserClient } = await import("@/lib/insforge/client");
+  const client = getInsForgeBrowserClient();
+  const { data, error } = await client.database
+    .from("user_identities")
+    .select("*")
+    .eq("match_id", matchId)
+    .eq("team_id", teamId);
+
+  if (error || !data) return [];
+  return data.map((row) => rowToIdentity(row as IdentityRow));
+}
+
 export async function fetchUserIdentityForMatch(
   userId: string,
   matchId: string,
