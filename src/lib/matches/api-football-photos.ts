@@ -97,8 +97,26 @@ async function resolveApiFootballTeamId(name: string): Promise<number | null> {
   }
 }
 
-async function buildPhotoMap(team: Team): Promise<Map<string, string>> {
-  const teamId = await resolveApiFootballTeamId(team.name);
+async function resolveTeamId(
+  team: Team,
+  searchNames: string[],
+): Promise<number | null> {
+  // Short display names collide with lower-division clubs, so try the
+  // provider's full name before falling back to what we show in the UI.
+  for (const candidate of [...searchNames, team.name]) {
+    const name = candidate?.trim();
+    if (!name) continue;
+    const id = await resolveApiFootballTeamId(name);
+    if (id) return id;
+  }
+  return null;
+}
+
+async function buildPhotoMap(
+  team: Team,
+  searchNames: string[],
+): Promise<Map<string, string>> {
+  const teamId = await resolveTeamId(team, searchNames);
   const map = new Map<string, string>();
   if (!teamId) return map;
 
@@ -123,7 +141,10 @@ async function buildPhotoMap(team: Team): Promise<Map<string, string>> {
   return map;
 }
 
-async function getPhotoMap(team: Team): Promise<Map<string, string>> {
+async function getPhotoMap(
+  team: Team,
+  searchNames: string[],
+): Promise<Map<string, string>> {
   const cached = teamPhotoCache.get(team.id);
   if (cached) return cached;
 
@@ -133,7 +154,9 @@ async function getPhotoMap(team: Team): Promise<Map<string, string>> {
     return empty;
   }
 
-  const pending = buildPhotoMap(team).catch(() => new Map<string, string>());
+  const pending = buildPhotoMap(team, searchNames).catch(
+    () => new Map<string, string>(),
+  );
   teamPhotoCache.set(team.id, pending);
   return pending;
 }
@@ -147,11 +170,12 @@ async function getPhotoMap(team: Team): Promise<Map<string, string>> {
 export async function enrichPlayersWithApiFootballPhotos(
   players: Player[],
   team: Team,
+  searchNames: string[] = [],
 ): Promise<Player[]> {
   if (players.length === 0) return players;
   if (!getApiFootballKey()) return players;
 
-  const photoMap = await getPhotoMap(team);
+  const photoMap = await getPhotoMap(team, searchNames);
   if (photoMap.size === 0) return players;
 
   return players.map((player) => {

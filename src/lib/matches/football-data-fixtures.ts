@@ -1,7 +1,11 @@
 import type { Match, Player, Team } from "@/types";
 import { MAX_FIXTURES_RETURNED } from "@/lib/matches/config";
 import { enrichPlayersWithApiFootballPhotos } from "@/lib/matches/api-football-photos";
-import { enrichPlayersWithTheSportsDbPhotos } from "@/lib/matches/thesportsdb-photos";
+import {
+  enrichPlayersWithTheSportsDbPhotos,
+  fetchTheSportsDbRoster,
+  playerNameKey,
+} from "@/lib/matches/thesportsdb-photos";
 import {
   deriveMatchStatus,
   getKickoffMs,
@@ -381,6 +385,37 @@ function mapFdSquadPlayer(
   };
 }
 
+/** Below this, a squad is too thin to pick a player from. */
+const MIN_USABLE_SQUAD = 11;
+
+/**
+ * football-data's free tier returns a partial squad for some clubs (Atlético
+ * Madrid comes back with 5 players while Arsenal has 30). Pull the rest from
+ * TheSportsDB so every team offers a real roster to pick from.
+ */
+async function topUpSparseSquad(
+  players: Player[],
+  team: Team,
+  searchNames: string[],
+): Promise<Player[]> {
+  if (players.length >= MIN_USABLE_SQUAD) return players;
+
+  const extras = await fetchTheSportsDbRoster(team, searchNames).catch(
+    () => [] as Player[],
+  );
+  if (extras.length === 0) return players;
+
+  const seen = new Set(players.map((player) => playerNameKey(player.name)));
+  const merged = players.slice();
+  for (const extra of extras) {
+    const key = playerNameKey(extra.name);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    merged.push(extra);
+  }
+  return merged;
+}
+
 /**
  * Load squads for a football-data.org fixture. Costs up to three API requests
  * (match + two team lookups); free tier caps at 10/min so this is fine when
@@ -426,7 +461,11 @@ export async function fetchFootballDataSquadForMatch(
   const teams: Team[] = [];
   const players: Player[] = [];
 
-  const teamSquadPairs: { team: Team; rawSquad: FdSquadPlayer[] }[] = [];
+  const teamSquadPairs: {
+    team: Team;
+    rawSquad: FdSquadPlayer[];
+    fullName: string;
+  }[] = [];
   for (const teamPayload of [homeResp.data, awayResp.data]) {
     const mappedTeam: Team = {
       id: teamNameToSlug(teamPayload.shortName || teamPayload.name),
@@ -438,19 +477,32 @@ export async function fetchFootballDataSquadForMatch(
       color: teamColorForSlug(teamNameToSlug(teamPayload.name)),
     };
     teams.push(mappedTeam);
-    teamSquadPairs.push({ team: mappedTeam, rawSquad: teamPayload.squad ?? [] });
+    teamSquadPairs.push({
+      team: mappedTeam,
+      rawSquad: teamPayload.squad ?? [],
+      fullName: teamPayload.name.trim(),
+    });
   }
 
   const enrichedGroups = await Promise.all(
-    teamSquadPairs.map(async ({ team, rawSquad }) => {
+    teamSquadPairs.map(async ({ team, rawSquad, fullName }) => {
+      // The display name is a short name ("Atleti"), which matches the wrong
+      // club on name-based providers. Search the full name first.
+      const searchNames = [fullName];
       const mapped = rawSquad.map((squadPlayer, index) =>
         mapFdSquadPlayer(squadPlayer, team, index),
       );
       const withApiFootball = await enrichPlayersWithApiFootballPhotos(
         mapped,
         team,
+        searchNames,
       );
-      return enrichPlayersWithTheSportsDbPhotos(withApiFootball, team);
+      const enriched = await enrichPlayersWithTheSportsDbPhotos(
+        withApiFootball,
+        team,
+        searchNames,
+      );
+      return topUpSparseSquad(enriched, team, searchNames);
     }),
   );
 

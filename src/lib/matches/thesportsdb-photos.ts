@@ -18,17 +18,24 @@ interface TeamSearchResponse {
   }[] | null;
 }
 
+interface TsdbPlayer {
+  idPlayer?: string | null;
+  strPlayer: string;
+  strTeam?: string | null;
+  strPosition?: string | null;
+  strNumber?: string | null;
+  strNationality?: string | null;
+  dateBorn?: string | null;
+  strThumb?: string | null;
+  strCutout?: string | null;
+}
+
 interface PlayersResponse {
-  player: {
-    strPlayer: string;
-    strTeam?: string | null;
-    strPosition?: string | null;
-    strThumb?: string | null;
-    strCutout?: string | null;
-  }[] | null;
+  player: TsdbPlayer[] | null;
 }
 
 const teamPhotoCache = new Map<string, Promise<Map<string, string>>>();
+const teamRosterCache = new Map<string, Promise<TsdbPlayer[]>>();
 const nameLookupCache = new Map<string, Promise<string | null>>();
 
 function normalize(name: string): string {
@@ -53,7 +60,7 @@ async function tsdbFetch<T>(path: string): Promise<T | null> {
   }
 }
 
-async function findTeamId(name: string): Promise<string | null> {
+async function searchTeamId(name: string): Promise<string | null> {
   const query = encodeURIComponent(name.slice(0, 40));
   const body = await tsdbFetch<TeamSearchResponse>(`/searchteams.php?t=${query}`);
   const teams = (body?.teams ?? []).filter((t) => t.strSport === "Soccer");
@@ -63,24 +70,70 @@ async function findTeamId(name: string): Promise<string | null> {
   return (exact ?? teams[0]).idTeam;
 }
 
-async function fetchPhotoMap(team: Team): Promise<Map<string, string>> {
-  const teamId = await findTeamId(team.name);
-  const map = new Map<string, string>();
-  if (!teamId) return map;
+/**
+ * Resolve a club, trying the most specific name first. Short names collide
+ * badly here — "Atleti" matches Atlético CP of the Portuguese third tier
+ * rather than Atlético Madrid — so callers should pass the provider's full
+ * name ahead of the display name.
+ */
+async function findTeamId(
+  team: Team,
+  searchNames: string[] = [],
+): Promise<string | null> {
+  const candidates = [...searchNames, team.name]
+    .map((name) => name?.trim())
+    .filter((name): name is string => Boolean(name));
 
+  const tried = new Set<string>();
+  for (const candidate of candidates) {
+    const key = normalize(candidate);
+    if (!key || tried.has(key)) continue;
+    tried.add(key);
+    const id = await searchTeamId(candidate);
+    if (id) return id;
+  }
+  return null;
+}
+
+function isStaffPosition(position?: string | null): boolean {
+  const value = position?.toLowerCase() ?? "";
+  return value.includes("coach") || value.includes("manager");
+}
+
+async function fetchRoster(
+  team: Team,
+  searchNames: string[],
+): Promise<TsdbPlayer[]> {
+  const teamId = await findTeamId(team, searchNames);
+  if (!teamId) return [];
   const body = await tsdbFetch<PlayersResponse>(
     `/lookup_all_players.php?id=${teamId}`,
   );
-  const players = body?.player ?? [];
+  return (body?.player ?? []).filter(
+    (player) => player.strPlayer && !isStaffPosition(player.strPosition),
+  );
+}
+
+async function getRoster(
+  team: Team,
+  searchNames: string[],
+): Promise<TsdbPlayer[]> {
+  const cached = teamRosterCache.get(team.id);
+  if (cached) return cached;
+  const pending = fetchRoster(team, searchNames).catch(() => [] as TsdbPlayer[]);
+  teamRosterCache.set(team.id, pending);
+  return pending;
+}
+
+async function fetchPhotoMap(
+  team: Team,
+  searchNames: string[],
+): Promise<Map<string, string>> {
+  const map = new Map<string, string>();
+  const players = await getRoster(team, searchNames);
   for (const player of players) {
     const photo = player.strThumb || player.strCutout;
     if (!photo) continue;
-    if (
-      player.strPosition?.toLowerCase().includes("coach") ||
-      player.strPosition?.toLowerCase().includes("manager")
-    ) {
-      continue;
-    }
     const full = normalize(player.strPlayer);
     if (full) map.set(full, photo);
     const parts = player.strPlayer.split(/\s+/).filter(Boolean);
@@ -92,10 +145,15 @@ async function fetchPhotoMap(team: Team): Promise<Map<string, string>> {
   return map;
 }
 
-async function getPhotoMap(team: Team): Promise<Map<string, string>> {
+async function getPhotoMap(
+  team: Team,
+  searchNames: string[],
+): Promise<Map<string, string>> {
   const cached = teamPhotoCache.get(team.id);
   if (cached) return cached;
-  const pending = fetchPhotoMap(team).catch(() => new Map<string, string>());
+  const pending = fetchPhotoMap(team, searchNames).catch(
+    () => new Map<string, string>(),
+  );
   teamPhotoCache.set(team.id, pending);
   return pending;
 }
@@ -171,6 +229,7 @@ function findInMap(playerName: string, photoMap: Map<string, string>): string | 
 export async function enrichPlayersWithTheSportsDbPhotos(
   players: Player[],
   team: Team,
+  searchNames: string[] = [],
 ): Promise<Player[]> {
   if (players.length === 0) return players;
   const stillPlaceholder = players.some((p) =>
@@ -178,7 +237,7 @@ export async function enrichPlayersWithTheSportsDbPhotos(
   );
   if (!stillPlaceholder) return players;
 
-  const photoMap = await getPhotoMap(team);
+  const photoMap = await getPhotoMap(team, searchNames);
 
   // First pass — apply team-level lookup (fast, single request per team).
   const firstPass = players.map((player) => {
@@ -205,4 +264,50 @@ export async function enrichPlayersWithTheSportsDbPhotos(
     if (photo) enriched[index] = { ...enriched[index], imageUrl: photo };
   });
   return enriched;
+}
+
+function ageFromDateBorn(dateBorn?: string | null): number {
+  if (!dateBorn) return 25;
+  const parsed = new Date(dateBorn);
+  if (Number.isNaN(parsed.getTime())) return 25;
+  const years = (Date.now() - parsed.getTime()) / (365.25 * 24 * 3600 * 1000);
+  return Math.max(0, Math.floor(years));
+}
+
+/**
+ * Roster straight from TheSportsDB, used to top up providers that return a
+ * partial squad. The free tier caps this at ~10 players per club, so treat it
+ * as a supplement rather than a full replacement.
+ */
+export async function fetchTheSportsDbRoster(
+  team: Team,
+  searchNames: string[] = [],
+): Promise<Player[]> {
+  const roster = await getRoster(team, searchNames).catch(
+    () => [] as TsdbPlayer[],
+  );
+
+  return roster.map((entry, index) => {
+    const shirtNumber = Number.parseInt(entry.strNumber ?? "", 10);
+    return {
+      id: `tsdb-${team.id}-${entry.idPlayer ?? normalize(entry.strPlayer).replace(/\s+/g, "-")}`,
+      teamId: team.id,
+      name: entry.strPlayer.trim(),
+      number: Number.isFinite(shirtNumber) && shirtNumber > 0 ? shirtNumber : index + 1,
+      imageUrl:
+        entry.strThumb ||
+        entry.strCutout ||
+        `https://api.dicebear.com/7.x/personas/svg?seed=${encodeURIComponent(`${team.id}-${entry.strPlayer}`)}&backgroundColor=${team.color.replace("#", "")}`,
+      age: ageFromDateBorn(entry.dateBorn),
+      country: entry.strNationality?.trim() || team.name,
+      position: entry.strPosition?.trim() || "Midfielder",
+      club: team.name,
+      stats: { goals: 0, assists: 0, caps: 0 },
+    } satisfies Player;
+  });
+}
+
+/** Normalized full name, for de-duplicating players across providers. */
+export function playerNameKey(name: string): string {
+  return normalize(name);
 }
