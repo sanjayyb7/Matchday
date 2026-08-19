@@ -8,9 +8,19 @@ interface ChatThreadProps {
   messages: ChatMessage[];
   currentUserId?: string;
   team?: Team;
+  /** Space for the overlaid squad rail so the first message clears it. */
+  topInset?: number | string;
+  /** Space for the floating input so the last message clears it. */
+  bottomInset?: number | string;
 }
 
-export function ChatThread({ messages, currentUserId, team }: ChatThreadProps) {
+export function ChatThread({
+  messages,
+  currentUserId,
+  team,
+  topInset = 0,
+  bottomInset = 0,
+}: ChatThreadProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -18,7 +28,10 @@ export function ChatThread({ messages, currentUserId, team }: ChatThreadProps) {
   }, [messages]);
 
   return (
-    <div className="flex-1 overflow-y-auto px-4 py-3">
+    <div
+      className="h-full overflow-y-auto px-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      style={{ paddingTop: topInset, paddingBottom: bottomInset }}
+    >
       <div className="flex flex-col gap-3">
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">

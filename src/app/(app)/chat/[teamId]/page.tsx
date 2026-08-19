@@ -27,7 +27,10 @@ import {
   mergeMatchSquads,
 } from "@/lib/mock/data";
 import { generateFallbackSquad } from "@/lib/matches/squad-fallback";
-import { CHAT_INPUT_CLEARANCE } from "@/lib/layout/constants";
+import {
+  CHAT_INPUT_CLEARANCE,
+  CHAT_INPUT_CLEARANCE_COMPACT,
+} from "@/lib/layout/constants";
 import type { Player, Team } from "@/types";
 
 export default function ChatPage({
@@ -54,6 +57,19 @@ export default function ChatPage({
   const [menuOpen, setMenuOpen] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const railRef = useRef<HTMLDivElement>(null);
+  const [railHeight, setRailHeight] = useState(96);
+
+  // The rail is overlaid, so the thread needs its height as scroll padding.
+  useEffect(() => {
+    const node = railRef.current;
+    if (!node) return;
+    const observer = new ResizeObserver(([entry]) => {
+      setRailHeight(entry.contentRect.height);
+    });
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
 
   // Once identity is loaded from Zustand persist, decide if we should chat here.
   const hasActiveIdentity =
@@ -181,6 +197,9 @@ export default function ChatPage({
 
   const matchLabel = match ? getMatchLabel(match) : null;
 
+  // Starter prompts are only helpful until the user has said something.
+  const showQuickReplies = !messages.some((msg) => msg.userId === user?.id);
+
   return (
     <div className="relative flex h-dvh flex-col overflow-hidden bg-[#0B0F14]">
       <header className="relative z-10 flex items-center gap-3 bg-[#0B0F14]/80 px-3 py-3 backdrop-blur-md">
@@ -247,22 +266,54 @@ export default function ChatPage({
         )}
       </header>
 
-      <div
-        className="relative z-10 flex min-h-0 flex-1 flex-col"
-        style={{ paddingBottom: CHAT_INPUT_CLEARANCE }}
-      >
-        <ChatStoriesRow
+      <div className="relative z-10 min-h-0 flex-1">
+        <ChatThread
           messages={messages}
-          teamId={teamId}
-          matchId={matchId}
+          currentUserId={user?.id}
           team={team}
+          topInset={railHeight + 12}
+          bottomInset={
+            showQuickReplies
+              ? CHAT_INPUT_CLEARANCE
+              : CHAT_INPUT_CLEARANCE_COMPACT
+          }
         />
-        <ChatThread messages={messages} currentUserId={user?.id} team={team} />
+
+        {/* Squad rail floats over the thread: messages scroll underneath and
+            dissolve into a blur instead of hitting a hard clipped edge. */}
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-20">
+          <div
+            aria-hidden
+            className="absolute inset-0 backdrop-blur-xl [mask-image:linear-gradient(to_bottom,#000_60%,transparent)] [-webkit-mask-image:linear-gradient(to_bottom,#000_60%,transparent)]"
+          />
+          <div
+            aria-hidden
+            className="absolute inset-0 bg-gradient-to-b from-[#0B0F14] via-[#0B0F14]/85 to-transparent"
+          />
+          <div ref={railRef} className="pointer-events-auto relative">
+            <ChatStoriesRow
+              messages={messages}
+              teamId={teamId}
+              matchId={matchId}
+              team={team}
+            />
+          </div>
+        </div>
+
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-28 backdrop-blur-xl [mask-image:linear-gradient(to_top,#000_55%,transparent)] [-webkit-mask-image:linear-gradient(to_top,#000_55%,transparent)]"
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-28 bg-gradient-to-t from-[#0B0F14] via-[#0B0F14]/85 to-transparent"
+        />
       </div>
       <ChatInput
         onSend={handleSend}
         disabled={!hasActiveIdentity}
         team={team}
+        showQuickReplies={showQuickReplies}
       />
     </div>
   );

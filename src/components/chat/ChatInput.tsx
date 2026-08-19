@@ -17,9 +17,15 @@ interface ChatInputProps {
   onSend: (text: string) => OutgoingChatResult | void;
   disabled?: boolean;
   team?: Team;
+  /** Starter prompts — only useful before the user has said anything. */
+  showQuickReplies?: boolean;
 }
 
-export function ChatInput({ onSend, disabled }: ChatInputProps) {
+export function ChatInput({
+  onSend,
+  disabled,
+  showQuickReplies = true,
+}: ChatInputProps) {
   const [text, setText] = useState("");
   const [policyWarning, setPolicyWarning] = useState<string | null>(null);
   const pathname = usePathname();
@@ -71,19 +77,30 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
           )}
         </AnimatePresence>
 
-        <div className="flex gap-2 overflow-x-auto pr-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {QUICK_REPLIES.map((template) => (
-            <button
-              key={template}
-              type="button"
-              onClick={() => submit(template)}
-              disabled={disabled}
-              className="shrink-0 rounded-full bg-[#141a22]/75 px-3.5 py-1.5 text-xs font-medium text-white/70 shadow-md ring-1 ring-white/10 backdrop-blur-xl transition-[background-color,transform] duration-150 ease-[var(--ease-out-strong)] hover:bg-[#141a22]/90 active:scale-[0.97] disabled:opacity-40"
+        <AnimatePresence initial={false}>
+          {showQuickReplies && (
+            <motion.div
+              key="quick-replies"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={uiTransition(reduced, 0.18)}
+              className="flex gap-2 overflow-x-auto pr-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
             >
-              {template}
-            </button>
-          ))}
-        </div>
+              {QUICK_REPLIES.map((template) => (
+                <button
+                  key={template}
+                  type="button"
+                  onClick={() => submit(template)}
+                  disabled={disabled}
+                  className="shrink-0 rounded-full bg-[#141a22]/75 px-3.5 py-1.5 text-xs font-medium text-white/70 shadow-md ring-1 ring-white/10 backdrop-blur-xl transition-[background-color,transform] duration-150 ease-[var(--ease-out-strong)] hover:bg-[#141a22]/90 active:scale-[0.97] disabled:opacity-40"
+                >
+                  {template}
+                </button>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <div className="flex min-h-[52px] items-center gap-2.5 rounded-full bg-[#141a22]/75 py-2.5 pl-5 pr-2 shadow-[0_8px_32px_rgba(0,0,0,0.45)] ring-1 ring-white/10 backdrop-blur-xl">
           <input
