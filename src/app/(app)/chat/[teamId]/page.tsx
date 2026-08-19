@@ -21,7 +21,6 @@ import {
   getPlayersByTeam,
   getTeam,
   getDerivedMatchStatus,
-  identityMatchesActiveMatch,
   mergeMatchSquads,
 } from "@/lib/mock/data";
 import { generateFallbackSquad } from "@/lib/matches/squad-fallback";
@@ -45,7 +44,9 @@ export default function ChatPage({
   const identityMatch = identity?.matchId ? getMatch(identity.matchId) : undefined;
   const match = identityMatch ?? getLiveOrUpcomingMatch();
   const team = getTeam(teamId);
-  const matchId = match?.id ?? identity?.matchId ?? "match-spain-france";
+  // Identity is source of truth: any two users who joined the same match+team
+  // subscribe to the same chat channel regardless of the "featured" match.
+  const matchId = identity?.matchId ?? match?.id ?? "match-spain-france";
   const { messages, sendMessage } = useTeamChat(teamId, matchId);
   const chatTheme = getTeamChatThemeFromTeam(team);
   const [, setSquadTick] = useState(0);
@@ -53,18 +54,16 @@ export default function ChatPage({
   const [leaving, setLeaving] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const hasActiveIdentity = identityMatchesActiveMatch(identity, user?.id, match);
+  // Once identity is loaded from Zustand persist, decide if we should chat here.
+  const hasActiveIdentity =
+    !!user && !!identity && identity.teamId === teamId;
 
   useEffect(() => {
-    if (!user || !match) return;
-    if (!hasActiveIdentity) {
-      router.replace("/chat");
-      return;
-    }
-    if (identity && identity.teamId !== teamId) {
+    if (!user || !identity) return;
+    if (identity.teamId !== teamId) {
       router.replace(`/chat/${identity.teamId}`);
     }
-  }, [user, match, hasActiveIdentity, identity, teamId, router]);
+  }, [user, identity, teamId, router]);
 
   // Rehydrate the squad on direct navigation / refresh so the "Live squad"
   // rail always shows the roster instead of just the current user.
