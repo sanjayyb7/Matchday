@@ -2,7 +2,7 @@
 
 import { use, useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { ChevronLeft, MoreHorizontal } from "lucide-react";
+import { ChevronLeft, MoreVertical } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChatThread } from "@/components/chat/ChatThread";
@@ -244,7 +244,7 @@ export default function ChatPage({
               onClick={() => setMenuOpen((open) => !open)}
               className="flex h-9 w-9 items-center justify-center rounded-full text-white/70 transition-colors hover:bg-white/10 hover:text-white"
             >
-              <MoreHorizontal className="h-5 w-5" strokeWidth={2.25} />
+              <MoreVertical className="h-5 w-5" strokeWidth={2.25} />
             </button>
             {menuOpen && (
               <div

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { MoreHorizontal } from "lucide-react";
+import { MoreVertical } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useMatchdayStore } from "@/store/matchday-store";
 import { useHistory } from "@/hooks/useHistory";
@@ -191,7 +191,7 @@ export default function ProfilePage() {
                     onClick={() => setMenuOpen((open) => !open)}
                     className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-white/10 hover:text-foreground"
                   >
-                    <MoreHorizontal className="h-5 w-5" />
+                    <MoreVertical className="h-5 w-5" />
                   </button>
                   {menuOpen && (
                     <div
