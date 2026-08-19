@@ -27,7 +27,6 @@ import {
   mergeMatchSquads,
 } from "@/lib/mock/data";
 import { generateFallbackSquad } from "@/lib/matches/squad-fallback";
-import { getTeamChatThemeFromTeam } from "@/lib/chat/team-theme";
 import { CHAT_INPUT_CLEARANCE } from "@/lib/layout/constants";
 import type { Player, Team } from "@/types";
 
@@ -51,7 +50,6 @@ export default function ChatPage({
   // subscribe to the same chat channel regardless of the "featured" match.
   const matchId = identity?.matchId ?? match?.id ?? "match-spain-france";
   const { messages, sendMessage } = useTeamChat(teamId, matchId);
-  const chatTheme = getTeamChatThemeFromTeam(team);
   const [, setSquadTick] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
   const [leaving, setLeaving] = useState(false);
@@ -194,11 +192,13 @@ export default function ChatPage({
           <ChevronLeft className="h-6 w-6" strokeWidth={2.5} />
         </Link>
         {team && (
-          <div
-            className="relative h-10 w-10 overflow-hidden rounded-full ring-2 ring-[#F1BF00]"
-            style={{ boxShadow: `0 0 0 2px ${chatTheme.accent}` }}
-          >
-            <Image src={team.flagUrl} alt={team.name} fill className="object-cover" />
+          <div className="relative h-10 w-10 shrink-0">
+            <Image
+              src={team.flagUrl}
+              alt={team.name}
+              fill
+              className="object-contain drop-shadow-[0_1px_6px_rgba(0,0,0,0.55)]"
+            />
           </div>
         )}
         <div className="min-w-0 flex-1">

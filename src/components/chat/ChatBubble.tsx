@@ -25,6 +25,29 @@ export function ChatBubble({ message, isOwn, showAvatar = false, team }: ChatBub
   );
   const chatTheme = getTeamChatThemeFromTeam(team);
 
+  // Keep the bubble aligned when a run of messages has no avatar of its own.
+  const avatar = showAvatar ? (
+    <button
+      type="button"
+      onClick={() => player && setSelectedPlayerProfile(player)}
+      aria-label={player ? `View ${player.name}` : "View player"}
+      className="relative mt-auto h-7 w-7 shrink-0 overflow-hidden rounded-full ring-1 ring-white/20"
+    >
+      {player && (
+        <Image
+          src={player.imageUrl}
+          alt=""
+          width={28}
+          height={28}
+          className="h-full w-full object-cover"
+          unoptimized
+        />
+      )}
+    </button>
+  ) : (
+    <div className="h-7 w-7 shrink-0" aria-hidden />
+  );
+
   return (
     <motion.div
       className={cn("flex w-full gap-2", isOwn ? "justify-end" : "justify-start")}
@@ -33,28 +56,11 @@ export function ChatBubble({ message, isOwn, showAvatar = false, team }: ChatBub
       variants={enterVariants(reduced)}
       layout={false}
     >
-      {!isOwn && showAvatar && (
-        <button
-          type="button"
-          onClick={() => player && setSelectedPlayerProfile(player)}
-          className="relative mt-auto h-7 w-7 shrink-0 overflow-hidden rounded-full ring-1 ring-white/20"
-        >
-          {player && (
-            <Image
-              src={player.imageUrl}
-              alt=""
-              width={28}
-              height={28}
-              className="h-full w-full object-cover"
-              unoptimized
-            />
-          )}
-        </button>
-      )}
+      {!isOwn && avatar}
       <div className={cn("flex max-w-[78%] flex-col", isOwn ? "items-end" : "items-start")}>
-        {!isOwn && (
+        {showAvatar && (
           <span className="mb-1 px-1 text-[11px] font-medium text-white/50">
-            {player?.name.split(" ").pop() ?? "Fan"}
+            {isOwn ? "You" : (player?.name.split(" ").pop() ?? "Fan")}
           </span>
         )}
         <button
@@ -75,6 +81,7 @@ export function ChatBubble({ message, isOwn, showAvatar = false, team }: ChatBub
           {sanitizeChatText(message.text)}
         </button>
       </div>
+      {isOwn && avatar}
     </motion.div>
   );
 }

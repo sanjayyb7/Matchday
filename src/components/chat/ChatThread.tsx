@@ -33,9 +33,9 @@ export function ChatThread({ messages, currentUserId, team }: ChatThreadProps) {
         ) : (
           messages.map((msg, i) => {
             const prev = messages[i - 1];
-            const showAvatar =
-              msg.userId !== currentUserId &&
-              (!prev || prev.userId !== msg.userId);
+            // Show the sender's avatar on the first message of each run, on
+            // both sides, so you can always tell who a message came from.
+            const showAvatar = !prev || prev.userId !== msg.userId;
             return (
               <ChatBubble
                 key={msg.id}
