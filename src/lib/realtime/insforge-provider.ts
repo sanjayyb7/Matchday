@@ -267,6 +267,16 @@ class InsForgeRealtimeEngine implements RealtimeAdapter {
       this.chatMessages.set(key, [...list, optimistic]);
       this.notifyChat(key);
 
+      const rollback = (reason: unknown) => {
+        console.error("[chat] send failed, rolling back", reason);
+        const current = this.chatMessages.get(key) ?? [];
+        this.chatMessages.set(
+          key,
+          current.filter((m) => m.id !== optimistic.id),
+        );
+        this.notifyChat(key);
+      };
+
       try {
         await this.ensureInitialized();
         const client = getInsForgeBrowserClient();
@@ -279,11 +289,11 @@ class InsForgeRealtimeEngine implements RealtimeAdapter {
             text: prepared.text,
           },
         ]);
-        if (error) {
-          console.error("[chat] insert failed", error);
-        }
+        // Drop the optimistic bubble rather than leaving a message that looks
+        // sent but disappears on the next reload.
+        if (error) rollback(error);
       } catch (err) {
-        console.error("[chat] send failed", err);
+        rollback(err);
       }
     })();
   }

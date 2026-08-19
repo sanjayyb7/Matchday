@@ -83,15 +83,23 @@ export async function upsertUserIdentity(identity: UserIdentity) {
     updated_at: identity.updatedAt,
   };
 
-  if (existing) {
-    await client.database
-      .from("user_identities")
-      .update(payload)
-      .eq("id", existing.id);
-    return;
-  }
+  // Surface failures: a silently swallowed error here leaves the user without
+  // an identity row, which then blocks chat inserts via RLS.
+  const { error } = existing
+    ? await client.database
+        .from("user_identities")
+        .update(payload)
+        .eq("id", existing.id)
+    : await client.database.from("user_identities").insert([payload]);
 
-  await client.database.from("user_identities").insert([payload]);
+  if (error) {
+    console.error("[identity] failed to save squad pick", error);
+    throw new Error(
+      typeof error === "object" && error && "message" in error
+        ? String((error as { message: unknown }).message)
+        : "Could not save your squad pick",
+    );
+  }
 }
 
 /** Remove team/player pick for a match so the fan can leave and rejoin later. */

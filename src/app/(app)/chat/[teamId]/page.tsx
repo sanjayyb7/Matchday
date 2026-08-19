@@ -13,7 +13,10 @@ import { useAuth } from "@/hooks/useAuth";
 import { useMatchdayStore } from "@/store/matchday-store";
 import { useRealtime } from "@/lib/realtime/context";
 import { INSFORGE_ENABLED } from "@/lib/insforge/config";
-import { deleteUserIdentityForMatch } from "@/lib/identity/insforge-identity";
+import {
+  deleteUserIdentityForMatch,
+  upsertUserIdentity,
+} from "@/lib/identity/insforge-identity";
 import {
   getLiveOrUpcomingMatch,
   getMatch,
@@ -64,6 +67,19 @@ export default function ChatPage({
       router.replace(`/chat/${identity.teamId}`);
     }
   }, [user, identity, teamId, router]);
+
+  // Self-heal: a pick saved locally before the DB write succeeded leaves a
+  // "ghost" membership with no user_identities row, and chat RLS then rejects
+  // every message. Reconcile the row whenever we land in a team chat.
+  useEffect(() => {
+    if (!INSFORGE_ENABLED) return;
+    if (!user || !identity) return;
+    if (identity.teamId !== teamId) return;
+
+    void upsertUserIdentity(identity).catch((err) => {
+      console.error("[identity] could not reconcile squad membership", err);
+    });
+  }, [user, identity, teamId]);
 
   // Rehydrate the squad on direct navigation / refresh so the "Live squad"
   // rail always shows the roster instead of just the current user.

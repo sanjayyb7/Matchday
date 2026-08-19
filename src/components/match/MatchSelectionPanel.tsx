@@ -170,7 +170,9 @@ export function MatchSelectionPanel({
     });
 
     if (INSFORGE_ENABLED) {
-      void upsertUserIdentity(identity);
+      void upsertUserIdentity(identity).catch((err) => {
+        console.error("[identity] squad pick not persisted", err);
+      });
     }
 
     router.replace(`/chat/${selectedTeamId}`);
