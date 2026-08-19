@@ -200,8 +200,22 @@ class InsForgeRealtimeEngine implements RealtimeAdapter {
           createdAt: payload.createdAt,
         };
         const list = this.chatMessages.get(key) ?? [];
+        // Dedupe by id, or by (userId + text) for optimistic locals that
+        // were appended before the realtime broadcast came back.
         if (list.some((m) => m.id === message.id)) return;
-        this.chatMessages.set(key, [...list, message]);
+        const optimisticIdx = list.findIndex(
+          (m) =>
+            m.id.startsWith("local-") &&
+            m.userId === message.userId &&
+            m.text === message.text,
+        );
+        if (optimisticIdx >= 0) {
+          const next = [...list];
+          next[optimisticIdx] = message;
+          this.chatMessages.set(key, next);
+        } else {
+          this.chatMessages.set(key, [...list, message]);
+        }
         this.notifyChat(key);
       });
 
@@ -235,22 +249,43 @@ class InsForgeRealtimeEngine implements RealtimeAdapter {
   }
 
   sendChatMessage(message: Omit<ChatMessage, "id" | "createdAt">) {
-    void this.ensureInitialized().then(async () => {
+    void (async () => {
       const { prepareOutgoingChatMessage } = await import("@/lib/chat/safety");
       const prepared = prepareOutgoingChatMessage(message.text);
       if (!prepared.ok) return;
 
-      const client = getInsForgeBrowserClient();
-      await client.database.from("chat_messages").insert([
-        {
-          team_id: message.teamId,
-          match_id: message.matchId,
-          user_id: message.userId,
-          player_id: message.playerId,
-          text: prepared.text,
-        },
-      ]);
-    });
+      // Optimistically append locally so the user sees their message
+      // immediately, regardless of realtime broadcast timing.
+      const key = this.chatKey(message.teamId, message.matchId);
+      const optimistic: ChatMessage = {
+        ...message,
+        text: prepared.text,
+        id: `local-${crypto.randomUUID().slice(0, 8)}`,
+        createdAt: new Date().toISOString(),
+      };
+      const list = this.chatMessages.get(key) ?? [];
+      this.chatMessages.set(key, [...list, optimistic]);
+      this.notifyChat(key);
+
+      try {
+        await this.ensureInitialized();
+        const client = getInsForgeBrowserClient();
+        const { error } = await client.database.from("chat_messages").insert([
+          {
+            team_id: message.teamId,
+            match_id: message.matchId,
+            user_id: message.userId,
+            player_id: message.playerId,
+            text: prepared.text,
+          },
+        ]);
+        if (error) {
+          console.error("[chat] insert failed", error);
+        }
+      } catch (err) {
+        console.error("[chat] send failed", err);
+      }
+    })();
   }
 
   getPresence() {
