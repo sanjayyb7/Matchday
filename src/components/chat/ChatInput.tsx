@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { Send } from "lucide-react";
+import { ArrowUp } from "lucide-react";
 import { QUICK_REPLIES } from "@/lib/mock/simulatedFans";
 import {
   BOTTOM_NAV_CLEARANCE,
@@ -131,10 +131,10 @@ export function ChatInput({
                 variants={enterVariants(reduced)}
                 transition={uiTransition(reduced, 0.16)}
                 whileTap={reduced ? undefined : { scale: 0.97 }}
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#FFFC00] text-black shadow-[0_2px_10px_rgba(255,252,0,0.35)] disabled:opacity-40"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#FFFC00] text-black disabled:opacity-40"
                 aria-label="Send"
               >
-                <Send className="h-[18px] w-[18px]" strokeWidth={2.5} />
+                <ArrowUp className="h-5 w-5" strokeWidth={1.75} />
               </motion.button>
             )}
           </AnimatePresence>
