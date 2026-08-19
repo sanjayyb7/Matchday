@@ -66,9 +66,9 @@ export function UpcomingMatchCard({ match, onSelect }: UpcomingMatchCardProps) {
       whileTap={{ scale: 0.985 }}
       onClick={() => onSelect(match)}
       className={cn(
-        "relative w-full overflow-visible rounded-3xl border border-white/10 bg-[#141A22] px-4 pb-4 pt-6 text-left transition-colors",
-        "hover:border-white/20 hover:bg-[#171E28]",
-        isLive && "border-red-500/35",
+        "relative w-full overflow-visible rounded-3xl border border-white/[0.06] bg-[#1A1D1E] px-4 pb-4 pt-6 text-left shadow-[inset_0_1px_0_0_rgba(255,255,255,0.10)] transition-colors",
+        "hover:border-white/15 hover:bg-[#202425]",
+        isLive && "border-red-500/35 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08),0_0_0_1px_rgba(225,29,46,0.12)]",
       )}
     >
       {isLive && (

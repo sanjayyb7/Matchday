@@ -19,6 +19,33 @@ interface UpcomingMatchListProps {
   onSelect: (match: Match) => void;
 }
 
+function MatchSection({
+  title,
+  matches,
+  onSelect,
+}: {
+  title: string;
+  matches: Match[];
+  onSelect: (match: Match) => void;
+}) {
+  return (
+    <section>
+      <h2 className="mb-3 font-heading text-base font-semibold uppercase tracking-wide text-white">
+        {title}
+      </h2>
+      <div className="flex flex-col gap-3">
+        {matches.map((match) => (
+          <UpcomingMatchCard
+            key={match.id}
+            match={match}
+            onSelect={onSelect}
+          />
+        ))}
+      </div>
+    </section>
+  );
+}
+
 interface LeagueOption {
   id: string | null;
   label: string;
@@ -47,18 +74,13 @@ export function UpcomingMatchList({ matches, onSelect }: UpcomingMatchListProps)
   const activeLeague =
     selectedLeague && leagues.includes(selectedLeague) ? selectedLeague : null;
   const filtered = filterMatchesByLeague(matches, activeLeague);
-
-  const hasLive = filtered.some(
+  const liveMatches = filtered.filter(
     (match) => getDerivedMatchStatus(match) === "live",
   );
-  const title =
-    filtered.length === 1
-      ? hasLive
-        ? "Live match"
-        : "Next match"
-      : hasLive
-        ? "Live & upcoming"
-        : "Upcoming matches";
+  const upcomingMatches = filtered.filter(
+    (match) => getDerivedMatchStatus(match) !== "live",
+  );
+  const showSections = liveMatches.length > 0 && upcomingMatches.length > 0;
 
   const leagueOptions: LeagueOption[] = [
     { id: null, label: "All", shortLabel: "All", logoUrl: null },
@@ -72,10 +94,16 @@ export function UpcomingMatchList({ matches, onSelect }: UpcomingMatchListProps)
 
   return (
     <div
-      className="h-dvh overflow-y-auto overscroll-contain bg-[#0B0F14]"
+      className="relative h-dvh overflow-y-auto overscroll-contain bg-[#07090C]"
       style={{ paddingBottom: BOTTOM_NAV_CLEARANCE }}
     >
-      <div className="sticky top-0 z-10 bg-[#0B0F14] pb-3 pt-6">
+      <div
+        aria-hidden
+        className="pointer-events-none sticky top-0 z-0 h-0"
+      >
+        <div className="absolute inset-x-0 -top-8 h-72 bg-[radial-gradient(ellipse_100%_90%_at_50%_-10%,rgba(255,220,70,0.28),rgba(255,252,0,0.08)_42%,transparent_72%)]" />
+      </div>
+      <div className="relative sticky top-0 z-10 bg-transparent pb-3 pt-6">
         <h1 className="px-5 pb-3 font-heading text-lg font-semibold uppercase tracking-wide text-white">
           Matches
         </h1>
@@ -83,7 +111,7 @@ export function UpcomingMatchList({ matches, onSelect }: UpcomingMatchListProps)
           <div
             className="flex gap-5 overflow-x-auto px-5 py-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
             role="tablist"
-            aria-label={title}
+            aria-label="Filter by league"
           >
             {leagueOptions.map((option) => {
               const isActive = activeLeague === option.id;
@@ -139,7 +167,7 @@ export function UpcomingMatchList({ matches, onSelect }: UpcomingMatchListProps)
             hitting a hard divider. */}
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-x-0 -bottom-6 h-6 bg-gradient-to-b from-[#0B0F14] to-transparent"
+          className="pointer-events-none absolute inset-x-0 -bottom-6 h-6 bg-gradient-to-b from-[#07090C]/80 to-transparent"
         />
       </div>
 
@@ -148,16 +176,35 @@ export function UpcomingMatchList({ matches, onSelect }: UpcomingMatchListProps)
           <p className="py-10 text-center text-sm text-white/50">
             No matches in {activeLeague ?? "this filter"} right now.
           </p>
-        ) : (
-          <div className="flex flex-col gap-3">
-            {filtered.map((match) => (
-              <UpcomingMatchCard
-                key={match.id}
-                match={match}
-                onSelect={onSelect}
-              />
-            ))}
+        ) : showSections ? (
+          <div className="flex flex-col gap-7">
+            <MatchSection
+              title={liveMatches.length === 1 ? "Live match" : "Live matches"}
+              matches={liveMatches}
+              onSelect={onSelect}
+            />
+            <MatchSection
+              title={
+                upcomingMatches.length === 1
+                  ? "Upcoming match"
+                  : "Upcoming matches"
+              }
+              matches={upcomingMatches}
+              onSelect={onSelect}
+            />
           </div>
+        ) : (
+          <MatchSection
+            title={
+              liveMatches.length > 0
+                ? liveMatches.length === 1
+                  ? "Live match"
+                  : "Live matches"
+                : "Upcoming matches"
+            }
+            matches={liveMatches.length > 0 ? liveMatches : upcomingMatches}
+            onSelect={onSelect}
+          />
         )}
       </div>
     </div>
