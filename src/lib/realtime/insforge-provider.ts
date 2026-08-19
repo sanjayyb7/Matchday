@@ -4,6 +4,7 @@ import { getPub, getLiveOrUpcomingMatch } from "@/lib/mock/data";
 import { haversine } from "@/lib/geo/haversine";
 import { NEAR_PUB_RADIUS_METERS } from "@/lib/mock/constants";
 import { getInsForgeBrowserClient } from "@/lib/insforge/client";
+import { useMatchdayStore } from "@/store/matchday-store";
 import type { ChatMessage, FanPresence } from "@/types";
 import type { RealtimeAdapter } from "./types";
 
@@ -27,24 +28,55 @@ type ChatPayload = {
   createdAt: string;
 };
 
+const DEBUG = process.env.NEXT_PUBLIC_REALTIME_DEBUG === "1";
+const shapeLogged = new Set<string>();
+
+/**
+ * Socket events arrive as a `SocketMessage`: `{ meta, ...payload }` when the
+ * body is flattened, or `{ meta, payload }` when it is nested. Accept both so
+ * a shape change upstream can't silently swallow every message.
+ */
+function unwrap<T>(raw: unknown): T | null {
+  if (!raw || typeof raw !== "object") return null;
+  const nested = (raw as { payload?: unknown }).payload;
+  if (nested && typeof nested === "object") return nested as T;
+  return raw as T;
+}
+
+function logShapeOnce(event: string, raw: unknown) {
+  if (!DEBUG || shapeLogged.has(event)) return;
+  shapeLogged.add(event);
+  console.info(`[realtime] first "${event}" payload shape`, raw);
+}
+
 class InsForgeRealtimeEngine implements RealtimeAdapter {
   private presence = new Map<string, FanPresence>();
   private chatMessages = new Map<string, ChatMessage[]>();
   private presenceListeners = new Set<(p: FanPresence[]) => void>();
   private squadListeners = new Map<string, Set<(s: FanPresence[]) => void>>();
   private chatListeners = new Map<string, Set<(m: ChatMessage[]) => void>>();
+  private subscribedChatChannels = new Set<string>();
+  private presenceChannel: string | null = null;
+
+  /**
+   * The match the user actually joined. The featured fixture rotates as
+   * kickoffs pass, so keying channels off it would put two members of the same
+   * squad on different channels.
+   */
   private getMatchId(): string {
-    return getLiveOrUpcomingMatch()?.id ?? "match-spain-france";
+    const joined = useMatchdayStore.getState().identity?.matchId;
+    return joined ?? getLiveOrUpcomingMatch()?.id ?? "match-spain-france";
   }
 
-  private get presenceChannel(): string {
-    return `presence:match:${this.getMatchId()}`;
-  }
   private initialized = false;
   private initPromise: Promise<void> | null = null;
 
   private chatKey(teamId: string, matchId: string) {
     return `${teamId}:${matchId}`;
+  }
+
+  private chatChannel(teamId: string, matchId: string) {
+    return `chat:team:${teamId}:match:${matchId}`;
   }
 
   private async ensureInitialized() {
@@ -59,25 +91,59 @@ class InsForgeRealtimeEngine implements RealtimeAdapter {
     const client = getInsForgeBrowserClient();
     await client.realtime.connect();
 
-    await client.realtime.subscribe(this.presenceChannel);
-
-    client.realtime.on("presence_updated", (payload: PresencePayload) => {
-      const presence: FanPresence = {
+    // Handlers are registered exactly once for the lifetime of the engine.
+    // Registering them per subscription stacked a duplicate on every mount.
+    client.realtime.on("presence_updated", (raw: unknown) => {
+      logShapeOnce("presence_updated", raw);
+      const payload = unwrap<PresencePayload>(raw);
+      if (!payload?.userId) return;
+      this.presence.set(payload.userId, {
         userId: payload.userId,
         playerId: payload.playerId,
         teamId: payload.teamId,
-        lat: payload.lat,
-        lng: payload.lng,
+        lat: Number(payload.lat),
+        lng: Number(payload.lng),
         pubId: payload.pubId ?? undefined,
-      };
-      this.presence.set(presence.userId, presence);
+      });
       this.notifyPresence();
     });
+
+    client.realtime.on("chat_message", (raw: unknown) => {
+      logShapeOnce("chat_message", raw);
+      const payload = unwrap<ChatPayload>(raw);
+      if (!payload?.teamId || !payload.matchId) return;
+      this.ingestChatMessage({
+        id: String(payload.id),
+        teamId: payload.teamId,
+        matchId: payload.matchId,
+        userId: String(payload.userId),
+        playerId: String(payload.playerId),
+        text: String(payload.text),
+        createdAt: String(payload.createdAt),
+      });
+    });
+
+    this.initialized = true;
+    await this.ensurePresenceChannel();
+  }
+
+  /** Follow the joined match, re-subscribing if the user switches squads. */
+  private async ensurePresenceChannel() {
+    const client = getInsForgeBrowserClient();
+    const matchId = this.getMatchId();
+    const channel = `presence:match:${matchId}`;
+    if (this.presenceChannel === channel) return;
+
+    if (this.presenceChannel) {
+      client.realtime.unsubscribe(this.presenceChannel);
+    }
+    this.presenceChannel = channel;
+    await client.realtime.subscribe(channel);
 
     const { data } = await client.database
       .from("fan_presence")
       .select("*")
-      .eq("match_id", this.getMatchId());
+      .eq("match_id", matchId);
 
     if (data) {
       for (const row of data) {
@@ -93,8 +159,29 @@ class InsForgeRealtimeEngine implements RealtimeAdapter {
       }
       this.notifyPresence();
     }
+  }
 
-    this.initialized = true;
+  /** Merge an inbound message, reconciling it with any optimistic local copy. */
+  private ingestChatMessage(message: ChatMessage) {
+    const key = this.chatKey(message.teamId, message.matchId);
+    const list = this.chatMessages.get(key) ?? [];
+    if (list.some((m) => m.id === message.id)) return;
+
+    const optimisticIdx = list.findIndex(
+      (m) =>
+        m.id.startsWith("local-") &&
+        m.userId === message.userId &&
+        m.text === message.text,
+    );
+
+    if (optimisticIdx >= 0) {
+      const next = [...list];
+      next[optimisticIdx] = message;
+      this.chatMessages.set(key, next);
+    } else {
+      this.chatMessages.set(key, [...list, message]);
+    }
+    this.notifyChat(key);
   }
 
   private notifyPresence() {
@@ -128,6 +215,7 @@ class InsForgeRealtimeEngine implements RealtimeAdapter {
       const client = getInsForgeBrowserClient();
       this.presence.set(presence.userId, presence);
       this.notifyPresence();
+      await this.ensurePresenceChannel();
 
       await client.database.from("fan_presence").upsert([
         {
@@ -151,10 +239,14 @@ class InsForgeRealtimeEngine implements RealtimeAdapter {
 
   subscribeToPresence(callback: (presence: FanPresence[]) => void) {
     this.presenceListeners.add(callback);
-    void this.ensureInitialized().then(() => {
-      callback(Array.from(this.presence.values()));
-    });
-    return () => this.presenceListeners.delete(callback);
+    void this.ensureInitialized()
+      .then(() => this.ensurePresenceChannel())
+      .then(() => {
+        callback(Array.from(this.presence.values()));
+      });
+    return () => {
+      this.presenceListeners.delete(callback);
+    };
   }
 
   subscribeToPubSquad(pubId: string, callback: (squad: FanPresence[]) => void) {
@@ -162,9 +254,11 @@ class InsForgeRealtimeEngine implements RealtimeAdapter {
       this.squadListeners.set(pubId, new Set());
     }
     this.squadListeners.get(pubId)!.add(callback);
-    void this.ensureInitialized().then(() => {
-      callback(this.getSquadForPub(pubId, Array.from(this.presence.values())));
-    });
+    void this.ensureInitialized()
+      .then(() => this.ensurePresenceChannel())
+      .then(() => {
+        callback(this.getSquadForPub(pubId, Array.from(this.presence.values())));
+      });
     return () => this.squadListeners.get(pubId)?.delete(callback);
   }
 
@@ -182,52 +276,34 @@ class InsForgeRealtimeEngine implements RealtimeAdapter {
     }
     this.chatListeners.get(key)!.add(callback);
 
+    const channel = this.chatChannel(teamId, matchId);
+
     void this.ensureInitialized().then(async () => {
       const client = getInsForgeBrowserClient();
-      const channel = `chat:team:${teamId}:match:${matchId}`;
 
-      await client.realtime.subscribe(channel);
-
-      client.realtime.on("chat_message", (payload: ChatPayload) => {
-        if (payload.teamId !== teamId || payload.matchId !== matchId) return;
-        const message: ChatMessage = {
-          id: payload.id,
-          teamId: payload.teamId,
-          matchId: payload.matchId,
-          userId: payload.userId,
-          playerId: payload.playerId,
-          text: payload.text,
-          createdAt: payload.createdAt,
-        };
-        const list = this.chatMessages.get(key) ?? [];
-        // Dedupe by id, or by (userId + text) for optimistic locals that
-        // were appended before the realtime broadcast came back.
-        if (list.some((m) => m.id === message.id)) return;
-        const optimisticIdx = list.findIndex(
-          (m) =>
-            m.id.startsWith("local-") &&
-            m.userId === message.userId &&
-            m.text === message.text,
-        );
-        if (optimisticIdx >= 0) {
-          const next = [...list];
-          next[optimisticIdx] = message;
-          this.chatMessages.set(key, next);
-        } else {
-          this.chatMessages.set(key, [...list, message]);
+      if (!this.subscribedChatChannels.has(channel)) {
+        this.subscribedChatChannels.add(channel);
+        const response = await client.realtime.subscribe(channel);
+        if (!response.ok) {
+          // Leave the channel unmarked so a later mount can retry it.
+          this.subscribedChatChannels.delete(channel);
+          console.error("[realtime] could not subscribe to", channel, response);
         }
-        this.notifyChat(key);
-      });
+      }
 
-      const { data } = await client.database
+      const { data, error } = await client.database
         .from("chat_messages")
         .select("*")
         .eq("team_id", teamId)
         .eq("match_id", matchId)
         .order("created_at", { ascending: true });
 
+      if (error) {
+        console.error("[chat] could not load history", error);
+      }
+
       if (data) {
-        const messages = data.map(
+        const history = data.map(
           (row): ChatMessage => ({
             id: String(row.id),
             teamId: String(row.team_id),
@@ -238,14 +314,33 @@ class InsForgeRealtimeEngine implements RealtimeAdapter {
             createdAt: String(row.created_at),
           }),
         );
-        this.chatMessages.set(key, messages);
-        callback(messages);
-      } else {
-        callback(this.chatMessages.get(key) ?? []);
+
+        // Keep any optimistic message the server hasn't echoed back yet,
+        // otherwise a send racing this fetch would vanish from the thread.
+        const historyIds = new Set(history.map((m) => m.id));
+        const pending = (this.chatMessages.get(key) ?? []).filter(
+          (m) =>
+            m.id.startsWith("local-") &&
+            !history.some((h) => h.userId === m.userId && h.text === m.text) &&
+            !historyIds.has(m.id),
+        );
+        this.chatMessages.set(key, [...history, ...pending]);
       }
+
+      // Notify every listener on this thread, not just the newest subscriber.
+      this.notifyChat(key);
     });
 
-    return () => this.chatListeners.get(key)?.delete(callback);
+    return () => {
+      const listeners = this.chatListeners.get(key);
+      listeners?.delete(callback);
+      if (listeners && listeners.size === 0) {
+        this.chatListeners.delete(key);
+        if (this.subscribedChatChannels.delete(channel)) {
+          getInsForgeBrowserClient().realtime.unsubscribe(channel);
+        }
+      }
+    };
   }
 
   sendChatMessage(message: Omit<ChatMessage, "id" | "createdAt">) {

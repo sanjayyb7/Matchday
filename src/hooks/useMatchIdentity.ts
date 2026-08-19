@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import {
   getLiveOrUpcomingMatch,
-  identityMatchesActiveMatch,
+  isIdentityStillActive,
   matches,
   refreshActiveMatchFromApi,
 } from "@/lib/mock/data";
@@ -40,7 +40,8 @@ export function useMatchIdentity(userId?: string) {
   }, []);
 
   const activeMatch = getLiveOrUpcomingMatch();
-  const hasIdentity = identityMatchesActiveMatch(identity, userId, activeMatch);
+  // Being in *a* squad is what matters, not being in the featured one.
+  const hasIdentity = isIdentityStillActive(identity, userId);
   const canPrompt = activeMatch
     ? canPromptTeamSelection(activeMatch, matches)
     : false;
@@ -49,15 +50,19 @@ export function useMatchIdentity(userId?: string) {
     : false;
   const onChatPage = pathname.startsWith("/chat");
 
+  // Retire a squad pick only once its own match is over. Clearing it because
+  // some other fixture became "next" silently revoked chat access, since the
+  // chat_messages RLS policy is keyed off the user's identity row.
   useEffect(() => {
-    if (!userId || !activeMatch || !identity) return;
-    if (
-      identity.userId === userId &&
-      identity.matchId !== activeMatch.id
-    ) {
+    if (!userId || !identity) return;
+    if (identity.userId !== userId) {
+      setIdentity(null);
+      return;
+    }
+    if (!isIdentityStillActive(identity, userId)) {
       setIdentity(null);
     }
-  }, [userId, activeMatch?.id, identity, setIdentity]);
+  }, [userId, identity, setIdentity, tick]);
 
   useEffect(() => {
     if (!userId || !activeMatch) {

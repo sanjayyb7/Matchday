@@ -9,11 +9,10 @@ import { useAuth } from "@/hooks/useAuth";
 import { useMatchdayStore } from "@/store/matchday-store";
 import { useHistory } from "@/hooks/useHistory";
 import {
-  getLiveOrUpcomingMatch,
   getPlayer,
   getPub,
   getTeam,
-  identityMatchesActiveMatch,
+  isIdentityStillActive,
   refreshActiveMatchFromApi,
 } from "@/lib/mock/data";
 import { BOTTOM_NAV_CLEARANCE } from "@/lib/layout/constants";
@@ -62,11 +61,9 @@ export default function ProfilePage() {
   }, [menuOpen]);
 
   const { history } = useHistory(user?.id);
-  const liveMatch = getLiveOrUpcomingMatch();
-  const activeIdentity =
-    identity && identityMatchesActiveMatch(identity, user?.id, liveMatch)
-      ? identity
-      : null;
+  const activeIdentity = isIdentityStillActive(identity, user?.id)
+    ? identity
+    : null;
   const player = activeIdentity ? getPlayer(activeIdentity.playerId) : null;
   const team = activeIdentity ? getTeam(activeIdentity.teamId) : null;
   const nearbyPubId = findNearestPubId(
@@ -175,7 +172,7 @@ export default function ProfilePage() {
 
       {activeTab === "history" && (
         <>
-          {activeIdentity && liveMatch && player && team && (
+          {activeIdentity && player && team && (
             <section className="mb-8 rounded-2xl border border-primary/30 bg-primary/5 p-4">
               <div className="mb-3 flex items-start justify-between gap-2">
                 <p className="text-xs font-semibold uppercase tracking-wider text-primary">

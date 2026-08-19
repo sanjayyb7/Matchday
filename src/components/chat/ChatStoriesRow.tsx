@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
 import { getPlayer, getTeam } from "@/lib/mock/data";
 import { getTeamChatThemeFromTeam } from "@/lib/chat/team-theme";
@@ -10,6 +10,17 @@ import { INSFORGE_ENABLED } from "@/lib/insforge/config";
 import { fetchSquadIdentities } from "@/lib/identity/insforge-identity";
 import { cn } from "@/lib/utils";
 import type { ChatMessage, FanPresence, Player, Team, UserIdentity } from "@/types";
+
+type SquadMember = {
+  playerId: string;
+  /** Missing when the squad hasn't loaded, or the pick predates a roster refresh. */
+  player?: Player;
+};
+
+function fallbackAvatar(playerId: string, team?: Team): string {
+  const color = (team?.color ?? "#FFFC00").replace("#", "");
+  return `https://api.dicebear.com/7.x/personas/svg?seed=${encodeURIComponent(playerId)}&backgroundColor=${color}`;
+}
 
 interface ChatStoriesRowProps {
   messages: ChatMessage[];
@@ -36,28 +47,28 @@ export function ChatStoriesRow({
     return realtime.subscribeToPresence(setPresence);
   }, [realtime]);
 
+  const loadSquad = useCallback(async () => {
+    if (!INSFORGE_ENABLED || !matchId || !teamId) return;
+    try {
+      setSquadIdentities(await fetchSquadIdentities(matchId, teamId));
+    } catch (err) {
+      console.error("[squad] failed to load identities", err);
+    }
+  }, [matchId, teamId]);
+
   // Poll the identities table so both accounts see each other in the rail,
   // even if realtime presence hasn't published yet.
   useEffect(() => {
-    if (!INSFORGE_ENABLED || !matchId || !teamId) return;
-    let cancelled = false;
+    void loadSquad();
+    const interval = window.setInterval(() => void loadSquad(), 8000);
+    return () => window.clearInterval(interval);
+  }, [loadSquad]);
 
-    const load = async () => {
-      try {
-        const rows = await fetchSquadIdentities(matchId, teamId);
-        if (!cancelled) setSquadIdentities(rows);
-      } catch (err) {
-        console.error("[squad] failed to load identities", err);
-      }
-    };
-
-    void load();
-    const interval = window.setInterval(load, 8000);
-    return () => {
-      cancelled = true;
-      window.clearInterval(interval);
-    };
-  }, [matchId, teamId]);
+  // A message from someone new means the roster changed — pull it immediately
+  // rather than waiting out the poll.
+  useEffect(() => {
+    void loadSquad();
+  }, [messages.length, presence.length, loadSquad]);
 
   const resolvedTeam = team ?? getTeam(teamId);
   const chatTheme = getTeamChatThemeFromTeam(resolvedTeam);
@@ -82,20 +93,19 @@ export function ChatStoriesRow({
     if (msg.teamId === teamId) joinedPlayerIds.add(msg.playerId);
   }
 
-  const display: Player[] = [];
+  // Keep everyone who joined, even when their player isn't in the loaded
+  // roster — dropping them made real teammates invisible.
+  const display: SquadMember[] = [];
   const seen = new Set<string>();
   for (const playerId of joinedPlayerIds) {
-    if (seen.has(playerId)) continue;
-    const p = getPlayer(playerId);
-    if (p) {
-      display.push(p);
-      seen.add(playerId);
-    }
+    if (!playerId || seen.has(playerId)) continue;
+    seen.add(playerId);
+    display.push({ playerId, player: getPlayer(playerId) });
   }
 
   const sorted = display.sort((a, b) => {
-    const aYou = identity?.playerId === a.id ? 0 : 1;
-    const bYou = identity?.playerId === b.id ? 0 : 1;
+    const aYou = identity?.playerId === a.playerId ? 0 : 1;
+    const bYou = identity?.playerId === b.playerId ? 0 : 1;
     return aYou - bYou;
   });
 
@@ -110,14 +120,16 @@ export function ChatStoriesRow({
             No teammates in yet — invite a friend.
           </p>
         )}
-        {sorted.map((player) => {
-          const isYou = identity?.playerId === player.id;
+        {sorted.map(({ playerId, player }) => {
+          const isYou = identity?.playerId === playerId;
+          const name = player?.name ?? "Fan";
 
           return (
             <button
-              key={player.id}
+              key={playerId}
               type="button"
-              onClick={() => setSelectedPlayerProfile(player)}
+              disabled={!player}
+              onClick={() => player && setSelectedPlayerProfile(player)}
               className="flex shrink-0 flex-col items-center gap-1.5"
             >
               <div
@@ -128,8 +140,8 @@ export function ChatStoriesRow({
               >
                 <div className="relative h-14 w-14 overflow-hidden rounded-full border-2 border-[#0B0F14] bg-[#0B0F14]">
                   <Image
-                    src={player.imageUrl}
-                    alt={player.name}
+                    src={player?.imageUrl ?? fallbackAvatar(playerId, resolvedTeam)}
+                    alt={name}
                     fill
                     className="object-cover"
                     unoptimized
@@ -142,7 +154,7 @@ export function ChatStoriesRow({
                   isYou ? "text-[#FFFC00]" : "text-white/75",
                 )}
               >
-                {isYou ? "You" : player.name.split(" ").pop()}
+                {isYou ? "You" : name.split(" ").pop()}
               </span>
             </button>
           );

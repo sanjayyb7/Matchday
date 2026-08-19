@@ -321,13 +321,21 @@ export function getDerivedMatchStatus(match: Match): MatchStatus {
   return deriveMatchStatus(match);
 }
 
-export function identityMatchesActiveMatch(
+/**
+ * A squad pick stays valid until its own match finishes — never because some
+ * other fixture became the next one up. Unknown matches are treated as still
+ * active: the fixture list only covers a rolling window, and dropping the pick
+ * would revoke the chat access that RLS grants off the identity row.
+ */
+export function isIdentityStillActive(
   identity: { matchId: string; userId: string } | null | undefined,
   userId: string | undefined,
-  match: Match | undefined,
 ): boolean {
-  if (!identity || !userId || !match) return false;
-  return identity.userId === userId && identity.matchId === match.id;
+  if (!identity || !userId) return false;
+  if (identity.userId !== userId) return false;
+  const match = getMatch(identity.matchId);
+  if (!match) return true;
+  return deriveMatchStatus(match) !== "finished";
 }
 
 export function getMatchLabel(match: Match): string {

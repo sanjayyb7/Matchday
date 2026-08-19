@@ -17,7 +17,7 @@ export {
   isUsingFallbackFixtures,
   getMatchLabel,
   getDerivedMatchStatus,
-  identityMatchesActiveMatch,
+  isIdentityStillActive,
   getAllPlayers,
   hydrateStaticDataFromInsForge,
   isStaticDataHydrated,

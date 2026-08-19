@@ -8,10 +8,7 @@ import { uiTransition } from "@/lib/motion/tokens";
 import { cn } from "@/lib/utils";
 import { useMatchdayStore } from "@/store/matchday-store";
 import { useAuth } from "@/hooks/useAuth";
-import {
-  getLiveOrUpcomingMatch,
-  identityMatchesActiveMatch,
-} from "@/lib/mock/data";
+import { isIdentityStillActive } from "@/lib/mock/data";
 
 const tabs = [
   { href: "/map", icon: Map, label: "Map" },
@@ -25,12 +22,7 @@ export function BottomNav() {
   const reduced = useReducedMotion() ?? false;
   const { user } = useAuth();
   const identity = useMatchdayStore((s) => s.identity);
-  const activeMatch = getLiveOrUpcomingMatch();
-  const hasActiveIdentity = identityMatchesActiveMatch(
-    identity,
-    user?.id,
-    activeMatch,
-  );
+  const hasActiveIdentity = isIdentityStillActive(identity, user?.id);
   const chatHref = hasActiveIdentity ? `/chat/${identity!.teamId}` : "/chat";
 
   const resolvedTabs = tabs.map((tab) =>

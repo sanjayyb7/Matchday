@@ -48,23 +48,6 @@ export async function fetchSquadIdentities(
   return data.map((row) => rowToIdentity(row as IdentityRow));
 }
 
-export async function fetchUserIdentityForMatch(
-  userId: string,
-  matchId: string,
-): Promise<UserIdentity | null> {
-  const { getInsForgeBrowserClient } = await import("@/lib/insforge/client");
-  const client = getInsForgeBrowserClient();
-  const { data, error } = await client.database
-    .from("user_identities")
-    .select("*")
-    .eq("user_id", userId)
-    .eq("match_id", matchId)
-    .maybeSingle();
-
-  if (error || !data) return null;
-  return rowToIdentity(data as IdentityRow);
-}
-
 export async function upsertUserIdentity(identity: UserIdentity) {
   const { getInsForgeBrowserClient } = await import("@/lib/insforge/client");
   const client = getInsForgeBrowserClient();
@@ -123,17 +106,28 @@ export async function deleteUserIdentityForMatch(
 }
 
 /**
- * Restore the user's team/player pick for the live or upcoming match from Postgres.
- * DB is source of truth when InsForge is enabled; local Zustand persist is updated in place.
+ * Restore the user's squad pick from Postgres. Looks at every match they have
+ * joined, not just the featured one, so a pick for a fixture later in the week
+ * survives a reload — losing it would also revoke chat access, since the
+ * chat_messages RLS policy is keyed off this row.
+ *
+ * DB is source of truth when InsForge is enabled; local Zustand persist is
+ * updated in place.
  */
 export async function hydrateIdentityForCurrentMatch(userId: string): Promise<UserIdentity | null> {
-  const { getLiveOrUpcomingMatch } = await import("@/lib/mock/data");
+  const { getMatch, getDerivedMatchStatus } = await import("@/lib/mock/data");
   const { useMatchdayStore } = await import("@/store/matchday-store");
 
-  const match = getLiveOrUpcomingMatch();
-  if (!match) return null;
+  // Already sorted newest-first.
+  const identities = await fetchUserIdentities(userId);
+  if (identities.length === 0) return null;
 
-  const identity = await fetchUserIdentityForMatch(userId, match.id);
+  const identity = identities.find((candidate) => {
+    const match = getMatch(candidate.matchId);
+    // Unknown match: outside the loaded fixture window, so assume still active.
+    if (!match) return true;
+    return getDerivedMatchStatus(match) !== "finished";
+  });
   if (!identity) return null;
 
   const current = useMatchdayStore.getState().identity;

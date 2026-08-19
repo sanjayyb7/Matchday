@@ -4,10 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { useMatchdayStore } from "@/store/matchday-store";
-import {
-  getLiveOrUpcomingMatch,
-  identityMatchesActiveMatch,
-} from "@/lib/mock/data";
+import { isIdentityStillActive } from "@/lib/mock/data";
 import { MatchChatGate } from "@/components/match/MatchChatGate";
 import { useMatchIdentity } from "@/hooks/useMatchIdentity";
 
@@ -16,20 +13,14 @@ export default function ChatPage() {
   const { user } = useAuth();
   const identity = useMatchdayStore((s) => s.identity);
   useMatchIdentity(user?.id);
-  const activeMatch = getLiveOrUpcomingMatch();
+  const inSquad = isIdentityStillActive(identity, user?.id);
 
   useEffect(() => {
-    if (!user || !activeMatch) return;
-    if (identityMatchesActiveMatch(identity, user.id, activeMatch)) {
-      router.replace(`/chat/${identity!.teamId}`);
-    }
-  }, [user, identity, activeMatch, router]);
+    if (!user || !inSquad) return;
+    router.replace(`/chat/${identity!.teamId}`);
+  }, [user, identity, inSquad, router]);
 
-  if (
-    user &&
-    activeMatch &&
-    identityMatchesActiveMatch(identity, user.id, activeMatch)
-  ) {
+  if (user && inSquad) {
     return null;
   }
 

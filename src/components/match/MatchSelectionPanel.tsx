@@ -182,12 +182,15 @@ export function MatchSelectionPanel({
     <div
       className={cn(
         "flex flex-col bg-[#0B0F14]",
-        embedded ? "min-h-0 flex-1" : "h-dvh",
+        embedded
+          ? "min-h-0 flex-1"
+          : "h-dvh overflow-y-auto overscroll-contain",
       )}
+      style={embedded ? undefined : { paddingBottom: BOTTOM_NAV_CLEARANCE }}
     >
       <div
         className={cn(
-          "shrink-0 px-4 pb-4",
+          "sticky top-0 z-10 shrink-0 bg-[#0B0F14] px-4 pb-4",
           embedded ? "pr-14 pt-10" : "pt-6",
         )}
       >
@@ -245,12 +248,10 @@ export function MatchSelectionPanel({
       </div>
 
       <div
-        className="min-h-0 flex-1 overflow-y-auto px-4 pt-4"
-        style={
-          embedded
-            ? { paddingBottom: "1.5rem" }
-            : { paddingBottom: BOTTOM_NAV_CLEARANCE }
-        }
+        className={cn(
+          "px-4 pt-4",
+          embedded && "min-h-0 flex-1 overflow-y-auto pb-6",
+        )}
       >
         {step === "team" ? (
           homeTeam && awayTeam ? (

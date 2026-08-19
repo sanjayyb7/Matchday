@@ -20,7 +20,7 @@ export function PlayerPicker({ players, teamColor, onSelect }: PlayerPickerProps
   }
 
   return (
-    <div className="flex max-h-[55vh] flex-col gap-2 overflow-y-auto overscroll-contain pr-1">
+    <div className="flex flex-col gap-2">
       {players.map((player, i) => (
         <motion.button
           key={player.id}

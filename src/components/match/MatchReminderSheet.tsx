@@ -11,7 +11,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useMatchIdentity, dismissMatchReminder } from "@/hooks/useMatchIdentity";
 import {
   getLiveOrUpcomingMatch,
-  identityMatchesActiveMatch,
+  isIdentityStillActive,
   matches,
 } from "@/lib/mock/data";
 import {
@@ -30,7 +30,7 @@ export function MatchReminderSheet() {
 
   const activeMatch = getLiveOrUpcomingMatch();
   const onChatPage = pathname.startsWith("/chat");
-  const hasIdentity = identityMatchesActiveMatch(identity, user?.id, activeMatch);
+  const hasIdentity = isIdentityStillActive(identity, user?.id);
   const canPrompt = activeMatch
     ? canPromptTeamSelection(activeMatch, matches)
     : false;
