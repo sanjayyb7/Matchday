@@ -8,7 +8,7 @@ export const BOTTOM_SAFE_CLEARANCE =
 
 /** Reserve space above fixed chat input (chips + pill + inset). */
 export const CHAT_INPUT_CLEARANCE =
-  "calc(8.25rem + env(safe-area-inset-bottom))";
+  "calc(8.75rem + env(safe-area-inset-bottom))";
 
 /** Same, minus the quick-reply chip row once the user has started chatting. */
 export const CHAT_INPUT_CLEARANCE_COMPACT =

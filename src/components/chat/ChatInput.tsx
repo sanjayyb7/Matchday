@@ -85,19 +85,23 @@ export function ChatInput({
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
               transition={uiTransition(reduced, 0.18)}
-              className="flex gap-2 overflow-x-auto pr-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+              className="overflow-hidden"
             >
-              {QUICK_REPLIES.map((template) => (
-                <button
-                  key={template}
-                  type="button"
-                  onClick={() => submit(template)}
-                  disabled={disabled}
-                  className="shrink-0 rounded-full bg-[#141a22]/75 px-3.5 py-1.5 text-xs font-medium text-white/70 shadow-md ring-1 ring-white/10 backdrop-blur-xl transition-[background-color,transform] duration-150 ease-[var(--ease-out-strong)] hover:bg-[#141a22]/90 active:scale-[0.97] disabled:opacity-40"
-                >
-                  {template}
-                </button>
-              ))}
+              {/* py-* keeps the pills' rounded edges and shadows clear of the
+                  scroller, which clips vertically once overflow-x is set. */}
+              <div className="flex gap-2 overflow-x-auto py-1.5 pr-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                {QUICK_REPLIES.map((template) => (
+                  <button
+                    key={template}
+                    type="button"
+                    onClick={() => submit(template)}
+                    disabled={disabled}
+                    className="shrink-0 rounded-full bg-[#141a22]/75 px-3.5 py-1.5 text-xs font-medium text-white/70 shadow-md ring-1 ring-white/10 backdrop-blur-xl transition-[background-color,transform] duration-150 ease-[var(--ease-out-strong)] hover:bg-[#141a22]/90 active:scale-[0.97] disabled:opacity-40"
+                  >
+                    {template}
+                  </button>
+                ))}
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
