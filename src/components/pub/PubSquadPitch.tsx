@@ -165,7 +165,6 @@ export function PubSquadPitch({ squad, pubName, pubId }: PubSquadPitchProps) {
     presentCounts,
     startingIds,
   );
-  const team = getTeam(selectedTeamId);
 
   return (
     <div className="space-y-3">
@@ -203,20 +202,6 @@ export function PubSquadPitch({ squad, pubName, pubId }: PubSquadPitchProps) {
           })}
         </div>
       )}
-
-      <div
-        className={cn(
-          "flex items-center justify-between px-1 text-xs text-white/50",
-          PITCH_WIDTH,
-          "md:max-w-none md:w-full md:max-w-xl md:mx-auto",
-        )}
-      >
-        <span>{team?.name ?? "Squad"} · 4-4-2</span>
-        <span>
-          {presentCount} fan{presentCount === 1 ? "" : "s"} here ·{" "}
-          {presentPlayerCount}/{STARTING_XI_SIZE} players
-        </span>
-      </div>
 
       <div className={cn(PITCH_WIDTH, "md:max-w-none md:w-full")}>
         <SquadRewardPanel

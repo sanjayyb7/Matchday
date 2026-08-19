@@ -1,13 +1,15 @@
 "use client";
 
 import Image from "next/image";
-import { ArrowUpRight, MapPin } from "lucide-react";
+import { ArrowUpRight, MapPin, X } from "lucide-react";
 import {
   Sheet,
+  SheetClose,
   SheetContent,
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
 import { useMatchdayStore } from "@/store/matchday-store";
 import { usePubSquad } from "@/hooks/usePubSquad";
 import { PubSquadPitch } from "./PubSquadPitch";
@@ -22,7 +24,8 @@ export function PubSquadSheet() {
     <Sheet open={!!selectedPub} onOpenChange={(open) => !open && setSelectedPub(null)}>
       <SheetContent
         side="bottom"
-        className="max-h-[90vh] overflow-y-auto rounded-t-3xl border-white/10 bg-[#0B0F14] px-4 pb-8 pt-10 md:mx-auto md:max-w-3xl"
+        showCloseButton={false}
+        className="max-h-[90vh] overflow-y-auto rounded-t-3xl border-white/10 bg-[#0B0F14] px-4 pb-8 pt-5 md:mx-auto md:max-w-3xl"
       >
         {selectedPub && (
           <>
@@ -33,7 +36,7 @@ export function PubSquadSheet() {
               className="pointer-events-none absolute inset-x-0 top-2 mx-auto h-1 w-10 rounded-full bg-white/20"
             />
             <SheetHeader className="gap-2 text-left">
-              <div className="flex items-center gap-3 pr-14">
+              <div className="flex items-center gap-3">
                 <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-xl ring-2 ring-primary/30">
                   <Image
                     src={selectedPub.imageUrl}
@@ -46,6 +49,18 @@ export function PubSquadSheet() {
                 <SheetTitle className="min-w-0 flex-1 truncate font-heading text-xl uppercase text-white">
                   {selectedPub.name}
                 </SheetTitle>
+                <SheetClose
+                  render={
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      className="h-9 w-9 shrink-0 rounded-full bg-white/10 text-white ring-1 ring-white/20 hover:bg-white/20 hover:text-white"
+                    />
+                  }
+                >
+                  <X className="h-[18px] w-[18px]" strokeWidth={2.5} />
+                  <span className="sr-only">Close</span>
+                </SheetClose>
               </div>
               <div className="flex items-center justify-between gap-3">
                 <p className="min-w-0 flex-1 truncate text-xs text-white/45">
