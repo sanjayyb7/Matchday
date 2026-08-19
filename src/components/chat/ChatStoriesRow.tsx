@@ -1,11 +1,13 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Image from "next/image";
-import { getPlayer, getPlayersByTeam, getTeam } from "@/lib/mock/data";
+import { getPlayer, getTeam } from "@/lib/mock/data";
 import { getTeamChatThemeFromTeam } from "@/lib/chat/team-theme";
 import { useMatchdayStore } from "@/store/matchday-store";
+import { useRealtime } from "@/lib/realtime/context";
 import { cn } from "@/lib/utils";
-import type { ChatMessage, Player, Team } from "@/types";
+import type { ChatMessage, FanPresence, Player, Team } from "@/types";
 
 interface ChatStoriesRowProps {
   messages: ChatMessage[];
@@ -18,54 +20,61 @@ export function ChatStoriesRow({ messages, teamId, team }: ChatStoriesRowProps) 
   const setSelectedPlayerProfile = useMatchdayStore(
     (s) => s.setSelectedPlayerProfile,
   );
+  const realtime = useRealtime();
+  const [presence, setPresence] = useState<FanPresence[]>([]);
+
+  useEffect(() => {
+    return realtime.subscribeToPresence(setPresence);
+  }, [realtime]);
 
   const resolvedTeam = team ?? getTeam(teamId);
   const chatTheme = getTeamChatThemeFromTeam(resolvedTeam);
 
-  // Whole roster in the rail so you see the squad, not just chat participants.
-  const roster = getPlayersByTeam(teamId);
+  // Only real fans who joined this squad show up. Sources of truth:
+  //  1. Fan presence rows for this team (people who picked a player).
+  //  2. Current user's identity (in case presence hasn't landed yet).
+  //  3. Chat participants for this team.
+  const joinedPlayerIds = new Set<string>();
+  for (const p of presence) {
+    if (p.teamId === teamId) joinedPlayerIds.add(p.playerId);
+  }
+  if (identity?.teamId === teamId && identity.playerId) {
+    joinedPlayerIds.add(identity.playerId);
+  }
+  for (const msg of messages) {
+    if (msg.teamId === teamId) joinedPlayerIds.add(msg.playerId);
+  }
 
-  const activePlayerIds = new Set<string>();
-  if (identity?.playerId) activePlayerIds.add(identity.playerId);
-  for (const msg of messages) activePlayerIds.add(msg.playerId);
-
-  // Build the display list. Guarantee identity + chat participants are shown
-  // even if the roster hasn't hydrated yet, so "You" never disappears.
-  const display: Player[] = [...roster];
-  const seenIds = new Set(display.map((p) => p.id));
-  for (const playerId of activePlayerIds) {
-    if (seenIds.has(playerId)) continue;
+  const display: Player[] = [];
+  const seen = new Set<string>();
+  for (const playerId of joinedPlayerIds) {
+    if (seen.has(playerId)) continue;
     const p = getPlayer(playerId);
     if (p) {
       display.push(p);
-      seenIds.add(p.id);
+      seen.add(playerId);
     }
   }
 
   const sorted = display.sort((a, b) => {
     const aYou = identity?.playerId === a.id ? 0 : 1;
     const bYou = identity?.playerId === b.id ? 0 : 1;
-    if (aYou !== bYou) return aYou - bYou;
-    const aActive = activePlayerIds.has(a.id) ? 0 : 1;
-    const bActive = activePlayerIds.has(b.id) ? 0 : 1;
-    if (aActive !== bActive) return aActive - bActive;
-    return 0;
+    return aYou - bYou;
   });
 
   return (
     <div className="px-4 py-3">
       <p className="mb-2.5 text-[11px] font-semibold uppercase tracking-widest text-white/45">
-        Live squad {roster.length > 0 ? `· ${roster.length}` : ""}
+        Live squad {sorted.length > 0 ? `· ${sorted.length}` : ""}
       </p>
       <div className="flex gap-3 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {sorted.length === 0 && (
           <p className="text-xs text-white/45">
-            Squad details are still loading.
+            No teammates in yet — invite a friend.
           </p>
         )}
         {sorted.map((player) => {
           const isYou = identity?.playerId === player.id;
-          const isActive = activePlayerIds.has(player.id);
 
           return (
             <button
@@ -75,14 +84,9 @@ export function ChatStoriesRow({ messages, teamId, team }: ChatStoriesRowProps) 
               className="flex shrink-0 flex-col items-center gap-1.5"
             >
               <div
-                className={cn(
-                  "rounded-full p-[2.5px] transition-opacity",
-                  !isActive && "opacity-60",
-                )}
+                className="rounded-full p-[2.5px]"
                 style={{
-                  background: isActive
-                    ? `linear-gradient(135deg, ${chatTheme.accent}, ${chatTheme.accentMuted})`
-                    : "rgba(255,255,255,0.15)",
+                  background: `linear-gradient(135deg, ${chatTheme.accent}, ${chatTheme.accentMuted})`,
                 }}
               >
                 <div className="relative h-14 w-14 overflow-hidden rounded-full border-2 border-[#0B0F14] bg-[#0B0F14]">
