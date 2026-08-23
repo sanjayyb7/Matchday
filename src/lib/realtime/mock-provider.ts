@@ -46,12 +46,27 @@ class MockRealtimeEngine implements RealtimeAdapter {
       this.presence.set(p.userId, p);
       this.notifyPresence();
     }
+    if (data.type === "presence_cleared") {
+      const userId = (data.payload as { userId?: string }).userId;
+      if (userId) {
+        this.presence.delete(userId);
+        this.notifyPresence();
+      }
+    }
     if (data.type === "chat") {
       const msg = data.payload as ChatMessage;
       const key = this.chatKey(msg.teamId, msg.matchId);
       const list = this.chatMessages.get(key) ?? [];
       this.chatMessages.set(key, [...list, msg]);
       this.notifyChat(key);
+    }
+    if (data.type === "chat_cleared") {
+      const payload = data.payload as { teamId?: string; matchId?: string };
+      if (payload.teamId && payload.matchId) {
+        const key = this.chatKey(payload.teamId, payload.matchId);
+        this.chatMessages.set(key, []);
+        this.notifyChat(key);
+      }
     }
   }
 
@@ -118,6 +133,7 @@ class MockRealtimeEngine implements RealtimeAdapter {
   clearPresence(userId: string) {
     if (!this.presence.has(userId)) return;
     this.presence.delete(userId);
+    this.broadcast("presence_cleared", { userId });
     this.notifyPresence();
   }
 
@@ -170,6 +186,13 @@ class MockRealtimeEngine implements RealtimeAdapter {
     this.notifyChat(key);
   }
 
+  async clearTeamChat(teamId: string, matchId: string) {
+    const key = this.chatKey(teamId, matchId);
+    this.chatMessages.set(key, []);
+    this.broadcast("chat_cleared", { teamId, matchId });
+    this.notifyChat(key);
+  }
+
   getPresence() {
     return Array.from(this.presence.values());
   }
@@ -206,6 +229,9 @@ export const mockRealtimeAdapter: RealtimeAdapter = {
   },
   sendChatMessage(msg) {
     getMockRealtimeEngine().sendChatMessage(msg);
+  },
+  clearTeamChat(teamId, matchId) {
+    return getMockRealtimeEngine().clearTeamChat(teamId, matchId);
   },
   getPresence() {
     return getMockRealtimeEngine().getPresence();

@@ -14,5 +14,6 @@ export interface RealtimeAdapter {
     callback: (messages: ChatMessage[]) => void,
   ): () => void;
   sendChatMessage(message: Omit<ChatMessage, "id" | "createdAt">): void;
+  clearTeamChat(teamId: string, matchId: string): Promise<void>;
   getPresence(): FanPresence[];
 }

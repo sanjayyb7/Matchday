@@ -52,10 +52,11 @@ export default function ChatPage({
   // Identity is source of truth: any two users who joined the same match+team
   // subscribe to the same chat channel regardless of the "featured" match.
   const matchId = identity?.matchId ?? match?.id ?? "match-spain-france";
-  const { messages, sendMessage } = useTeamChat(teamId, matchId);
+  const { messages, sendMessage, resetChat } = useTeamChat(teamId, matchId);
   const [, setSquadTick] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
   const [leaving, setLeaving] = useState(false);
+  const [resetting, setResetting] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const railRef = useRef<HTMLDivElement>(null);
   const [railHeight, setRailHeight] = useState(96);
@@ -162,8 +163,8 @@ export default function ChatPage({
     setMenuOpen(false);
 
     const leavingMatchId = identity.matchId;
-    setIdentity(null);
     realtime.clearPresence(user.id);
+    setIdentity(null);
 
     if (INSFORGE_ENABLED) {
       try {
@@ -185,6 +186,19 @@ export default function ChatPage({
     router.replace("/chat");
   };
 
+  const handleResetChat = async () => {
+    if (!hasActiveIdentity || resetting || leaving) return;
+    setResetting(true);
+    try {
+      await resetChat();
+      setMenuOpen(false);
+    } catch {
+      // Local thread is already emptied; keep the menu so the label can recover.
+    } finally {
+      setResetting(false);
+    }
+  };
+
   const handleSend = (text: string) => {
     if (!user || !identity || !hasActiveIdentity) {
       return {
@@ -201,12 +215,12 @@ export default function ChatPage({
   const showQuickReplies = !messages.some((msg) => msg.userId === user?.id);
 
   return (
-    <div className="relative flex h-dvh flex-col overflow-hidden bg-[#0B0F14]">
-      <header className="relative z-10 flex items-center gap-3 bg-[#0B0F14]/80 px-3 py-3 backdrop-blur-md">
+    <div className="relative flex h-dvh flex-col overflow-hidden bg-paper">
+      <header className="relative z-50 flex items-center gap-3 overflow-visible bg-ink px-3 py-3">
         <Link
           href="/map"
           aria-label="Back"
-          className="flex h-9 w-9 items-center justify-center rounded-full text-white transition-colors hover:bg-white/10"
+          className="flex h-11 w-11 items-center justify-center rounded-full text-paper transition-transform duration-[var(--duration-press)] ease-out active:scale-95"
         >
           <ChevronLeft className="h-6 w-6" strokeWidth={2.5} />
         </Link>
@@ -216,15 +230,15 @@ export default function ChatPage({
               src={team.flagUrl}
               alt={team.name}
               fill
-              className="object-contain drop-shadow-[0_1px_6px_rgba(0,0,0,0.55)]"
+              className="object-contain"
             />
           </div>
         )}
         <div className="min-w-0 flex-1">
-          <h1 className="truncate font-heading text-base font-bold text-white">
+          <h1 className="truncate font-display text-name text-paper">
             {team?.name ?? "Team"} Squad
           </h1>
-          <p className="truncate text-xs text-white/50">
+          <p className="truncate font-utility text-xs text-paper/70">
             {matchLabel
               ? `${matchLabel}${match && getDerivedMatchStatus(match) === "live" ? " · LIVE" : ""}`
               : messages.length > 0
@@ -240,23 +254,38 @@ export default function ChatPage({
               aria-label="Match options"
               aria-expanded={menuOpen}
               aria-haspopup="menu"
-              disabled={leaving}
+              disabled={leaving || resetting}
               onClick={() => setMenuOpen((open) => !open)}
-              className="flex h-9 w-9 items-center justify-center rounded-full text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+              className="flex h-11 w-11 items-center justify-center rounded-full text-paper transition-transform duration-[var(--duration-press)] ease-out active:scale-95"
             >
               <MoreVertical className="h-5 w-5" strokeWidth={2.25} />
             </button>
             {menuOpen && (
               <div
                 role="menu"
-                className="absolute right-0 top-11 z-30 min-w-[10rem] overflow-hidden rounded-xl border border-white/10 bg-[#141A22] py-1 shadow-lg"
+                onPointerDown={(event) => event.stopPropagation()}
+                className="absolute right-0 top-11 z-50 min-w-[10rem] overflow-hidden rounded-card border-2 border-ink bg-paper py-1"
               >
                 <button
                   type="button"
                   role="menuitem"
-                  disabled={leaving}
+                  disabled={resetting || leaving}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    void handleResetChat();
+                  }}
+                  onPointerDown={(event) => event.stopPropagation()}
+                  className="w-full px-3 py-2.5 text-left font-utility text-sm font-medium text-ink transition-colors hover:bg-land disabled:opacity-50"
+                >
+                  {resetting ? "Resetting…" : "Reset chat"}
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  disabled={leaving || resetting}
                   onClick={() => void handleLeaveMatch()}
-                  className="w-full px-3 py-2.5 text-left text-sm font-medium text-red-400 transition-colors hover:bg-white/5"
+                  className="w-full px-3 py-2.5 text-left font-utility text-sm font-medium text-live transition-colors hover:bg-land disabled:opacity-50"
                 >
                   Leave match
                 </button>
@@ -284,11 +313,11 @@ export default function ChatPage({
         <div className="pointer-events-none absolute inset-x-0 top-0 z-20">
           <div
             aria-hidden
-            className="absolute inset-0 backdrop-blur-xl [mask-image:linear-gradient(to_bottom,#000_60%,transparent)] [-webkit-mask-image:linear-gradient(to_bottom,#000_60%,transparent)]"
+            className="absolute inset-0 bg-paper"
           />
           <div
             aria-hidden
-            className="absolute inset-0 bg-gradient-to-b from-[#0B0F14] via-[#0B0F14]/85 to-transparent"
+            className="absolute inset-0 bg-paper"
           />
           <div ref={railRef} className="pointer-events-auto relative">
             <ChatStoriesRow
@@ -302,11 +331,11 @@ export default function ChatPage({
 
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-28 backdrop-blur-xl [mask-image:linear-gradient(to_top,#000_55%,transparent)] [-webkit-mask-image:linear-gradient(to_top,#000_55%,transparent)]"
+          className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-16 bg-paper"
         />
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-28 bg-gradient-to-t from-[#0B0F14] via-[#0B0F14]/85 to-transparent"
+          className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-16 bg-paper"
         />
       </div>
       <ChatInput

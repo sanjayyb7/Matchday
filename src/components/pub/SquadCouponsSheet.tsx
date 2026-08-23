@@ -90,8 +90,8 @@ function CouponCard({
       className={cn(
         "flex w-full flex-col gap-3 rounded-xl border p-3 text-left transition-[border-color,background-color] duration-200 ease-[var(--ease-out-strong)]",
         unlocked
-          ? "border-[#FFFC00]/40 bg-[#FFFC00]/8"
-          : "border-white/10 bg-white/[0.03]",
+          ? "border-[#D0FA69]/40 bg-[#D0FA69]/8"
+          : "border-0 bg-[#151515]",
         unlocked && pubId && !isThisClaimed && "active:scale-[0.99]",
       )}
     >
@@ -99,7 +99,7 @@ function CouponCard({
         <div
           className={cn(
             "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-xl",
-            unlocked ? "bg-[#FFFC00]/15" : "bg-white/5",
+            unlocked ? "bg-[#D0FA69]/15" : "bg-[#151515]",
           )}
           aria-hidden
         >
@@ -112,7 +112,7 @@ function CouponCard({
               <p
                 className={cn(
                   "text-sm font-semibold leading-tight",
-                  unlocked ? "text-[#FFFC00]" : "text-white/90",
+                  unlocked ? "text-[#D0FA69]" : "text-white/90",
                 )}
               >
                 {coupon.title}
@@ -125,7 +125,7 @@ function CouponCard({
               className={cn(
                 "shrink-0 rounded-lg px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide",
                 unlocked
-                  ? "bg-[#FFFC00]/20 text-[#FFFC00]"
+                  ? "bg-[#D0FA69]/20 text-[#D0FA69]"
                   : "bg-white/10 text-white/45",
               )}
             >
@@ -135,7 +135,7 @@ function CouponCard({
 
           <div className="mt-2 flex items-center gap-1.5">
             {unlocked ? (
-              <Sparkles className="h-3 w-3 shrink-0 text-[#FFFC00]" />
+              <Sparkles className="h-3 w-3 shrink-0 text-[#D0FA69]" />
             ) : (
               <Lock className="h-3 w-3 shrink-0 text-white/35" />
             )}
@@ -203,7 +203,7 @@ export function SquadCouponsSheet({
         side="bottom"
         elevated
         overlayClassName="bg-black/75 [-webkit-backdrop-filter:blur(16px)] backdrop-blur-lg"
-        className="max-h-[min(78vh,600px)] rounded-t-3xl border-white/10 bg-[#0B0F14] px-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-2"
+        className="max-h-[min(78vh,600px)] rounded-t-3xl border-white/10 bg-[#151515] px-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-2"
       >
         <SheetHeader className="border-b border-white/10 pb-3 text-left">
           <SheetTitle className="font-heading text-lg uppercase text-white">

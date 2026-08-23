@@ -34,5 +34,5 @@ export function useTeamChat(teamId: string, matchId: string) {
     return prepared;
   };
 
-  return { messages, sendMessage };
+  return { messages, sendMessage, resetChat: () => realtime.clearTeamChat(teamId, matchId) };
 }

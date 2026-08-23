@@ -91,8 +91,8 @@ export default function ProfilePage() {
     setMenuOpen(false);
 
     const matchId = activeIdentity.matchId;
-    setIdentity(null);
     realtime.clearPresence(user.id);
+    setIdentity(null);
 
     if (INSFORGE_ENABLED) {
       try {
@@ -116,7 +116,7 @@ export default function ProfilePage() {
   return (
     <div className="px-4 py-6" style={{ paddingBottom: BOTTOM_NAV_CLEARANCE }}>
       <header className="mb-8 flex items-center gap-4">
-        <div className="relative h-16 w-16 overflow-hidden rounded-2xl ring-2 ring-primary/40">
+        <div className="relative h-16 w-16 overflow-hidden rounded-card border-[3px] border-ink">
           <Image
             src={user?.avatarUrl ?? ""}
             alt={user?.name ?? "Fan"}
@@ -126,7 +126,7 @@ export default function ProfilePage() {
           />
         </div>
         <div>
-          <h1 className="font-heading text-2xl font-bold uppercase tracking-wide">
+          <h1 className="font-display text-block text-ink">
             {user?.name}
           </h1>
           <p className="text-sm text-muted-foreground">
@@ -141,7 +141,7 @@ export default function ProfilePage() {
       <div
         role="tablist"
         aria-label="Profile sections"
-        className="mb-6 flex gap-1 rounded-full bg-white/[0.06] p-1"
+        className="mb-6 flex gap-1 rounded-pill border-2 border-ink bg-paper p-1"
       >
         {(
           [
@@ -158,10 +158,10 @@ export default function ProfilePage() {
               aria-selected={isActive}
               onClick={() => setActiveTab(tab.id)}
               className={cn(
-                "flex-1 rounded-full px-4 py-2 text-sm font-semibold transition-colors duration-150 ease-[var(--ease-out-strong)]",
+                "flex-1 min-h-11 rounded-pill px-4 font-display text-chip transition-colors duration-[var(--duration-press)] ease-out",
                 isActive
-                  ? "bg-[#FFFC00] text-black"
-                  : "text-white/60 hover:text-white",
+                  ? "bg-ink text-paper"
+                  : "text-ink-muted",
               )}
             >
               {tab.label}
@@ -193,7 +193,7 @@ export default function ProfilePage() {
                   {menuOpen && (
                     <div
                       role="menu"
-                      className="absolute right-0 top-9 z-20 min-w-[9.5rem] overflow-hidden rounded-xl border border-white/10 bg-[#141A22] py-1 shadow-lg"
+                      className="absolute right-0 top-9 z-20 min-w-[9.5rem] overflow-hidden rounded-xl bg-[#151515] py-1"
                     >
                       <button
                         type="button"

@@ -36,10 +36,10 @@ export function MatchChatGate() {
   const showFallbackBanner = isUsingFallbackFixtures() && !!fetchError;
 
   const fallbackBanner = showFallbackBanner ? (
-    <div className="border-b border-amber-500/20 bg-amber-500/10 px-4 py-2 text-center text-xs text-amber-100/90">
+    <div className="border-b-2 border-ink bg-c-amber px-4 py-2 text-center font-utility text-xs text-ink">
       Live schedule unavailable — showing demo matches
       {fetchError ? (
-        <span className="mt-0.5 block text-amber-100/70">{fetchError}</span>
+        <span className="mt-0.5 block text-ink-muted">{fetchError}</span>
       ) : null}
     </div>
   ) : null;
@@ -47,11 +47,11 @@ export function MatchChatGate() {
   if (!hydrated) {
     return (
       <div
-        className="flex h-dvh flex-col items-center justify-center gap-3 bg-[#0B0F14]"
+        className="flex h-dvh flex-col items-center justify-center gap-3 bg-paper"
         style={{ paddingBottom: BOTTOM_NAV_CLEARANCE }}
       >
-        <div className="live-pulse h-3 w-3 rounded-full bg-primary" />
-        <p className="text-sm text-white/50">Loading matches…</p>
+        <div className="live-pulse h-3 w-3 rounded-full bg-live" />
+        <p className="font-utility text-sm text-ink-muted">Loading matches…</p>
       </div>
     );
   }
@@ -81,14 +81,14 @@ export function MatchChatGate() {
 
   return (
     <div
-      className="flex h-dvh flex-col items-center justify-center gap-4 bg-[#0B0F14] px-6 text-center"
+      className="flex h-dvh flex-col items-center justify-center gap-4 bg-paper px-6 text-center"
       style={{ paddingBottom: BOTTOM_NAV_CLEARANCE }}
     >
       {fallbackBanner}
-      <p className="font-heading text-xl font-bold uppercase tracking-wide text-white">
+      <p className="font-display text-block text-ink">
         Pick your side first
       </p>
-      <p className="max-w-sm text-sm text-white/55">
+      <p className="max-w-sm font-utility text-sm text-ink-muted">
         {activeMatch
           ? matchStatus === "finished"
             ? `Team selection for ${getMatchLabel(activeMatch)} has closed.`

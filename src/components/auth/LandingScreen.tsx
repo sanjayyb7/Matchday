@@ -30,7 +30,7 @@ export function LandingScreen() {
   };
 
   return (
-    <main className="h-dvh overflow-hidden bg-black p-[5px]">
+    <main className="h-dvh overflow-hidden bg-[#1E1E1E] p-[5px]">
       {/* Soft-edged hero container inset 5px from every side */}
       <div className="relative flex h-full w-full flex-col overflow-hidden rounded-[20px] shadow-[0_0_60px_rgba(0,0,0,0.6)]">
         {/* Background: photo → grain → tint */}
@@ -58,7 +58,7 @@ export function LandingScreen() {
           transition={{ duration: 0.5 }}
           className="relative z-10 flex justify-center pt-8"
         >
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#FFFC00] shadow-[0_8px_32px_rgba(255,252,0,0.4)]">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#D0FA69] shadow-[0_8px_32px_rgba(208,250,105,0.4)]">
             <span className="font-heading text-lg font-bold text-black">LD</span>
           </div>
         </motion.div>
@@ -69,9 +69,9 @@ export function LandingScreen() {
             <motion.div
               {...fadeUp}
               transition={{ delay: 0.15, duration: 0.5 }}
-              className="mb-4 inline-flex w-fit items-center gap-2 rounded-full bg-black/40 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-white backdrop-blur-sm"
+              className="mb-4 inline-flex w-fit items-center gap-2 rounded-full bg-[#151515] px-4 py-2 text-xs font-semibold uppercase tracking-wider text-white"
             >
-              <span className="live-pulse h-2 w-2 rounded-full bg-[#FFFC00]" />
+              <span className="live-pulse h-2 w-2 rounded-full bg-[#D0FA69]" />
               Live soccer · Find your SF pub
             </motion.div>
 
@@ -80,7 +80,7 @@ export function LandingScreen() {
               transition={{ delay: 0.25, duration: 0.5 }}
               className="font-heading text-5xl font-medium leading-none tracking-normal sm:text-7xl"
             >
-              <span className="text-[#FFFC00]">Local</span>
+              <span className="text-[#D0FA69]">Local</span>
               <span className="text-white">Derby</span>
             </motion.h1>
 
@@ -102,7 +102,7 @@ export function LandingScreen() {
                 type="button"
                 disabled={pending}
                 onClick={handleGoogle}
-                className="group inline-flex w-full items-center justify-center gap-2 whitespace-nowrap rounded-full bg-[#FFFC00] px-6 py-4 text-base font-bold text-black shadow-[0_8px_28px_rgba(255,252,0,0.35)] transition-transform active:scale-[0.98] disabled:opacity-60"
+                className="group inline-flex w-full items-center justify-center gap-2 whitespace-nowrap rounded-full bg-[#D0FA69] px-6 py-4 text-base font-bold text-black shadow-[0_8px_28px_rgba(208,250,105,0.35)] transition-transform active:scale-[0.98] disabled:opacity-60"
               >
                 Continue with Google
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
@@ -111,7 +111,7 @@ export function LandingScreen() {
                 Already have an account?{" "}
                 <Link
                   href="/login"
-                  className="font-semibold text-[#FFFC00] hover:underline"
+                  className="font-semibold text-[#D0FA69] hover:underline"
                 >
                   Log in
                 </Link>

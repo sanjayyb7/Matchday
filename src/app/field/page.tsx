@@ -63,21 +63,21 @@ export default function FieldVisitPage() {
   };
 
   return (
-    <div className="min-h-dvh bg-[#0B0F14] text-white">
+    <div className="min-h-dvh bg-[#1E1E1E] text-white">
       <div className="mx-auto flex max-w-lg flex-col gap-6 px-4 py-8">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wider text-[#FFFC00]">
+          <p className="text-xs font-semibold uppercase tracking-wider text-[#D0FA69]">
             Terac job · $25 each · $50 max
           </p>
           <h1 className="font-heading text-2xl font-bold uppercase">
             Call 2 SF pubs
           </h1>
-          <div className="mt-3 space-y-2 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm text-white/70">
+          <div className="mt-3 space-y-2 rounded-2xl bg-[#151515] p-4 text-sm text-white/70">
             <p>
               <span className="text-white">Job:</span> Call a San Francisco
               soccer/sports pub, get owner/manager details, fill this form.
-              Complete for <span className="text-[#FFFC00]">2 different pubs</span>{" "}
-              ($25 per form, <span className="text-[#FFFC00]">$50 max</span>).
+              Complete for <span className="text-[#D0FA69]">2 different pubs</span>{" "}
+              ($25 per form, <span className="text-[#D0FA69]">$50 max</span>).
             </p>
             <ol className="list-decimal space-y-1 pl-4 text-white/60">
               <li>Call the pub — speak to owner/manager about LocalDerby.</li>
@@ -88,11 +88,11 @@ export default function FieldVisitPage() {
               <li>Submit this form (one pub = one $25 job).</li>
               <li>
                 If interested: give them the claim code →{" "}
-                <Link href="/for-pubs" className="text-[#FFFC00] underline">
+                <Link href="/for-pubs" className="text-[#D0FA69] underline">
                   /for-pubs
                 </Link>{" "}
                 →{" "}
-                <Link href="/partner" className="text-[#FFFC00] underline">
+                <Link href="/partner" className="text-[#D0FA69] underline">
                   /partner
                 </Link>
                 .
@@ -103,8 +103,8 @@ export default function FieldVisitPage() {
         </div>
 
         {claimCode && (
-          <div className="rounded-2xl border border-[#FFFC00]/40 bg-[#FFFC00]/10 p-5 text-center">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-[#FFFC00]">
+          <div className="rounded-2xl border border-[#D0FA69]/40 bg-[#D0FA69]/10 p-5 text-center">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-[#D0FA69]">
               Give this code to the pub owner
             </p>
             <p className="mt-2 font-heading text-3xl font-bold tracking-[0.2em] text-white">
@@ -158,7 +158,7 @@ export default function FieldVisitPage() {
               Outcome
             </label>
             <select
-              className="mt-1 w-full rounded-md border border-white/10 bg-[#141a22] px-3 py-2 text-sm"
+              className="mt-1 w-full rounded-md bg-[#151515] px-3 py-2 text-sm"
               value={form.outcome}
               onChange={(e) =>
                 setForm((f) => ({
@@ -178,7 +178,7 @@ export default function FieldVisitPage() {
               Notes (matches, rewards, daily coupon cap)
             </label>
             <textarea
-              className="mt-1 min-h-28 w-full rounded-md border border-white/10 bg-white/5 px-3 py-2 text-sm"
+              className="mt-1 min-h-28 w-full rounded-md bg-[#151515] px-3 py-2 text-sm"
               value={form.notes}
               onChange={(e) =>
                 setForm((f) => ({ ...f, notes: e.target.value }))
@@ -189,7 +189,7 @@ export default function FieldVisitPage() {
 
           <Button
             disabled={loading}
-            className="w-full rounded-xl bg-[#FFFC00] text-black"
+            className="w-full rounded-xl bg-[#D0FA69] text-black"
             onClick={() => void submit()}
           >
             {loading ? "Submitting…" : "Submit visit"}

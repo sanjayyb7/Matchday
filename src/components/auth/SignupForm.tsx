@@ -38,7 +38,7 @@ export function SignupForm() {
         <OAuthButtons mode="signup" />
         <p className="mt-5 text-center text-sm text-white/45">
           Already have an account?{" "}
-          <Link href="/login" className="font-semibold text-[#FFFC00] hover:underline">
+          <Link href="/login" className="font-semibold text-[#D0FA69] hover:underline">
             Log in
           </Link>
         </p>
@@ -65,7 +65,7 @@ export function SignupForm() {
             onChange={(e) => setName(e.target.value)}
             placeholder="What should fans call you?"
             autoComplete="name"
-            className="h-12 w-full rounded-2xl border border-white/10 bg-white/8 px-4 text-white placeholder:text-white/30 outline-none backdrop-blur-sm focus:border-[#FFFC00]/50 focus:ring-2 focus:ring-[#FFFC00]/20"
+            className="h-12 w-full rounded-2xl bg-[#151515] px-4 text-white placeholder:text-white/30 outline-none focus:ring-2 focus:ring-[#D0FA69]/20"
           />
         </div>
         <div>
@@ -79,7 +79,7 @@ export function SignupForm() {
             onChange={(e) => setEmail(e.target.value)}
             placeholder="you@example.com"
             autoComplete="email"
-            className="h-12 w-full rounded-2xl border border-white/10 bg-white/8 px-4 text-white placeholder:text-white/30 outline-none backdrop-blur-sm focus:border-[#FFFC00]/50 focus:ring-2 focus:ring-[#FFFC00]/20"
+            className="h-12 w-full rounded-2xl bg-[#151515] px-4 text-white placeholder:text-white/30 outline-none focus:ring-2 focus:ring-[#D0FA69]/20"
           />
         </div>
         {error && (
@@ -87,14 +87,14 @@ export function SignupForm() {
         )}
         <button
           type="submit"
-          className="h-14 w-full rounded-full bg-[#FFFC00] text-lg font-bold text-black shadow-[0_4px_24px_rgba(255,252,0,0.35)] transition-transform active:scale-[0.98]"
+          className="h-14 w-full rounded-full bg-[#D0FA69] text-lg font-bold text-black shadow-[0_4px_24px_rgba(208,250,105,0.35)] transition-transform active:scale-[0.98]"
         >
           Create account
         </button>
       </form>
       <p className="mt-5 text-center text-sm text-white/45">
         Already have an account?{" "}
-        <Link href="/login" className="font-semibold text-[#FFFC00] hover:underline">
+        <Link href="/login" className="font-semibold text-[#D0FA69] hover:underline">
           Log in
         </Link>
       </p>

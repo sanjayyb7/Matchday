@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
 import { getPlayer, getTeam } from "@/lib/mock/data";
-import { getTeamChatThemeFromTeam } from "@/lib/chat/team-theme";
 import { useMatchdayStore } from "@/store/matchday-store";
 import { useRealtime } from "@/lib/realtime/context";
 import { INSFORGE_ENABLED } from "@/lib/insforge/config";
@@ -12,13 +11,14 @@ import { cn } from "@/lib/utils";
 import type { ChatMessage, FanPresence, Player, Team, UserIdentity } from "@/types";
 
 type SquadMember = {
+  userId: string;
   playerId: string;
   /** Missing when the squad hasn't loaded, or the pick predates a roster refresh. */
   player?: Player;
 };
 
 function fallbackAvatar(playerId: string, team?: Team): string {
-  const color = (team?.color ?? "#FFFC00").replace("#", "");
+  const color = (team?.color ?? "").replace("#", "") || "ddf56b";
   return `https://api.dicebear.com/7.x/personas/svg?seed=${encodeURIComponent(playerId)}&backgroundColor=${color}`;
 }
 
@@ -60,7 +60,7 @@ export function ChatStoriesRow({
   // even if realtime presence hasn't published yet.
   useEffect(() => {
     void loadSquad();
-    const interval = window.setInterval(() => void loadSquad(), 8000);
+    const interval = window.setInterval(() => void loadSquad(), 3000);
     return () => window.clearInterval(interval);
   }, [loadSquad]);
 
@@ -71,74 +71,66 @@ export function ChatStoriesRow({
   }, [messages.length, presence.length, loadSquad]);
 
   const resolvedTeam = team ?? getTeam(teamId);
-  const chatTheme = getTeamChatThemeFromTeam(resolvedTeam);
 
-  // Only real fans who joined this squad show up. Sources of truth:
-  //  1. `user_identities` rows for this match+team (authoritative — anyone who
-  //     picked a player is here, even if they never opened the map).
-  //  2. Realtime presence for this team (fresh joiners between polls).
-  //  3. Current user's identity (immediate self-display).
-  //  4. Chat participants (safety net).
-  const joinedPlayerIds = new Set<string>();
+  // Live rail = people currently in this squad, not chat history.
+  // Keyed by account so one Google user is one persona; a leave drops them
+  // even if their old player still appears in the thread.
+  const members = new Map<string, SquadMember>();
   for (const row of squadIdentities) {
-    joinedPlayerIds.add(row.playerId);
+    if (row.matchId !== matchId || row.teamId !== teamId) continue;
+    members.set(row.userId, {
+      userId: row.userId,
+      playerId: row.playerId,
+      player: getPlayer(row.playerId),
+    });
   }
-  for (const p of presence) {
-    if (p.teamId === teamId) joinedPlayerIds.add(p.playerId);
-  }
-  if (identity?.teamId === teamId && identity.playerId) {
-    joinedPlayerIds.add(identity.playerId);
-  }
-  for (const msg of messages) {
-    if (msg.teamId === teamId) joinedPlayerIds.add(msg.playerId);
-  }
-
-  // Keep everyone who joined, even when their player isn't in the loaded
-  // roster — dropping them made real teammates invisible.
-  const display: SquadMember[] = [];
-  const seen = new Set<string>();
-  for (const playerId of joinedPlayerIds) {
-    if (!playerId || seen.has(playerId)) continue;
-    seen.add(playerId);
-    display.push({ playerId, player: getPlayer(playerId) });
+  if (
+    identity?.matchId === matchId &&
+    identity.teamId === teamId &&
+    identity.playerId &&
+    identity.userId
+  ) {
+    members.set(identity.userId, {
+      userId: identity.userId,
+      playerId: identity.playerId,
+      player: getPlayer(identity.playerId),
+    });
   }
 
-  const sorted = display.sort((a, b) => {
-    const aYou = identity?.playerId === a.playerId ? 0 : 1;
-    const bYou = identity?.playerId === b.playerId ? 0 : 1;
+  const sorted = [...members.values()].sort((a, b) => {
+    const aYou = identity?.userId === a.userId ? 0 : 1;
+    const bYou = identity?.userId === b.userId ? 0 : 1;
     return aYou - bYou;
   });
 
   return (
     <div className="px-4 py-3">
-      <p className="mb-2.5 text-[11px] font-semibold uppercase tracking-widest text-white/45">
+      <p className="mb-2.5 font-display text-section text-ink-muted">
         Live squad {sorted.length > 0 ? `· ${sorted.length}` : ""}
       </p>
       <div className="flex gap-3 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {sorted.length === 0 && (
-          <p className="text-xs text-white/45">
+          <p className="font-utility text-xs text-ink-muted">
             No teammates in yet — invite a friend.
           </p>
         )}
-        {sorted.map(({ playerId, player }) => {
-          const isYou = identity?.playerId === playerId;
+        {sorted.map(({ userId, playerId, player }) => {
+          const isYou = identity?.userId === userId;
           const name = player?.name ?? "Fan";
 
           return (
             <button
-              key={playerId}
+              key={userId}
               type="button"
               disabled={!player}
               onClick={() => player && setSelectedPlayerProfile(player)}
               className="flex shrink-0 flex-col items-center gap-1.5"
             >
               <div
-                className="rounded-full p-[2.5px]"
-                style={{
-                  background: `linear-gradient(135deg, ${chatTheme.accent}, ${chatTheme.accentMuted})`,
-                }}
+                className="rounded-full"
+                style={isYou ? { boxShadow: "var(--ring-avatar)" } : undefined}
               >
-                <div className="relative h-14 w-14 overflow-hidden rounded-full border-2 border-[#0B0F14] bg-[#0B0F14]">
+                <div className="relative h-14 w-14 overflow-hidden rounded-full border-[3px] border-ink bg-paper">
                   <Image
                     src={player?.imageUrl ?? fallbackAvatar(playerId, resolvedTeam)}
                     alt={name}
@@ -150,8 +142,8 @@ export function ChatStoriesRow({
               </div>
               <span
                 className={cn(
-                  "max-w-[56px] truncate text-[10px] font-medium",
-                  isYou ? "text-[#FFFC00]" : "text-white/75",
+                  "max-w-[56px] truncate font-display text-micro",
+                  isYou ? "text-ink" : "text-ink-muted",
                 )}
               >
                 {isYou ? "You" : name.split(" ").pop()}

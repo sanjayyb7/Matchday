@@ -35,11 +35,11 @@ export function ChatThread({
       <div className="flex flex-col gap-3">
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-white/10 text-2xl backdrop-blur-sm">
+            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full border-2 border-ink bg-c-lime text-2xl">
               👋
             </div>
-            <p className="text-sm font-semibold text-white/80">Say hey to your squad</p>
-            <p className="mt-1 max-w-[220px] text-xs text-white/45">
+            <p className="font-display text-name text-ink">Say hey to your squad</p>
+            <p className="mt-1 max-w-[220px] font-utility text-xs text-ink-muted">
               Tap a quick reply below or send your first message
             </p>
           </div>

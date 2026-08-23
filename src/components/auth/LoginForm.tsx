@@ -63,7 +63,7 @@ export function LoginForm() {
         <OAuthButtons mode="login" />
         <p className="mt-5 text-center text-sm text-white/45">
           New here?{" "}
-          <Link href="/signup" className="font-semibold text-[#FFFC00] hover:underline">
+          <Link href="/signup" className="font-semibold text-[#D0FA69] hover:underline">
             Create account
           </Link>
         </p>
@@ -88,14 +88,14 @@ export function LoginForm() {
           type="button"
           disabled={pending}
           onClick={() => startTransition(handleLogin)}
-          className="h-14 w-full rounded-full bg-[#FFFC00] text-lg font-bold text-black shadow-[0_4px_24px_rgba(255,252,0,0.35)] transition-transform active:scale-[0.98] disabled:opacity-60"
+          className="h-14 w-full rounded-full bg-[#D0FA69] text-lg font-bold text-black shadow-[0_4px_24px_rgba(208,250,105,0.35)] transition-transform active:scale-[0.98] disabled:opacity-60"
         >
           Log in
         </button>
       </div>
       <p className="mt-5 text-center text-sm text-white/45">
         New here?{" "}
-        <Link href="/signup" className="font-semibold text-[#FFFC00] hover:underline">
+        <Link href="/signup" className="font-semibold text-[#D0FA69] hover:underline">
           Create account
         </Link>
       </p>

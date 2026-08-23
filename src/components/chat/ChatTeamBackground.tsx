@@ -17,7 +17,7 @@ export function ChatTeamBackground({ team }: ChatTeamBackgroundProps) {
         className="absolute inset-0"
         style={{ background: chatTheme.stripes }}
       />
-      <div className="absolute inset-0 bg-[#0B0F14]/75" />
+      <div className="absolute inset-0 bg-[#1E1E1E]/75" />
       <div className="absolute inset-0 flex items-center justify-center opacity-[0.07]">
         <div className="relative h-48 w-72 sm:h-56 sm:w-80">
           <Image

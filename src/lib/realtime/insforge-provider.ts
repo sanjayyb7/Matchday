@@ -10,11 +10,12 @@ import type { RealtimeAdapter } from "./types";
 
 type PresencePayload = {
   userId: string;
-  playerId: string;
-  teamId: string;
-  lat: number;
-  lng: number;
+  playerId?: string;
+  teamId?: string;
+  lat?: number;
+  lng?: number;
   pubId?: string | null;
+  matchId?: string;
   updatedAt?: string;
 };
 
@@ -57,6 +58,8 @@ class InsForgeRealtimeEngine implements RealtimeAdapter {
   private chatListeners = new Map<string, Set<(m: ChatMessage[]) => void>>();
   private subscribedChatChannels = new Set<string>();
   private presenceChannel: string | null = null;
+  /** Bumped on reset so an in-flight history fetch cannot refill the thread. */
+  private chatResetEpoch = new Map<string, number>();
 
   /**
    * The match the user actually joined. The featured fixture rotates as
@@ -97,14 +100,25 @@ class InsForgeRealtimeEngine implements RealtimeAdapter {
       logShapeOnce("presence_updated", raw);
       const payload = unwrap<PresencePayload>(raw);
       if (!payload?.userId) return;
+      const currentMatch = this.getMatchId();
+      if (payload.matchId && payload.matchId !== currentMatch) return;
       this.presence.set(payload.userId, {
         userId: payload.userId,
-        playerId: payload.playerId,
-        teamId: payload.teamId,
+        playerId: String(payload.playerId ?? ""),
+        teamId: String(payload.teamId ?? ""),
         lat: Number(payload.lat),
         lng: Number(payload.lng),
         pubId: payload.pubId ?? undefined,
       });
+      this.notifyPresence();
+    });
+
+    client.realtime.on("presence_cleared", (raw: unknown) => {
+      logShapeOnce("presence_cleared", raw);
+      const payload = unwrap<PresencePayload>(raw);
+      if (!payload?.userId) return;
+      if (!this.presence.has(payload.userId)) return;
+      this.presence.delete(payload.userId);
       this.notifyPresence();
     });
 
@@ -121,6 +135,13 @@ class InsForgeRealtimeEngine implements RealtimeAdapter {
         text: String(payload.text),
         createdAt: String(payload.createdAt),
       });
+    });
+
+    client.realtime.on("chat_cleared", (raw: unknown) => {
+      logShapeOnce("chat_cleared", raw);
+      const payload = unwrap<{ teamId?: string; matchId?: string }>(raw);
+      if (!payload?.teamId || !payload.matchId) return;
+      this.emptyTeamChat(payload.teamId, payload.matchId);
     });
 
     this.initialized = true;
@@ -145,6 +166,7 @@ class InsForgeRealtimeEngine implements RealtimeAdapter {
       .select("*")
       .eq("match_id", matchId);
 
+    this.presence.clear();
     if (data) {
       for (const row of data) {
         const presence: FanPresence = {
@@ -157,8 +179,8 @@ class InsForgeRealtimeEngine implements RealtimeAdapter {
         };
         this.presence.set(presence.userId, presence);
       }
-      this.notifyPresence();
     }
+    this.notifyPresence();
   }
 
   /** Merge an inbound message, reconciling it with any optimistic local copy. */
@@ -235,6 +257,28 @@ class InsForgeRealtimeEngine implements RealtimeAdapter {
   clearPresence(userId: string) {
     this.presence.delete(userId);
     this.notifyPresence();
+
+    void this.ensureInitialized().then(async () => {
+      const client = getInsForgeBrowserClient();
+      const { data } = await client.database
+        .from("fan_presence")
+        .select("match_id")
+        .eq("user_id", userId)
+        .maybeSingle();
+      const matchId =
+        (data?.match_id ? String(data.match_id) : null) ?? this.getMatchId();
+
+      await client.database.from("fan_presence").delete().eq("user_id", userId);
+
+      try {
+        await client.realtime.publish(`presence:match:${matchId}`, "presence_cleared", {
+          userId,
+          matchId,
+        });
+      } catch (err) {
+        console.error("[realtime] could not publish presence leave", err);
+      }
+    });
   }
 
   subscribeToPresence(callback: (presence: FanPresence[]) => void) {
@@ -277,6 +321,7 @@ class InsForgeRealtimeEngine implements RealtimeAdapter {
     this.chatListeners.get(key)!.add(callback);
 
     const channel = this.chatChannel(teamId, matchId);
+    const epochAtStart = this.chatResetEpoch.get(key) ?? 0;
 
     void this.ensureInitialized().then(async () => {
       const client = getInsForgeBrowserClient();
@@ -297,6 +342,8 @@ class InsForgeRealtimeEngine implements RealtimeAdapter {
         .eq("team_id", teamId)
         .eq("match_id", matchId)
         .order("created_at", { ascending: true });
+
+      if ((this.chatResetEpoch.get(key) ?? 0) !== epochAtStart) return;
 
       if (error) {
         console.error("[chat] could not load history", error);
@@ -341,6 +388,60 @@ class InsForgeRealtimeEngine implements RealtimeAdapter {
         }
       }
     };
+  }
+
+  private emptyTeamChat(teamId: string, matchId: string) {
+    const key = this.chatKey(teamId, matchId);
+    this.chatMessages.set(key, []);
+    this.notifyChat(key);
+  }
+
+  async clearTeamChat(teamId: string, matchId: string) {
+    const key = this.chatKey(teamId, matchId);
+    this.chatResetEpoch.set(key, (this.chatResetEpoch.get(key) ?? 0) + 1);
+    const epoch = this.chatResetEpoch.get(key) ?? 1;
+    this.emptyTeamChat(teamId, matchId);
+
+    await this.ensureInitialized();
+    const client = getInsForgeBrowserClient();
+
+    // Primary wipe: current user can always delete their own rows via RLS.
+    const { error: clientError } = await client.database
+      .from("chat_messages")
+      .delete()
+      .eq("team_id", teamId)
+      .eq("match_id", matchId);
+    if (clientError) {
+      console.error("[chat] client reset delete failed", clientError);
+    }
+
+    // Best-effort admin wipe so other accounts' bubbles disappear too.
+    try {
+      const response = await fetch("/api/chat/reset", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ teamId, matchId }),
+      });
+      if (!response.ok) {
+        console.error("[chat] admin reset failed", response.status, await response.text());
+      }
+    } catch (err) {
+      console.error("[chat] admin reset request failed", err);
+    }
+
+    if ((this.chatResetEpoch.get(key) ?? 0) !== epoch) return;
+
+    try {
+      await client.realtime.publish(this.chatChannel(teamId, matchId), "chat_cleared", {
+        teamId,
+        matchId,
+      });
+    } catch (err) {
+      console.error("[chat] could not broadcast reset", err);
+    }
+
+    this.emptyTeamChat(teamId, matchId);
   }
 
   sendChatMessage(message: Omit<ChatMessage, "id" | "createdAt">) {
@@ -423,6 +524,9 @@ export const insforgeRealtimeAdapter: RealtimeAdapter = {
   },
   sendChatMessage(msg) {
     getEngine().sendChatMessage(msg);
+  },
+  clearTeamChat(teamId, matchId) {
+    return getEngine().clearTeamChat(teamId, matchId);
   },
   getPresence() {
     return getEngine().getPresence();

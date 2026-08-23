@@ -181,16 +181,17 @@ export function MatchSelectionPanel({
   return (
     <div
       className={cn(
-        "flex flex-col bg-[#0B0F14]",
+        "flex flex-col",
         embedded
-          ? "min-h-0 flex-1"
-          : "h-dvh overflow-y-auto overscroll-contain",
+          ? "min-h-0 flex-1 bg-paper"
+          : "h-dvh overflow-y-auto overscroll-contain bg-paper",
       )}
       style={embedded ? undefined : { paddingBottom: BOTTOM_NAV_CLEARANCE }}
     >
       <div
         className={cn(
-          "sticky top-0 z-10 shrink-0 bg-[#0B0F14] px-4 pb-4",
+          "sticky top-0 z-10 shrink-0 px-4 pb-4",
+          "bg-paper",
           embedded ? "pr-14 pt-10" : "pt-6",
         )}
       >
@@ -200,7 +201,7 @@ export function MatchSelectionPanel({
               type="button"
               onClick={onBack}
               aria-label="Back to matches"
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/15 text-white ring-1 ring-white/30 transition-colors hover:bg-white/25"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-ink bg-paper text-ink transition-[transform] duration-[var(--duration-press)] ease-out active:scale-95"
             >
               <ChevronLeft className="h-5 w-5" strokeWidth={2.5} />
             </button>
@@ -210,16 +211,16 @@ export function MatchSelectionPanel({
               type="button"
               onClick={() => setStep("team")}
               aria-label="Change team"
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/15 text-white ring-1 ring-white/30 transition-colors hover:bg-white/25"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-ink bg-paper text-ink transition-[transform] duration-[var(--duration-press)] ease-out active:scale-95"
             >
               <ChevronLeft className="h-5 w-5" strokeWidth={2.5} />
             </button>
           )}
           <div className="min-w-0 flex-1 text-center">
-            <h1 className="font-heading text-lg font-semibold uppercase tracking-wide text-white">
+            <h1 className="font-display text-name text-ink">
               Match
             </h1>
-            <p className="mt-0.5 truncate text-xs text-white/55">
+            <p className="mt-0.5 truncate font-utility text-xs text-ink-muted">
               {match.league
                 ? `${match.league} · ${
                     matchStatus === "live" ? "Live now" : formatKickoff(match.kickoff)
@@ -234,13 +235,13 @@ export function MatchSelectionPanel({
         </div>
 
         {step === "player" && (
-          <p className="mt-4 text-center text-xs font-semibold uppercase tracking-widest text-white/45">
+          <p className="mt-4 text-center font-display text-section text-ink-muted">
             Pick your player
           </p>
         )}
 
         {!selectionOpen && !earlyPick && matchStatus === "upcoming" && (
-          <p className="mt-3 text-center text-xs text-[#FFFC00]/80">
+          <p className="mt-3 text-center font-utility text-xs text-ink-muted">
             Team selection opens in{" "}
             {formatTimeUntil(getSelectionOpensAt(match))}
           </p>
@@ -249,8 +250,10 @@ export function MatchSelectionPanel({
 
       <div
         className={cn(
-          "px-4 pt-4",
-          embedded && "min-h-0 flex-1 overflow-y-auto pb-6",
+          step === "team"
+            ? "flex min-h-0 flex-1 flex-col"
+            : "min-h-0 flex-1 overflow-y-auto",
+          embedded && step !== "team" && "pb-6",
         )}
       >
         {step === "team" ? (
@@ -262,13 +265,13 @@ export function MatchSelectionPanel({
               onSelect={handleTeamSelect}
             />
           ) : (
-            <p className="text-sm text-white/55">
+            <p className="px-4 font-utility text-sm text-ink-muted">
               Team details are still loading for this match. Go back and try
               again in a moment.
             </p>
           )
         ) : squadLoading && players.length === 0 ? (
-          <p className="text-sm text-white/55">Loading players…</p>
+          <p className="px-4 font-utility text-sm text-ink-muted">Loading players…</p>
         ) : (
           selectedTeam && (
             <PlayerPicker

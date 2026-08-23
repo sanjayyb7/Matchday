@@ -13,10 +13,10 @@ export function PubMarker({ pub, onClick }: PubMarkerProps) {
     <button
       type="button"
       onClick={onClick}
-      className="group flex flex-col items-center"
+      className="group flex min-h-11 flex-col items-center"
       aria-label={`Open ${pub.name}`}
     >
-      <div className="relative h-14 w-14 overflow-hidden rounded-full border-2 border-white shadow-lg ring-2 ring-primary/50 transition-transform duration-150 ease-[var(--ease-out-strong)] active:scale-[0.97] hover:scale-105">
+      <div className="relative h-12 w-12 overflow-hidden rounded-card border-[3px] border-ink bg-paper">
         <Image
           src={pub.imageUrl}
           alt={pub.name}
@@ -25,7 +25,7 @@ export function PubMarker({ pub, onClick }: PubMarkerProps) {
           unoptimized
         />
       </div>
-      <span className="mt-1 max-w-[80px] truncate rounded-full bg-background/90 px-2 py-0.5 text-[10px] font-semibold text-foreground shadow">
+      <span className="mt-1 max-w-[88px] truncate rounded-pill bg-ink px-2 py-1 font-display text-micro text-paper">
         {pub.name}
       </span>
     </button>

@@ -3,8 +3,10 @@
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { getDerivedMatchStatus } from "@/lib/mock/data";
+import { CtaBar } from "@/components/visual/CtaBar";
+import { NameStack } from "@/components/visual/NameStack";
+import { Well } from "@/components/visual/Well";
 import type { Match, Team } from "@/types";
-import { cn } from "@/lib/utils";
 
 function formatKickoff(kickoff: string): string {
   return new Date(kickoff).toLocaleString(undefined, {
@@ -40,71 +42,61 @@ export function TeamPicker({
       ? `${match.elapsedMinutes}'`
       : null;
 
+  const sides = [
+    { team: homeTeam, score: match.homeScore, tone: "bg-c-pink" },
+    { team: awayTeam, score: match.awayScore, tone: "bg-c-blue" },
+  ] as const;
+
   return (
-    <div className="relative overflow-visible rounded-3xl border border-white/10 bg-[#141A22] p-3">
+    <div className="relative flex min-h-0 flex-1 flex-col">
       {isLive && (
-        <span className="absolute left-1/2 top-0 z-10 flex -translate-x-1/2 -translate-y-1/2 items-center gap-1.5 rounded-full bg-[#E11D2E] px-3 py-1 text-[10px] font-bold uppercase tracking-wide text-white shadow-lg shadow-red-900/40">
-          <span className="live-pulse h-1.5 w-1.5 rounded-full bg-white" />
+        <span className="absolute left-1/2 top-3 z-20 inline-flex min-h-11 -translate-x-1/2 items-center gap-2 rounded-pill bg-ink px-3 font-display text-chip text-paper">
+          <span className="live-pulse size-2 rounded-full bg-live" />
           Live
+          {elapsed ? (
+            <span className="font-utility text-micro text-paper">{elapsed}</span>
+          ) : null}
         </span>
       )}
 
-      <div className="grid grid-cols-2 gap-2">
-        {[
-          { team: homeTeam, score: match.homeScore, side: "Home" },
-          { team: awayTeam, score: match.awayScore, side: "Away" },
-        ].map(({ team, score, side }) => (
-          <motion.button
-            key={team.id}
-            type="button"
-            whileTap={{ scale: 0.97 }}
-            onClick={() => onSelect(team.id)}
-            className={cn(
-              "flex flex-col items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-5 text-center transition-colors",
-              "hover:border-[#FFFC00]/50 hover:bg-[#FFFC00]/8",
-            )}
-            style={{
-              background: `linear-gradient(165deg, ${team.color}40 0%, transparent 70%)`,
-            }}
-          >
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-white/40">
-              {side}
-            </span>
-            <div className="relative h-16 w-16">
+      {sides.map(({ team, score, tone }) => (
+        <motion.button
+          key={team.id}
+          type="button"
+          whileTap={{ filter: "brightness(0.96)" }}
+          onClick={() => onSelect(team.id)}
+          className={`relative flex min-h-0 flex-1 flex-col justify-between overflow-hidden ${tone} text-left transition-[filter] duration-[var(--duration-press)] ease-out focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-offset-[-3px] focus-visible:outline-live`}
+        >
+          <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 pt-10">
+            <Well filled className="size-16 bg-paper">
               <Image
                 src={team.flagUrl}
                 alt={team.name}
                 fill
-                className="object-contain"
+                className="object-contain p-2"
+                unoptimized
               />
-            </div>
-            <span className="font-heading text-lg font-bold uppercase leading-tight tracking-wide text-white">
-              {team.name}
-            </span>
+            </Well>
+            <NameStack name={team.name} className="text-center text-block" />
             {isLive && (
-              <span className="font-heading text-3xl font-bold tabular-nums text-white">
+              <p className="font-display text-score text-ink">
                 {formatScore(score)}
-              </span>
+              </p>
             )}
-            <span className="rounded-full bg-[#FFFC00] px-3 py-1 text-[10px] font-bold uppercase tracking-wide text-black">
-              Pick side
-            </span>
-          </motion.button>
-        ))}
-      </div>
+            <p className="font-display text-micro text-ink-muted">
+              {match.league || "Matchday"}
+              {!isLive ? ` · ${formatKickoff(match.kickoff)}` : ""}
+            </p>
+          </div>
+          <CtaBar>Pick side</CtaBar>
+        </motion.button>
+      ))}
 
-      <div className="mt-4 flex flex-col items-center gap-1 text-center">
-        <p className="text-xs font-semibold uppercase tracking-wide text-white/70">
-          {match.league || "Matchday"}
-        </p>
-        {isLive ? (
-          <p className="flex items-center gap-1.5 text-xs font-semibold text-red-400">
-            <span className="live-pulse h-1.5 w-1.5 rounded-full bg-red-500" />
-            {elapsed ?? "Live now"}
-          </p>
-        ) : (
-          <p className="text-xs text-white/45">{formatKickoff(match.kickoff)}</p>
-        )}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute left-1/2 top-1/2 z-20 flex size-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-[5px] border-paper bg-ink font-display text-chip text-paper"
+      >
+        VS
       </div>
     </div>
   );

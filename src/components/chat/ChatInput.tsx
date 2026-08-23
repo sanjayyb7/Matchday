@@ -10,6 +10,7 @@ import {
   BOTTOM_SAFE_CLEARANCE,
 } from "@/lib/layout/constants";
 import { enterVariants, uiTransition } from "@/lib/motion/tokens";
+import { cn } from "@/lib/utils";
 import type { OutgoingChatResult } from "@/lib/chat/safety";
 import type { Team } from "@/types";
 
@@ -70,7 +71,7 @@ export function ChatInput({
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 4 }}
-              className="rounded-2xl border border-amber-400/35 bg-amber-500/15 px-3.5 py-2.5 text-xs leading-snug text-amber-50 shadow-lg backdrop-blur-xl"
+              className="rounded-card border-2 border-ink bg-c-amber px-3.5 py-2.5 font-utility text-xs leading-snug text-ink"
             >
               {policyWarning}
             </motion.div>
@@ -90,23 +91,34 @@ export function ChatInput({
               {/* py-* keeps the pills' rounded edges and shadows clear of the
                   scroller, which clips vertically once overflow-x is set. */}
               <div className="flex gap-2 overflow-x-auto py-1.5 pr-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                {QUICK_REPLIES.map((template) => (
-                  <button
-                    key={template}
-                    type="button"
-                    onClick={() => submit(template)}
-                    disabled={disabled}
-                    className="shrink-0 rounded-full bg-[#141a22]/75 px-3.5 py-1.5 text-xs font-medium text-white/70 shadow-md ring-1 ring-white/10 backdrop-blur-xl transition-[background-color,transform] duration-150 ease-[var(--ease-out-strong)] hover:bg-[#141a22]/90 active:scale-[0.97] disabled:opacity-40"
-                  >
-                    {template}
-                  </button>
-                ))}
+                {QUICK_REPLIES.map((template) => {
+                  const selected = text === template;
+                  return (
+                    <button
+                      key={template}
+                      type="button"
+                      onClick={() => {
+                        setText(template);
+                        if (policyWarning) setPolicyWarning(null);
+                      }}
+                      disabled={disabled}
+                      className={cn(
+                        "min-h-11 shrink-0 rounded-pill border-2 border-ink px-3.5 font-display text-chip transition-[background-color,color,transform] duration-[var(--duration-press)] ease-out active:scale-95 disabled:opacity-40",
+                        selected
+                          ? "bg-ink text-paper"
+                          : "bg-paper text-ink",
+                      )}
+                    >
+                      {template}
+                    </button>
+                  );
+                })}
               </div>
             </motion.div>
           )}
         </AnimatePresence>
 
-        <div className="flex min-h-[52px] items-center gap-2.5 rounded-full bg-[#141a22]/75 py-2.5 pl-5 pr-2 shadow-[0_8px_32px_rgba(0,0,0,0.45)] ring-1 ring-white/10 backdrop-blur-xl">
+        <div className="flex min-h-14 items-center gap-2.5 rounded-pill border-2 border-ink bg-paper py-2 pl-5 pr-2">
           <input
             value={text}
             onChange={(e) => {
@@ -116,7 +128,7 @@ export function ChatInput({
             onKeyDown={(e) => e.key === "Enter" && canSend && handleSend()}
             placeholder="Send a chat..."
             disabled={disabled}
-            className="min-w-0 flex-1 bg-transparent text-[17px] leading-snug text-white placeholder:text-white/35 outline-none disabled:opacity-40"
+            className="min-w-0 flex-1 bg-transparent font-utility text-[17px] leading-snug text-ink placeholder:text-ghost outline-none disabled:opacity-40"
           />
           <AnimatePresence mode="popLayout">
             {canSend && (
@@ -131,7 +143,7 @@ export function ChatInput({
                 variants={enterVariants(reduced)}
                 transition={uiTransition(reduced, 0.16)}
                 whileTap={reduced ? undefined : { scale: 0.97 }}
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#FFFC00] text-black disabled:opacity-40"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-ink text-c-lime disabled:opacity-40"
                 aria-label="Send"
               >
                 <ArrowUp className="h-5 w-5" strokeWidth={1.75} />

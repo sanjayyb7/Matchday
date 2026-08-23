@@ -219,15 +219,15 @@ export default function PartnerDashboardPage() {
 
   if (isLoading || loading) {
     return (
-      <div className="flex min-h-dvh items-center justify-center bg-[#0B0F14]">
-        <div className="live-pulse h-3 w-3 rounded-full bg-[#FFFC00]" />
+      <div className="flex min-h-dvh items-center justify-center bg-[#1E1E1E]">
+        <div className="live-pulse h-3 w-3 rounded-full bg-[#D0FA69]" />
       </div>
     );
   }
 
   if (!isAuthenticated) {
     return (
-      <div className="mx-auto flex min-h-dvh max-w-lg flex-col justify-center gap-4 px-4 bg-[#0B0F14] text-white">
+      <div className="mx-auto flex min-h-dvh max-w-lg flex-col justify-center gap-4 px-4 bg-[#1E1E1E] text-white">
         <h1 className="font-heading text-2xl font-bold uppercase">
           Partner login
         </h1>
@@ -246,7 +246,7 @@ export default function PartnerDashboardPage() {
 
   if (!subscribed) {
     return (
-      <div className="mx-auto flex min-h-dvh max-w-lg flex-col justify-center gap-4 px-4 bg-[#0B0F14] text-white">
+      <div className="mx-auto flex min-h-dvh max-w-lg flex-col justify-center gap-4 px-4 bg-[#1E1E1E] text-white">
         <h1 className="font-heading text-2xl font-bold uppercase">
           Subscription required
         </h1>
@@ -261,7 +261,7 @@ export default function PartnerDashboardPage() {
           href="/for-pubs"
           className={cn(
             buttonVariants(),
-            "rounded-xl bg-[#FFFC00] text-black",
+            "rounded-xl bg-[#D0FA69] text-black",
           )}
         >
           Go to $10/mo page
@@ -271,10 +271,10 @@ export default function PartnerDashboardPage() {
   }
 
   return (
-    <div className="min-h-dvh bg-[#0B0F14] text-white">
+    <div className="min-h-dvh bg-[#1E1E1E] text-white">
       <div className="mx-auto flex max-w-lg flex-col gap-8 px-4 py-8">
         <header>
-          <p className="text-xs font-semibold uppercase tracking-wider text-[#FFFC00]">
+          <p className="text-xs font-semibold uppercase tracking-wider text-[#D0FA69]">
             Partner dashboard
           </p>
           <h1 className="font-heading text-2xl font-bold uppercase">
@@ -289,7 +289,7 @@ export default function PartnerDashboardPage() {
         {error && <p className="text-sm text-red-400">{error}</p>}
         {message && <p className="text-sm text-emerald-400">{message}</p>}
 
-        <section className="rounded-2xl border border-[#FFFC00]/30 bg-[#FFFC00]/5 p-4">
+        <section className="rounded-2xl border border-[#D0FA69]/30 bg-[#D0FA69]/5 p-4">
           <h2 className="font-heading text-sm font-bold uppercase">
             Claim pub with Terac code
           </h2>
@@ -306,7 +306,7 @@ export default function PartnerDashboardPage() {
               autoCapitalize="characters"
             />
             <Button
-              className="rounded-xl bg-[#FFFC00] text-black"
+              className="rounded-xl bg-[#D0FA69] text-black"
               disabled={claimLoading || !claimCode.trim()}
               onClick={() => void claimPub()}
             >
@@ -361,7 +361,7 @@ export default function PartnerDashboardPage() {
                         Edit
                       </Button>
                     </div>
-                    <p className="mt-2 text-sm text-[#FFFC00]">
+                    <p className="mt-2 text-sm text-[#D0FA69]">
                       Screening: {pub.screeningLabel || "—"}
                     </p>
                     <p className="text-xs text-white/60">
@@ -378,7 +378,7 @@ export default function PartnerDashboardPage() {
                   </>
                 ) : (
                   <div className="space-y-3">
-                    <p className="text-[11px] font-semibold uppercase tracking-wide text-[#FFFC00]">
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-[#D0FA69]">
                       Edit pub details
                     </p>
                     {(
@@ -409,7 +409,7 @@ export default function PartnerDashboardPage() {
                     ))}
                     <div className="flex gap-2">
                       <Button
-                        className="flex-1 rounded-xl bg-[#FFFC00] text-black"
+                        className="flex-1 rounded-xl bg-[#D0FA69] text-black"
                         disabled={savingPubId === pub.id}
                         onClick={() => void savePub(pub.id)}
                       >
@@ -473,7 +473,7 @@ export default function PartnerDashboardPage() {
                 </div>
               ))}
               <Button
-                className="w-full rounded-xl bg-[#FFFC00] text-black"
+                className="w-full rounded-xl bg-[#D0FA69] text-black"
                 onClick={() => void createPub()}
               >
                 Save pub profile

@@ -1,0 +1,210 @@
+/* Visual-system tokens. Hex lives here (and the TS mirror). Nowhere else.
+   Import from globals.css after `@import "tailwindcss"` — after review. */
+
+:root {
+  /* Color */
+  --ink: #0c0c0c;
+  --paper: #ffffff;
+  --live: #f0533a;
+
+  --c-lime: #ddf56b;
+  --c-pink: #f9c9db;
+  --c-blue: #8fb2f7;
+  --c-mint: #cff0d8;
+  --c-amber: #f7c86a;
+  --pitch: #bfe9cc;
+
+  --land: #ecebe8;
+  --block: #e2e1dd;
+  --water: #c9dcf7;
+
+  --ink-muted: rgba(12, 12, 12, 0.38);
+  --ink-muted-soft: rgba(12, 12, 12, 0.35);
+  --ink-muted-strong: rgba(12, 12, 12, 0.42);
+  --ink-faint: rgba(12, 12, 12, 0.22);
+  --fold: rgba(255, 255, 255, 0.55);
+
+  --ghost: #e0e0e0;
+  --ghost-fill: #ededed;
+  --chat-incoming: #f2f2f2;
+
+  --match-1: var(--c-lime);
+  --match-2: var(--c-pink);
+  --match-3: var(--c-blue);
+  --match-4: var(--c-mint);
+  --match-5: var(--c-amber);
+
+  /* Type — Anton / Archivo variables are set by next/font after review */
+  --family-display: var(--font-anton), "Arial Black", Impact, sans-serif;
+  --family-utility: var(--font-archivo), "Helvetica Neue", Arial, sans-serif;
+
+  --type-page: 52px;
+  --type-page-leading: 0.84;
+  --type-page-tracking: -1px;
+
+  --type-block: 34px;
+  --type-block-leading: 0.86;
+  --type-block-tracking: -0.5px;
+
+  --type-name: 24px;
+  --type-name-leading: 0.9;
+  --type-name-tracking: -0.3px;
+
+  --type-section: 15px;
+  --type-section-leading: 1.2;
+  --type-section-tracking: 1.2px;
+
+  --type-chip: 14px;
+  --type-chip-leading: 1;
+  --type-chip-tracking: 1.2px;
+
+  --type-micro: 11px;
+  --type-micro-leading: 1.2;
+  --type-micro-tracking: 1.4px;
+
+  --type-score: 76px;
+  --type-score-leading: 0.84;
+  --type-score-tracking: -1px;
+
+  --type-stat: 32px;
+  --type-stat-leading: 0.88;
+  --type-stat-tracking: -0.5px;
+
+  /* Shape */
+  --radius-block: 22px;
+  --radius-block-tl: 22px 0 0 0;
+  --radius-card: 16px;
+  --radius-ticket: 16px;
+  --radius-pill: 100px;
+  --radius-fold: 32px;
+
+  --border-ink: 2px;
+  --border-well: 1.6px;
+  --tap-min: 44px;
+  --cta-min: 56px;
+  --fold-size: 32px;
+
+  --clip-dog-ear: polygon(
+    0 0,
+    calc(100% - var(--fold-size)) 0,
+    100% var(--fold-size),
+    100% 100%,
+    0 100%
+  );
+
+  --hatch-next: repeating-linear-gradient(
+    45deg,
+    var(--ink) 0 2px,
+    transparent 2px 6px
+  );
+
+  /* The only allowed shadow — flat double-ring on selected avatars */
+  --ring-avatar: 0 0 0 3px var(--paper), 0 0 0 6px var(--c-lime);
+
+  /* Motion */
+  --duration-press: 140ms;
+  --duration-ui: 150ms;
+  --duration-sheet: 300ms;
+  --ease-out: ease-out;
+  --ease-sheet: cubic-bezier(0.22, 1, 0.36, 1);
+  --focus-ring: 3px solid var(--live);
+  --focus-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-press: 0ms;
+    --duration-ui: 0ms;
+    --duration-sheet: 0ms;
+  }
+}
+
+@theme inline {
+  --color-ink: var(--ink);
+  --color-paper: var(--paper);
+  --color-live: var(--live);
+  --color-c-lime: var(--c-lime);
+  --color-c-pink: var(--c-pink);
+  --color-c-blue: var(--c-blue);
+  --color-c-mint: var(--c-mint);
+  --color-c-amber: var(--c-amber);
+  --color-pitch: var(--pitch);
+  --color-land: var(--land);
+  --color-block: var(--block);
+  --color-water: var(--water);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-muted-soft: var(--ink-muted-soft);
+  --color-ink-muted-strong: var(--ink-muted-strong);
+  --color-ink-faint: var(--ink-faint);
+  --color-fold: var(--fold);
+  --color-ghost: var(--ghost);
+  --color-ghost-fill: var(--ghost-fill);
+  --color-chat-incoming: var(--chat-incoming);
+  --color-match-1: var(--match-1);
+  --color-match-2: var(--match-2);
+  --color-match-3: var(--match-3);
+  --color-match-4: var(--match-4);
+  --color-match-5: var(--match-5);
+
+  --font-display: var(--family-display);
+  --font-utility: var(--family-utility);
+
+  --text-page: var(--type-page);
+  --text-page--line-height: var(--type-page-leading);
+  --text-page--letter-spacing: var(--type-page-tracking);
+  --text-block: var(--type-block);
+  --text-block--line-height: var(--type-block-leading);
+  --text-block--letter-spacing: var(--type-block-tracking);
+  --text-name: var(--type-name);
+  --text-name--line-height: var(--type-name-leading);
+  --text-name--letter-spacing: var(--type-name-tracking);
+  --text-section: var(--type-section);
+  --text-section--line-height: var(--type-section-leading);
+  --text-section--letter-spacing: var(--type-section-tracking);
+  --text-chip: var(--type-chip);
+  --text-chip--line-height: var(--type-chip-leading);
+  --text-chip--letter-spacing: var(--type-chip-tracking);
+  --text-micro: var(--type-micro);
+  --text-micro--line-height: var(--type-micro-leading);
+  --text-micro--letter-spacing: var(--type-micro-tracking);
+  --text-score: var(--type-score);
+  --text-score--line-height: var(--type-score-leading);
+  --text-score--letter-spacing: var(--type-score-tracking);
+  --text-stat: var(--type-stat);
+  --text-stat--line-height: var(--type-stat-leading);
+  --text-stat--letter-spacing: var(--type-stat-tracking);
+
+  --radius-block: 22px;
+  --radius-card: 16px;
+  --radius-ticket: 16px;
+  --radius-pill: 100px;
+}
+
+@layer utilities {
+  .font-display {
+    font-family: var(--family-display);
+    text-transform: uppercase;
+    font-synthesis: none;
+  }
+
+  .font-utility {
+    font-family: var(--family-utility);
+  }
+
+  .dog-ear {
+    clip-path: var(--clip-dog-ear);
+    border-top-left-radius: var(--radius-block);
+  }
+
+  .dog-ear::after {
+    content: "";
+    pointer-events: none;
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: var(--fold-size);
+    height: var(--fold-size);
+    background: var(--fold);
+    clip-path: polygon(0 0, 100% 0, 100% 100%);
+  }
+}

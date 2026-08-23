@@ -4,7 +4,6 @@ import Image from "next/image";
 import { motion, useReducedMotion } from "framer-motion";
 import { getPlayer } from "@/lib/mock/data";
 import { sanitizeChatText } from "@/lib/chat/safety";
-import { getTeamChatThemeFromTeam } from "@/lib/chat/team-theme";
 import { enterVariants } from "@/lib/motion/tokens";
 import { useMatchdayStore } from "@/store/matchday-store";
 import type { ChatMessage, Team } from "@/types";
@@ -23,7 +22,7 @@ export function ChatBubble({ message, isOwn, showAvatar = false, team }: ChatBub
   const setSelectedPlayerProfile = useMatchdayStore(
     (s) => s.setSelectedPlayerProfile,
   );
-  const chatTheme = getTeamChatThemeFromTeam(team);
+  void team;
 
   // Keep the bubble aligned when a run of messages has no avatar of its own.
   const avatar = showAvatar ? (
@@ -31,7 +30,7 @@ export function ChatBubble({ message, isOwn, showAvatar = false, team }: ChatBub
       type="button"
       onClick={() => player && setSelectedPlayerProfile(player)}
       aria-label={player ? `View ${player.name}` : "View player"}
-      className="relative mt-auto h-7 w-7 shrink-0 overflow-hidden rounded-full ring-1 ring-white/20"
+      className="relative mt-auto h-7 w-7 shrink-0 overflow-hidden rounded-full border-2 border-ink"
     >
       {player && (
         <Image
@@ -59,7 +58,7 @@ export function ChatBubble({ message, isOwn, showAvatar = false, team }: ChatBub
       {!isOwn && avatar}
       <div className={cn("flex max-w-[78%] flex-col", isOwn ? "items-end" : "items-start")}>
         {showAvatar && (
-          <span className="mb-1 px-1 text-[11px] font-medium text-white/50">
+          <span className="mb-1 px-1 font-display text-micro text-ink-muted">
             {isOwn ? "You" : (player?.name.split(" ").pop() ?? "Fan")}
           </span>
         )}
@@ -67,18 +66,16 @@ export function ChatBubble({ message, isOwn, showAvatar = false, team }: ChatBub
           type="button"
           onClick={() => player && setSelectedPlayerProfile(player)}
           className={cn(
-            "px-4 py-2.5 text-[15px] leading-snug transition-transform duration-150 ease-[var(--ease-out-strong)] active:scale-[0.97]",
-            isOwn
-              ? "rounded-[22px] rounded-br-md text-black shadow-md"
-              : "rounded-[22px] rounded-bl-md bg-white/12 text-white backdrop-blur-sm",
+            "chat-bubble inline-block max-w-full rounded-card px-4 py-2.5 text-left font-utility text-[15px] leading-snug whitespace-pre-wrap break-words text-ink transition-transform duration-[var(--duration-press)] ease-out active:scale-95",
+            isOwn ? "bg-c-lime" : "bg-chat-incoming",
           )}
-          style={
-            isOwn
-              ? { backgroundColor: chatTheme.accent }
-              : undefined
-          }
+          style={{
+            textAlign: "left",
+          }}
         >
-          {sanitizeChatText(message.text)}
+          <span className="block text-left">
+            {sanitizeChatText(message.text)}
+          </span>
         </button>
       </div>
       {isOwn && avatar}

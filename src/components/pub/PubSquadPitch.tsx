@@ -95,14 +95,14 @@ function BenchRow({
   return (
     <div
       className={cn(
-        "flex flex-col rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-3",
+        "flex flex-col rounded-card border-2 border-ink bg-paper px-3 py-3",
         // Mobile: full width under the pitch.
         "w-full max-w-sm",
         // Desktop: same height as the pitch column (grid h-0/min-h-full trick).
         "md:h-0 md:min-h-full md:w-[7.5rem] md:max-w-none md:shrink-0",
       )}
     >
-      <p className="mb-2 shrink-0 text-[10px] font-bold uppercase tracking-wider text-white/40 md:text-center">
+      <p className="mb-2 shrink-0 font-display text-micro text-ink-muted md:text-center">
         Bench
       </p>
       <div
@@ -180,10 +180,10 @@ export function PubSquadPitch({ squad, pubName, pubId }: PubSquadPitchProps) {
                 type="button"
                 onClick={() => setSelectedTeamId(teamId)}
                 className={cn(
-                  "flex flex-1 items-center justify-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold transition-colors",
+                  "flex min-h-11 flex-1 items-center justify-center gap-2 rounded-pill border-2 border-ink px-3 font-display text-chip transition-colors",
                   active
-                    ? "border-[#FFFC00]/50 bg-[#FFFC00]/10 text-white"
-                    : "border-white/10 bg-white/5 text-white/60",
+                    ? "bg-ink text-paper"
+                    : "bg-paper text-ink",
                 )}
               >
                 {t && (
@@ -227,20 +227,13 @@ export function PubSquadPitch({ squad, pubName, pubId }: PubSquadPitchProps) {
             "md:mx-0 md:max-w-none",
           )}
         >
-          <div className="absolute inset-0 bg-[#1a4d35]" />
-          <div
-            className="absolute inset-0 opacity-30"
-            style={{
-              backgroundImage:
-                "repeating-linear-gradient(90deg, transparent, transparent 48px, rgba(255,255,255,0.03) 48px, rgba(255,255,255,0.03) 49px)",
-            }}
-          />
+          <div className="absolute inset-0 bg-pitch" />
 
-          <div className="absolute inset-3 rounded-lg border border-white/25" />
-          <div className="absolute left-3 right-3 top-1/2 h-px -translate-y-1/2 bg-white/25" />
-          <div className="absolute left-1/2 top-1/2 h-16 w-16 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/25" />
-          <div className="absolute bottom-3 left-1/2 h-20 w-[55%] -translate-x-1/2 rounded-t-lg border border-b-0 border-white/25" />
-          <div className="absolute top-3 left-1/2 h-20 w-[55%] -translate-x-1/2 rounded-b-lg border border-t-0 border-white/25" />
+          <div className="absolute inset-3 rounded-lg border-2 border-paper" />
+          <div className="absolute left-3 right-3 top-1/2 h-0.5 -translate-y-1/2 bg-paper" />
+          <div className="absolute left-1/2 top-1/2 h-16 w-16 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-paper" />
+          <div className="absolute bottom-3 left-1/2 h-20 w-[55%] -translate-x-1/2 rounded-t-lg border-2 border-b-0 border-paper" />
+          <div className="absolute top-3 left-1/2 h-20 w-[55%] -translate-x-1/2 rounded-b-lg border-2 border-t-0 border-paper" />
 
           <div
             key={selectedTeamId}

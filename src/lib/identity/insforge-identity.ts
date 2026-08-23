@@ -51,12 +51,18 @@ export async function fetchSquadIdentities(
 export async function upsertUserIdentity(identity: UserIdentity) {
   const { getInsForgeBrowserClient } = await import("@/lib/insforge/client");
   const client = getInsForgeBrowserClient();
-  const { data: existing } = await client.database
+
+  const { data: existingRows } = await client.database
     .from("user_identities")
     .select("id")
     .eq("user_id", identity.userId)
-    .eq("match_id", identity.matchId)
-    .maybeSingle();
+    .order("updated_at", { ascending: false });
+
+  const rows = existingRows ?? [];
+  const keep = rows[0];
+  for (const extra of rows.slice(1)) {
+    await client.database.from("user_identities").delete().eq("id", extra.id);
+  }
 
   const payload = {
     user_id: identity.userId,
@@ -66,13 +72,11 @@ export async function upsertUserIdentity(identity: UserIdentity) {
     updated_at: identity.updatedAt,
   };
 
-  // Surface failures: a silently swallowed error here leaves the user without
-  // an identity row, which then blocks chat inserts via RLS.
-  const { error } = existing
+  const { error } = keep
     ? await client.database
         .from("user_identities")
         .update(payload)
-        .eq("id", existing.id)
+        .eq("id", keep.id)
     : await client.database.from("user_identities").insert([payload]);
 
   if (error) {
@@ -85,7 +89,7 @@ export async function upsertUserIdentity(identity: UserIdentity) {
   }
 }
 
-/** Remove team/player pick for a match so the fan can leave and rejoin later. */
+/** Remove team/player pick so the fan leaves the live squad. Chat history stays. */
 export async function deleteUserIdentityForMatch(
   userId: string,
   matchId: string,
@@ -98,11 +102,7 @@ export async function deleteUserIdentityForMatch(
     .eq("user_id", userId)
     .eq("match_id", matchId);
 
-  await client.database
-    .from("fan_presence")
-    .delete()
-    .eq("user_id", userId)
-    .eq("match_id", matchId);
+  await client.database.from("fan_presence").delete().eq("user_id", userId);
 }
 
 /**
@@ -129,6 +129,25 @@ export async function hydrateIdentityForCurrentMatch(userId: string): Promise<Us
     return getDerivedMatchStatus(match) !== "finished";
   });
   if (!identity) return null;
+
+  if (identities.length > 1) {
+    const { getInsForgeBrowserClient } = await import("@/lib/insforge/client");
+    const client = getInsForgeBrowserClient();
+    for (const extra of identities) {
+      if (
+        extra.matchId === identity.matchId &&
+        extra.playerId === identity.playerId
+      ) {
+        continue;
+      }
+      await client.database
+        .from("user_identities")
+        .delete()
+        .eq("user_id", userId)
+        .eq("match_id", extra.matchId)
+        .eq("player_id", extra.playerId);
+    }
+  }
 
   const current = useMatchdayStore.getState().identity;
   if (

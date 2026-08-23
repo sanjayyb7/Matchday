@@ -22,8 +22,8 @@ function SignupRedirect() {
 
 export default function SignupPage() {
   return (
-    <main className="relative flex min-h-screen flex-col overflow-hidden bg-[#1a1033]">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_0%,rgba(255,252,0,0.12)_0%,transparent_55%)]" />
+    <main className="relative flex min-h-screen flex-col overflow-hidden bg-[#1E1E1E]">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_0%,rgba(208,250,105,0.12)_0%,transparent_55%)]" />
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_80%_80%,rgba(0,212,255,0.08)_0%,transparent_50%)]" />
       <AuthHero
         title="Join LocalDerby"

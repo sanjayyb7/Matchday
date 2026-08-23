@@ -3,9 +3,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Map, { Marker, type MapRef } from "react-map-gl/mapbox";
 import "mapbox-gl/dist/mapbox-gl.css";
-import { DEFAULT_ZOOM } from "@/lib/mock/constants";
+import { DEFAULT_ZOOM, NEAR_PUB_RADIUS_METERS, SF_CENTER } from "@/lib/mock/constants";
 import { findNearestPubId } from "@/lib/geo/haversine";
-import { NEAR_PUB_RADIUS_METERS } from "@/lib/mock/constants";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { useAuth } from "@/hooks/useAuth";
 import { usePubs } from "@/hooks/usePubs";
@@ -16,6 +15,7 @@ import {
   getPub,
   getLiveOrUpcomingMatch,
   getDerivedMatchStatus,
+  mergeMatchSquads,
 } from "@/lib/mock/data";
 
 import { PubMarker } from "./PubMarker";
@@ -23,7 +23,14 @@ import { UserPlayerMarkerContent } from "./UserPlayerMarker";
 import { UserLocationMarker } from "./UserLocationMarker";
 import { FanMarker } from "./FanMarker";
 import { Badge } from "@/components/ui/badge";
-import type { FanPresence } from "@/types";
+import type { FanPresence, Player, Team } from "@/types";
+
+function isPlaceholderLocation(lat: number, lng: number) {
+  return (
+    Math.abs(lat - SF_CENTER.lat) < 1e-6 &&
+    Math.abs(lng - SF_CENTER.lng) < 1e-6
+  );
+}
 
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? "";
 
@@ -36,17 +43,55 @@ export function PubMap() {
   const identity = useMatchdayStore((s) => s.identity);
   const setSelectedPub = useMatchdayStore((s) => s.setSelectedPub);
   const liveMatch = getLiveOrUpcomingMatch();
+  const matchId = identity?.matchId ?? liveMatch?.id;
   const mapRef = useRef<MapRef>(null);
   const hasFlownToUser = useRef(false);
   const lastPubIdRef = useRef<string | undefined>(undefined);
   const [fans, setFans] = useState<FanPresence[]>([]);
+  const [, setSquadTick] = useState(0);
 
   useEffect(() => {
     return realtime.subscribeToPresence(setFans);
   }, [realtime]);
 
+  // Squads live in memory after the picker/chat fetch. The map used to skip
+  // that load, so every live player id missed getPlayer() and rendered as a
+  // solid #334155 disk on top of the nearest pub.
+  useEffect(() => {
+    if (!matchId) return;
+    const hasSquadApi = matchId.startsWith("af-") || matchId.startsWith("fd-");
+    if (!hasSquadApi) return;
+
+    let cancelled = false;
+    void fetch(`/api/matches/squads?matchId=${encodeURIComponent(matchId)}`)
+      .then(async (response) => {
+        if (!response.ok || cancelled) return;
+        const payload = (await response.json()) as {
+          teams?: Team[];
+          players?: Player[];
+        };
+        if (cancelled) return;
+        mergeMatchSquads(payload.teams ?? [], payload.players ?? []);
+        setSquadTick((tick) => tick + 1);
+      })
+      .catch(() => {
+        // Fan markers fall back to generated avatars if the roster never loads.
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [matchId]);
+
   const otherFans = useMemo(
-    () => fans.filter((fan) => fan.userId !== user?.id),
+    () =>
+      fans.filter((fan) => {
+        if (fan.userId === user?.id) return false;
+        if (!Number.isFinite(fan.lat) || !Number.isFinite(fan.lng)) return false;
+        // Default SF pin is published before GPS resolves — hide those ghosts.
+        if (isPlaceholderLocation(fan.lat, fan.lng)) return false;
+        return true;
+      }),
     [fans, user?.id],
   );
 
@@ -56,7 +101,8 @@ export function PubMap() {
   const liveMatchId = liveMatch?.id;
 
   const publishLocation = useCallback(() => {
-    if (!user || !identity) return;
+    if (!user || !identity || !isWatching || error) return;
+    if (isPlaceholderLocation(position.lat, position.lng)) return;
     const pubId = findNearestPubId(
       position.lat,
       position.lng,
@@ -84,7 +130,7 @@ export function PubMap() {
         );
       }
     }
-  }, [user, identity, position, realtime, liveMatchId, pubs]);
+  }, [user, identity, isWatching, error, position, realtime, liveMatchId, pubs]);
 
   useEffect(() => {
     publishLocation();
@@ -124,7 +170,7 @@ export function PubMap() {
               key={pub.id}
               type="button"
               onClick={() => setSelectedPub(pub)}
-              className="rounded-2xl border border-border bg-card p-4 text-left"
+              className="rounded-2xl bg-card p-4 text-left"
             >
               <p className="font-semibold">{pub.name}</p>
               <p className="text-sm text-muted-foreground">{pub.neighborhood}</p>
@@ -139,28 +185,28 @@ export function PubMap() {
     <div className="relative h-dvh w-full">
       {liveMatch && getDerivedMatchStatus(liveMatch) === "live" && (
         <Badge
-          className={`absolute z-10 gap-2 bg-accent text-accent-foreground ${error ? "right-4 top-4" : "left-4 top-4"}`}
+          className={`absolute z-10 min-h-11 gap-2 rounded-pill border-0 bg-ink px-3 font-display text-chip text-paper ${error ? "right-4 top-4" : "left-4 top-4"}`}
         >
-          <span className="live-pulse h-2 w-2 rounded-full bg-red-500" />
+          <span className="live-pulse h-2 w-2 rounded-full bg-live" />
           LIVE
         </Badge>
       )}
       {!isWatching && (error || permission !== "granted") && (
-        <div className="absolute left-4 right-4 top-4 z-10 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100 backdrop-blur-sm">
-          <p className="font-semibold">
+        <div className="absolute left-4 right-4 top-4 z-10 rounded-card border-2 border-ink bg-c-amber px-4 py-3 font-utility text-sm text-ink">
+          <p className="font-display text-chip">
             {errorKind === "denied"
               ? "Location blocked"
               : error
                 ? "Location unavailable"
                 : "See yourself on the map"}
           </p>
-          <p className="mt-1 text-xs text-amber-100/80">
+          <p className="mt-1 text-xs text-ink-muted">
             {error
               ? error
               : "Tap below to allow location so fans can find you at the pub."}
           </p>
           {errorKind === "denied" ? (
-            <p className="mt-2 text-[11px] leading-relaxed text-amber-100/70">
+            <p className="mt-2 text-[11px] leading-relaxed text-ink-muted">
               After enabling location for your browser in phone Settings, come
               back here and tap the button.
             </p>
@@ -169,7 +215,7 @@ export function PubMap() {
             type="button"
             onClick={requestLocation}
             disabled={isRequesting}
-            className="mt-2 rounded-full bg-[#FFFC00] px-4 py-2 text-xs font-bold text-black transition-transform active:scale-[0.97] disabled:opacity-60"
+            className="mt-2 min-h-11 rounded-pill bg-ink px-4 font-display text-chip text-paper transition-transform duration-[var(--duration-press)] ease-out active:scale-95 disabled:opacity-60"
           >
             {isRequesting ? "Getting location…" : "Enable location"}
           </button>
@@ -180,7 +226,7 @@ export function PubMap() {
         mapboxAccessToken={MAPBOX_TOKEN}
         initialViewState={initialViewState}
         style={{ width: "100%", height: "100%" }}
-        mapStyle="mapbox://styles/mapbox/dark-v11"
+        mapStyle="mapbox://styles/mapbox/light-v11"
         attributionControl={false}
       >
         {pubs.map((pub) => (

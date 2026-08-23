@@ -79,15 +79,15 @@ export default function AdminFieldVisitsPage() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-dvh items-center justify-center bg-[#0B0F14]">
-        <div className="live-pulse h-3 w-3 rounded-full bg-[#FFFC00]" />
+      <div className="flex min-h-dvh items-center justify-center bg-[#1E1E1E]">
+        <div className="live-pulse h-3 w-3 rounded-full bg-[#D0FA69]" />
       </div>
     );
   }
 
   if (!isAuthenticated || !isAdmin) {
     return (
-      <div className="mx-auto flex min-h-dvh max-w-lg flex-col justify-center gap-4 px-4 bg-[#0B0F14] text-white">
+      <div className="mx-auto flex min-h-dvh max-w-lg flex-col justify-center gap-4 px-4 bg-[#1E1E1E] text-white">
         <p>Admin only. Sign in with an admin account, then refresh.</p>
         <Link href="/login?next=/admin/field-visits" className={cn(buttonVariants(), "rounded-xl")}>
           Log in
@@ -97,10 +97,10 @@ export default function AdminFieldVisitsPage() {
   }
 
   return (
-    <div className="min-h-dvh bg-[#0B0F14] text-white">
+    <div className="min-h-dvh bg-[#1E1E1E] text-white">
       <div className="mx-auto flex max-w-lg flex-col gap-6 px-4 py-8">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wider text-[#FFFC00]">
+          <p className="text-xs font-semibold uppercase tracking-wider text-[#D0FA69]">
             Admin
           </p>
           <h1 className="font-heading text-2xl font-bold uppercase">
@@ -132,8 +132,8 @@ export default function AdminFieldVisitsPage() {
                   </span>
                 </div>
 
-                <div className="mt-3 space-y-1 rounded-xl bg-white/[0.03] p-3">
-                  <p className="text-[10px] font-semibold uppercase tracking-wide text-[#FFFC00]/80">
+                <div className="mt-3 space-y-1 rounded-xl bg-[#151515] p-3">
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-[#D0FA69]/80">
                     Terac submission
                   </p>
                   <Detail label="Claim code" value={visit.claimCode} />
@@ -176,7 +176,7 @@ export default function AdminFieldVisitsPage() {
                     href={visit.photoUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="mt-2 inline-block text-xs text-[#FFFC00] underline"
+                    className="mt-2 inline-block text-xs text-[#D0FA69] underline"
                   >
                     Open photo
                   </a>
@@ -187,7 +187,7 @@ export default function AdminFieldVisitsPage() {
                     <summary className="cursor-pointer text-[11px] text-white/45">
                       Pioneer draft
                     </summary>
-                    <pre className="mt-2 max-h-40 overflow-auto rounded-lg bg-black/40 p-2 text-[10px] text-white/50">
+                    <pre className="mt-2 max-h-40 overflow-auto rounded-lg bg-[#151515] p-2 text-[10px] text-white/50">
                       {JSON.stringify(pioneer, null, 2)}
                     </pre>
                   </details>

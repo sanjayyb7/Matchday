@@ -62,10 +62,10 @@ export default function ForPubsPage() {
   };
 
   return (
-    <div className="min-h-dvh bg-[#0B0F14] text-white">
+    <div className="min-h-dvh bg-[#1E1E1E] text-white">
       <div className="mx-auto flex max-w-lg flex-col gap-8 px-4 py-10">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wider text-[#FFFC00]">
+          <p className="text-xs font-semibold uppercase tracking-wider text-[#D0FA69]">
             LocalDerby for Pubs
           </p>
           <h1 className="mt-2 font-heading text-3xl font-bold uppercase tracking-wide">
@@ -86,15 +86,15 @@ export default function ForPubsPage() {
           <li>• In-app QR validation for rewards</li>
         </ul>
 
-        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+        <div className="rounded-2xl bg-[#151515] p-5">
           <p className="font-heading text-lg font-bold uppercase">
             Pub Host subscription
           </p>
-          <p className="mt-1 text-3xl font-bold text-[#FFFC00]">
+          <p className="mt-1 text-3xl font-bold text-[#D0FA69]">
             $10<span className="text-base text-white/50">/mo</span>
           </p>
           <Button
-            className="mt-4 w-full rounded-xl bg-[#FFFC00] text-black hover:bg-[#FFFC00]/90"
+            className="mt-4 w-full rounded-xl bg-[#D0FA69] text-black hover:bg-[#D0FA69]/90"
             disabled={loading || promoLoading}
             onClick={() => void startCheckout()}
           >
@@ -110,7 +110,7 @@ export default function ForPubsPage() {
                 value={promoCode}
                 onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
                 placeholder="Enter code"
-                className="rounded-xl border-white/15 bg-black/30 uppercase"
+                className="rounded-xl bg-[#151515] uppercase"
                 autoCapitalize="characters"
               />
               <Button

@@ -13,7 +13,7 @@ export function AuthHero({ title, subtitle }: AuthHeroProps) {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-[#FFFC00] shadow-[0_8px_32px_rgba(255,252,0,0.35)]"
+        className="mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-[#D0FA69] shadow-[0_8px_32px_rgba(208,250,105,0.35)]"
       >
         <span className="font-heading text-2xl font-bold text-black">LD</span>
       </motion.div>

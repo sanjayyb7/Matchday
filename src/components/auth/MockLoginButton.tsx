@@ -23,7 +23,7 @@ export function MockLoginButton() {
       <button
         type="button"
         onClick={handleEnter}
-        className="h-14 w-full rounded-full bg-[#FFFC00] text-lg font-bold text-black shadow-[0_4px_24px_rgba(255,252,0,0.4)] transition-transform active:scale-[0.98]"
+        className="h-14 w-full rounded-full bg-[#D0FA69] text-lg font-bold text-black shadow-[0_4px_24px_rgba(208,250,105,0.4)] transition-transform active:scale-[0.98]"
       >
         Enter LocalDerby
       </button>

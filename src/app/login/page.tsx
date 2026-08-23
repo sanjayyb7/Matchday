@@ -29,7 +29,7 @@ function LoginRedirect() {
 
 export default function LoginPage() {
   return (
-    <main className="h-dvh overflow-hidden bg-black p-[5px]">
+    <main className="h-dvh overflow-hidden bg-[#1E1E1E] p-[5px]">
       {/* Soft-edged hero container inset 5px from every side */}
       <div className="relative flex h-full w-full flex-col overflow-hidden rounded-[20px] shadow-[0_0_60px_rgba(0,0,0,0.6)]">
         {/* Background: photo → grain → tint */}
@@ -57,7 +57,7 @@ export default function LoginPage() {
           transition={{ duration: 0.5 }}
           className="relative z-10 flex justify-center pt-8"
         >
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#FFFC00] shadow-[0_8px_32px_rgba(255,252,0,0.4)]">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#D0FA69] shadow-[0_8px_32px_rgba(208,250,105,0.4)]">
             <span className="font-heading text-lg font-bold text-black">LD</span>
           </div>
         </motion.div>
@@ -71,7 +71,7 @@ export default function LoginPage() {
               className="font-heading text-5xl font-medium leading-none tracking-normal sm:text-6xl"
             >
               <span className="text-white">Welcome </span>
-              <span className="text-[#FFFC00]">back</span>
+              <span className="text-[#D0FA69]">back</span>
             </motion.h1>
 
             <motion.p

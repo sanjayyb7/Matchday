@@ -28,8 +28,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="live-pulse h-3 w-3 rounded-full bg-primary" />
+      <div className="flex min-h-screen items-center justify-center bg-paper">
+        <div className="live-pulse h-3 w-3 rounded-full bg-live" />
       </div>
     );
   }
@@ -37,7 +37,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   if (!isAuthenticated) return null;
 
   return (
-    <div className="relative min-h-dvh">
+    <div className="relative min-h-dvh bg-paper">
       {children}
       <BottomNav />
       <MatchReminderSheet />

@@ -1,51 +1,19 @@
 import type { Metadata, Viewport } from "next";
-import localFont from "next/font/local";
-import { Nunito_Sans } from "next/font/google";
+import { Anton, Archivo } from "next/font/google";
 import { Providers } from "@/components/layout/Providers";
+import { color } from "@/lib/theme/tokens";
 import "./globals.css";
 
-const nunito = Nunito_Sans({
-  variable: "--font-body",
+const anton = Anton({
+  weight: "400",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  variable: "--font-anton",
 });
 
-/** Coolvetica Condensed — display headings (closest free match to Bold Condensed). */
-const coolvetica = localFont({
-  src: [
-    {
-      path: "../fonts/coolvetica/CoolveticaRgCond.otf",
-      weight: "400",
-      style: "normal",
-    },
-    {
-      path: "../fonts/coolvetica/CoolveticaRgCond.otf",
-      weight: "500",
-      style: "normal",
-    },
-    {
-      path: "../fonts/coolvetica/CoolveticaRgCond.otf",
-      weight: "600",
-      style: "normal",
-    },
-    {
-      path: "../fonts/coolvetica/CoolveticaRgCond.otf",
-      weight: "700",
-      style: "normal",
-    },
-    {
-      path: "../fonts/coolvetica/CoolveticaHvComp.otf",
-      weight: "800",
-      style: "normal",
-    },
-    {
-      path: "../fonts/coolvetica/CoolveticaHvComp.otf",
-      weight: "900",
-      style: "normal",
-    },
-  ],
-  variable: "--font-coolvetica",
-  display: "swap",
+const archivo = Archivo({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-archivo",
 });
 
 export const metadata: Metadata = {
@@ -84,7 +52,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: "#1a1033",
+  themeColor: color.paper,
 };
 
 export default function RootLayout({
@@ -93,9 +61,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="h-full dark" suppressHydrationWarning>
+    <html lang="en" className="h-full light" suppressHydrationWarning>
       <body
-        className={`${nunito.variable} ${coolvetica.variable} min-h-full bg-background font-sans antialiased`}
+        className={`${anton.variable} ${archivo.variable} min-h-full bg-paper font-utility text-ink antialiased`}
       >
         <Providers>{children}</Providers>
       </body>
