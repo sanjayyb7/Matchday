@@ -50,7 +50,27 @@ const LEAGUE_LOGO_MAP: Record<string, string> = {
     "https://r2.thesportsdb.com/images/media/league/badge/mlsr7d1718774547.png",
 };
 
+const LEAGUE_LOGO_HINTS: [RegExp, string][] = [
+  [/conference/, ""],
+  [/premier|\bepl\b/, "premier league"],
+  [/la\s*liga|\blaliga\b|primera/, "la liga"],
+  [/bundesliga/, "bundesliga"],
+  [/serie\s*a/, "serie a"],
+  [/ligue\s*1/, "ligue 1"],
+  [/champions/, "uefa champions league"],
+  [/europa/, "uefa europa league"],
+  [/\bmls\b|major league soccer/, "mls"],
+];
+
 export function getLeagueLogoUrl(league: string): string | null {
   const key = league.trim().toLowerCase();
-  return LEAGUE_LOGO_MAP[key] ?? null;
+  if (!key) return null;
+  const exact = LEAGUE_LOGO_MAP[key];
+  if (exact) return exact;
+
+  for (const [pattern, mapped] of LEAGUE_LOGO_HINTS) {
+    if (!pattern.test(key)) continue;
+    return mapped ? LEAGUE_LOGO_MAP[mapped] ?? null : null;
+  }
+  return null;
 }

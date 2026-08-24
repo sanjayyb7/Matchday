@@ -37,7 +37,7 @@ export function TeamPicker({
   ];
 
   return (
-    <div className="card-stack flex min-h-0 flex-1 flex-col px-[var(--gut)]">
+    <div className="card-stack flex min-h-0 flex-1 flex-col">
       {sides.map(({ team, label, emphasize, tone }) => (
         <button
           key={team.id}

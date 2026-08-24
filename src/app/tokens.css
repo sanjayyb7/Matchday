@@ -41,7 +41,7 @@
   --chat-hairline: rgba(255, 255, 255, 0.1);
   --chat-quick-border: rgba(255, 255, 255, 0.28);
   --chat-input-fill: rgba(255, 255, 255, 0.05);
-  --ring-you: 0 0 0 3px var(--chat-bg), 0 0 0 6px var(--c-lime);
+  --ring-you: 0 0 0 3px var(--paper), 0 0 0 6px var(--c-lime);
 
   /* ---- Type — two faces, strict split -------------------------------- */
   --family-display: var(--font-display-face), "Arial Black", Impact, sans-serif;
@@ -304,6 +304,12 @@
     background-image: var(--card-texture);
     background-size: var(--card-texture-size);
     pointer-events: none;
+  }
+
+  .bg-dots {
+    background-color: var(--paper);
+    background-image: var(--card-texture);
+    background-size: var(--card-texture-size);
   }
 
   /* ---- Interaction ---------------------------------------------------- */

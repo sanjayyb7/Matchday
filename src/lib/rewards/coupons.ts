@@ -10,6 +10,8 @@ export interface PubCoupon {
   status: CouponStatus;
   /** 0–100 when status is progress */
   progress?: number;
+  current?: number;
+  target?: number;
 }
 
 export interface SquadCouponContext {
@@ -38,9 +40,11 @@ export function getPubCoupons({
       description: "Everyone at the pub gets a round on the house.",
       value: "$5",
       emoji: "🍺",
-      requirement: `All ${rosterSize} squad players represented`,
+      requirement: `All ${rosterSize} squad shirts filled`,
       status: isFullSquad ? "unlocked" : "progress",
       progress: squadProgress,
+      current: presentPlayers,
+      target: rosterSize,
     },
     {
       id: "early-bird",
@@ -59,6 +63,8 @@ export function getPubCoupons({
         100,
         Math.round((presentFans / earlyBirdTarget) * 100),
       ),
+      current: Math.min(presentFans, earlyBirdTarget),
+      target: earlyBirdTarget,
     },
     {
       id: "formation-bonus",
@@ -77,6 +83,8 @@ export function getPubCoupons({
         100,
         Math.round((presentPlayers / formationTarget) * 100),
       ),
+      current: Math.min(presentPlayers, formationTarget),
+      target: formationTarget,
     },
     {
       id: "derby-night",
@@ -86,6 +94,8 @@ export function getPubCoupons({
       emoji: "⚔️",
       requirement: "Active during derby fixtures",
       status: "locked",
+      current: 0,
+      target: 1,
     },
     {
       id: "loyalty",
@@ -96,6 +106,8 @@ export function getPubCoupons({
       requirement: "3 pub check-ins this month",
       status: "locked",
       progress: 33,
+      current: 1,
+      target: 3,
     },
     {
       id: "mvp-raffle",
@@ -105,6 +117,8 @@ export function getPubCoupons({
       emoji: "👕",
       requirement: "Cast your MOTM vote after full time",
       status: "locked",
+      current: 0,
+      target: 1,
     },
   ];
 }

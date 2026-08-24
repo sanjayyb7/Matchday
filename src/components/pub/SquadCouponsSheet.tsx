@@ -1,22 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { motion, useReducedMotion } from "framer-motion";
-import { Lock, Sparkles } from "lucide-react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { Check, ChevronRight, Lock, X } from "lucide-react";
 import QRCode from "qrcode";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+import { NameStack } from "@/components/visual/NameStack";
 import {
   getPubCoupons,
   type PubCoupon,
   type SquadCouponContext,
 } from "@/lib/rewards/coupons";
-import { staggerContainer, staggerItem } from "@/lib/motion/tokens";
+import { staggerContainer, staggerItem, uiTransition } from "@/lib/motion/tokens";
 import { cn } from "@/lib/utils";
 
 interface SquadCouponsSheetProps {
@@ -33,23 +27,63 @@ interface ClaimedCoupon {
   token: string;
 }
 
+const TICKET_FILLS = [
+  "var(--c-amber)",
+  "var(--c-pink)",
+  "var(--c-blue)",
+  "var(--c-mint)",
+] as const;
+
+function SegmentBar({
+  filled,
+  total,
+  next,
+}: {
+  filled: number;
+  total: number;
+  next: number;
+}) {
+  if (total <= 0) return null;
+  return (
+    <div className="mt-2 flex gap-1">
+      {Array.from({ length: total }, (_, index) => (
+        <span
+          key={index}
+          className={cn(
+            "h-2.5 min-h-[10px] flex-1",
+            index < filled && "bg-ink",
+            index === next && "bg-[image:var(--hatch-next)] bg-ink/15",
+            index > filled && index !== next && "bg-ink/15",
+          )}
+        />
+      ))}
+    </div>
+  );
+}
+
 function CouponCard({
   coupon,
   reduced,
   pubId,
   claimed,
   onClaimed,
+  fillIndex,
 }: {
   coupon: PubCoupon;
   reduced: boolean;
   pubId?: string;
   claimed: ClaimedCoupon | null;
   onClaimed: (claim: ClaimedCoupon) => void;
+  fillIndex: number;
 }) {
   const unlocked = coupon.status === "unlocked";
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const isThisClaimed = claimed?.couponId === coupon.id;
+  const target = coupon.target ?? 0;
+  const current = Math.min(coupon.current ?? 0, target);
+  const next = unlocked || target === 0 || current >= target ? -1 : current;
+  const canClaim = unlocked && !!pubId && !isThisClaimed;
 
   const claim = async () => {
     if (!pubId || loading) return;
@@ -77,107 +111,154 @@ function CouponCard({
     }
   };
 
-  const Wrapper = unlocked && pubId && !isThisClaimed ? motion.button : motion.div;
-  const wrapperProps =
-    unlocked && pubId && !isThisClaimed
-      ? { type: "button" as const, onClick: () => void claim(), disabled: loading }
-      : {};
+  const fill = unlocked
+    ? "var(--c-lime)"
+    : TICKET_FILLS[fillIndex % TICKET_FILLS.length];
 
   return (
-    <Wrapper
+    <motion.article
       variants={staggerItem(reduced)}
-      {...wrapperProps}
-      className={cn(
-        "flex w-full flex-col gap-3 rounded-xl border p-3 text-left transition-[border-color,background-color] duration-200 ease-[var(--ease-out-strong)]",
-        unlocked
-          ? "border-[#D0FA69]/40 bg-[#D0FA69]/8"
-          : "border-0 bg-[#151515]",
-        unlocked && pubId && !isThisClaimed && "active:scale-[0.99]",
-      )}
+      className="overflow-hidden rounded-[20px] px-4 py-4 text-left"
+      style={{ backgroundColor: fill }}
     >
-      <div className="flex gap-3">
+      <div className="flex items-center gap-3">
         <div
-          className={cn(
-            "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-xl",
-            unlocked ? "bg-[#D0FA69]/15" : "bg-[#151515]",
-          )}
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-card bg-paper text-xl"
           aria-hidden
         >
           {coupon.emoji}
         </div>
-
-        <div className="min-w-0 flex-1">
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0">
-              <p
-                className={cn(
-                  "text-sm font-semibold leading-tight",
-                  unlocked ? "text-[#D0FA69]" : "text-white/90",
-                )}
-              >
-                {coupon.title}
-              </p>
-              <p className="mt-0.5 text-[11px] leading-snug text-white/50">
-                {coupon.description}
-              </p>
-            </div>
-            <span
+        <div className="flex min-w-0 flex-1 items-center justify-between gap-2">
+          <div className="min-w-0">
+            <p className="font-display text-chip leading-none text-ink">
+              {coupon.title}
+            </p>
+            <p
               className={cn(
-                "shrink-0 rounded-lg px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide",
-                unlocked
-                  ? "bg-[#D0FA69]/20 text-[#D0FA69]"
-                  : "bg-white/10 text-white/45",
+                "mt-0.5 font-utility text-xs leading-snug",
+                unlocked ? "text-ink/70" : "text-ink-muted",
               )}
             >
-              {coupon.value}
-            </span>
-          </div>
-
-          <div className="mt-2 flex items-center gap-1.5">
-            {unlocked ? (
-              <Sparkles className="h-3 w-3 shrink-0 text-[#D0FA69]" />
-            ) : (
-              <Lock className="h-3 w-3 shrink-0 text-white/35" />
-            )}
-            <p className="truncate text-[10px] text-white/40">
-              {unlocked && pubId && !isThisClaimed
-                ? loading
-                  ? "Claiming…"
-                  : "Tap to claim QR"
-                : coupon.requirement}
+              {coupon.description}
             </p>
           </div>
-
-          {coupon.status === "progress" && coupon.progress !== undefined && (
-            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
-              <div
-                className="h-full rounded-full bg-white/50 transition-[width] duration-500 ease-[var(--ease-out-strong)]"
-                style={{ width: `${coupon.progress}%` }}
-              />
-            </div>
-          )}
+          <span
+            className={cn(
+              "shrink-0 rounded-pill bg-ink px-2.5 py-1 font-display text-micro",
+              unlocked ? "text-c-lime" : "text-paper",
+            )}
+          >
+            {coupon.value}
+          </span>
         </div>
       </div>
 
+      <div className="my-3 border-t border-dashed border-ink/25" />
+
+      <div className="flex items-center gap-1.5">
+        {unlocked ? (
+          <Check className="h-3.5 w-3.5 shrink-0 text-ink" strokeWidth={2.5} />
+        ) : (
+          <Lock className="h-3.5 w-3.5 shrink-0 text-ink-muted" strokeWidth={2.25} />
+        )}
+        <p className="min-w-0 flex-1 truncate font-display text-micro text-ink">
+          {coupon.requirement}
+        </p>
+        {target > 0 && (
+          <span className="shrink-0 font-display text-micro text-ink-muted">
+            {current}/{target}
+          </span>
+        )}
+      </div>
+
+      {target > 1 && (
+        <SegmentBar filled={current} total={target} next={next} />
+      )}
+
+      {canClaim && (
+        <button
+          type="button"
+          onClick={() => void claim()}
+          disabled={loading}
+          className="press-pill mt-3 flex min-h-11 w-full items-center justify-center gap-1 rounded-pill bg-ink font-display text-chip text-paper disabled:opacity-60"
+        >
+          {loading ? "Claiming…" : "Show at the bar"}
+          {!loading && <ChevronRight className="h-4 w-4" strokeWidth={2.5} />}
+        </button>
+      )}
+
       {isThisClaimed && (
-        <div className="flex flex-col items-center gap-2 rounded-lg bg-white p-3">
+        <div className="mt-3 flex flex-col items-center gap-2 rounded-card bg-paper p-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={claimed.qrDataUrl} alt="Coupon QR" className="rounded-md" />
-          <p className="break-all text-center text-[10px] text-black/60">
+          <p className="break-all text-center font-utility text-[10px] text-ink-muted">
             {claimed.token}
           </p>
-          <p className="text-center text-[11px] text-black/70">
+          <p className="text-center font-utility text-[11px] text-ink">
             Show this to the pub to redeem
           </p>
         </div>
       )}
 
       {error && (
-        <p className="text-[11px] text-red-400" role="alert">
+        <p className="mt-2 font-utility text-[11px] text-live" role="alert">
           {error}
         </p>
       )}
-    </Wrapper>
+    </motion.article>
+  );
+}
+
+export function PubRewardsList({
+  context,
+  pubName,
+  pubId,
+}: {
+  context: SquadCouponContext;
+  pubName?: string;
+  pubId?: string;
+}) {
+  const reduced = useReducedMotion() ?? false;
+  const coupons = getPubCoupons(context);
+  const unlockedCount = coupons.filter((c) => c.status === "unlocked").length;
+  const [claimed, setClaimed] = useState<ClaimedCoupon | null>(null);
+
+  return (
+    <div>
+      <p className="font-display text-micro text-ink">
+        {pubName ? `${pubName} · ` : ""}
+        {unlockedCount} of {coupons.length} unlocked
+      </p>
+      <div className="mt-3 flex gap-1">
+        {coupons.map((coupon) => (
+          <span
+            key={coupon.id}
+            className={cn(
+              "h-2 min-h-[8px] flex-1",
+              coupon.status === "unlocked" ? "bg-ink" : "bg-ink/20",
+            )}
+          />
+        ))}
+      </div>
+      <motion.div
+        variants={staggerContainer(reduced, 0.04)}
+        initial="hidden"
+        animate="show"
+        className="mt-5 flex flex-col gap-3 pb-1"
+      >
+        {coupons.map((coupon, index) => (
+          <CouponCard
+            key={coupon.id}
+            coupon={coupon}
+            reduced={reduced}
+            pubId={pubId}
+            claimed={claimed}
+            onClaimed={setClaimed}
+            fillIndex={index}
+          />
+        ))}
+      </motion.div>
+    </div>
   );
 }
 
@@ -189,52 +270,54 @@ export function SquadCouponsSheet({
   pubId,
 }: SquadCouponsSheetProps) {
   const reduced = useReducedMotion() ?? false;
-  const coupons = getPubCoupons(context);
-  const unlockedCount = coupons.filter((c) => c.status === "unlocked").length;
-  const [claimed, setClaimed] = useState<ClaimedCoupon | null>(null);
 
   useEffect(() => {
-    if (!open) setClaimed(null);
-  }, [open, pubId]);
+    if (!open) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.stopPropagation();
+      onOpenChange(false);
+    };
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
+  }, [open, onOpenChange]);
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent
-        side="bottom"
-        elevated
-        overlayClassName="bg-black/75 [-webkit-backdrop-filter:blur(16px)] backdrop-blur-lg"
-        className="max-h-[min(78vh,600px)] rounded-t-3xl border-white/10 bg-[#151515] px-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-2"
-      >
-        <SheetHeader className="border-b border-white/10 pb-3 text-left">
-          <SheetTitle className="font-heading text-lg uppercase text-white">
-            Pub rewards
-          </SheetTitle>
-          <SheetDescription className="text-white/55">
-            {pubName ? `${pubName} · ` : ""}
-            {unlockedCount} of {coupons.length} unlocked
-            {unlockedCount > 0 ? " · tap to claim" : ""}
-          </SheetDescription>
-        </SheetHeader>
-
+    <AnimatePresence>
+      {open && (
         <motion.div
-          key={open ? "open" : "closed"}
-          variants={staggerContainer(reduced, 0.04)}
-          initial="hidden"
-          animate="show"
-          className="mt-3 flex max-h-[calc(min(78vh,600px)-7rem)] flex-col gap-2 overflow-y-auto overscroll-contain pb-1"
+          key="pub-rewards"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="pub-rewards-title"
+          initial={{ x: "100%" }}
+          animate={{ x: 0 }}
+          exit={{ x: "100%" }}
+          transition={uiTransition(reduced, 0.32)}
+          className="fixed inset-x-0 bottom-0 z-[60] h-[calc(100dvh-56px)] max-h-[calc(100dvh-56px)] overflow-y-auto rounded-t-[22px] bg-c-amber px-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-5 md:mx-auto md:max-w-3xl"
+          style={{
+            backgroundImage: "var(--card-texture)",
+            backgroundSize: "var(--card-texture-size)",
+          }}
         >
-          {coupons.map((coupon) => (
-            <CouponCard
-              key={coupon.id}
-              coupon={coupon}
-              reduced={reduced}
-              pubId={pubId}
-              claimed={claimed}
-              onClaimed={setClaimed}
-            />
-          ))}
+          <header className="relative pr-14 text-left">
+            <button
+              type="button"
+              onClick={() => onOpenChange(false)}
+              className="absolute right-0 top-0 flex h-11 w-11 items-center justify-center rounded-full border-2 border-ink bg-paper text-ink"
+              aria-label="Back"
+            >
+              <X className="h-[18px] w-[18px]" strokeWidth={2.5} />
+            </button>
+            <h2 id="pub-rewards-title">
+              <NameStack name="Pub Rewards" className="text-sub" />
+            </h2>
+          </header>
+          <div className="mt-4">
+            <PubRewardsList context={context} pubName={pubName} pubId={pubId} />
+          </div>
         </motion.div>
-      </SheetContent>
-    </Sheet>
+      )}
+    </AnimatePresence>
   );
 }

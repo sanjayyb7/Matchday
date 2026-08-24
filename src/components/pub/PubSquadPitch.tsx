@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { motion, useReducedMotion } from "framer-motion";
 import { FormationPlayerCard } from "./FormationPlayerCard";
-import { SquadRewardPanel } from "./SquadRewardPanel";
+import { PubRewardsList } from "./SquadCouponsSheet";
 import {
   assignStartingEleven,
   countPresentStartingPlayers,
@@ -144,6 +144,7 @@ function resolveDefaultTeamId(
 
 export function PubSquadPitch({ squad, pubName, pubId }: PubSquadPitchProps) {
   const reduced = useReducedMotion() ?? false;
+  const [tab, setTab] = useState<"squad" | "rewards">("rewards");
   const identity = useMatchdayStore((s) => s.identity);
   const teamsAtPub = useMemo(() => teamIdsByFanCount(squad), [squad]);
   const defaultTeamId = useMemo(
@@ -155,6 +156,10 @@ export function PubSquadPitch({ squad, pubName, pubId }: PubSquadPitchProps) {
   useEffect(() => {
     setSelectedTeamId(defaultTeamId);
   }, [defaultTeamId]);
+
+  useEffect(() => {
+    setTab("rewards");
+  }, [pubId]);
 
   const roster = getPlayersByTeam(selectedTeamId);
   const { starting, bench } = assignStartingEleven(roster);
@@ -203,16 +208,47 @@ export function PubSquadPitch({ squad, pubName, pubId }: PubSquadPitchProps) {
         </div>
       )}
 
-      <div className={cn(PITCH_WIDTH, "md:max-w-none md:w-full")}>
-        <SquadRewardPanel
-          presentPlayers={presentPlayerCount}
-          rosterSize={STARTING_XI_SIZE}
-          presentFans={presentCount}
+      <div
+        role="tablist"
+        aria-label="Pub sections"
+        className="flex gap-1 rounded-pill border-2 border-ink bg-paper p-1"
+      >
+        {(
+          [
+            { id: "rewards", label: "Rewards" },
+            { id: "squad", label: "Squad" },
+          ] as const
+        ).map((item) => {
+          const isActive = tab === item.id;
+          return (
+            <button
+              key={item.id}
+              type="button"
+              role="tab"
+              aria-selected={isActive}
+              onClick={() => setTab(item.id)}
+              className={cn(
+                "flex min-h-11 flex-1 items-center justify-center rounded-pill px-4 font-display text-chip transition-colors duration-[var(--duration-press)] ease-out",
+                isActive ? "bg-ink text-paper" : "text-ink-muted",
+              )}
+            >
+              {item.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {tab === "rewards" ? (
+        <PubRewardsList
+          context={{
+            presentPlayers: presentPlayerCount,
+            rosterSize: STARTING_XI_SIZE,
+            presentFans: presentCount,
+          }}
           pubName={pubName}
           pubId={pubId}
         />
-      </div>
-
+      ) : (
       <div
         className={cn(
           "flex flex-col items-center gap-3",
@@ -270,6 +306,7 @@ export function PubSquadPitch({ squad, pubName, pubId }: PubSquadPitchProps) {
 
         <BenchRow players={bench} presentCounts={presentCounts} />
       </div>
+      )}
     </div>
   );
 }

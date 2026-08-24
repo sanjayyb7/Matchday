@@ -61,7 +61,7 @@ export function ChatBubble({ message, isOwn, showAvatar = false, team }: ChatBub
       {!isOwn && avatar}
       <div className={cn("flex max-w-[78%] flex-col", isOwn ? "items-end" : "items-start")}>
         {showAvatar && (
-          <span className="micro-label mb-1 px-1 text-chat-muted">
+          <span className="micro-label mb-1 px-1 text-ink-muted">
             {isOwn ? "You" : (player?.name.split(" ").pop() ?? "Fan")}
           </span>
         )}
@@ -70,7 +70,7 @@ export function ChatBubble({ message, isOwn, showAvatar = false, team }: ChatBub
           onClick={() => player && setSelectedPlayerProfile(player)}
           className={cn(
             "chat-bubble inline-block max-w-full rounded-[18px] px-4 py-2.5 text-left font-utility text-body whitespace-pre-wrap break-words transition-[filter] duration-[var(--dur-press)] ease-out active:brightness-[0.97]",
-            isOwn ? "bg-c-lime text-ink" : "bg-chat-incoming text-chat-text",
+            isOwn ? "bg-c-lime text-ink" : "bg-land text-ink",
           )}
           style={{
             textAlign: "left",

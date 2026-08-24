@@ -103,10 +103,10 @@ export function ChatInput({
                       }}
                       disabled={disabled}
                       className={cn(
-                        "press-pill micro-label min-h-11 shrink-0 rounded-pill border-[length:var(--border-quick)] px-3.5 text-paper transition-[background-color,color,transform] duration-[var(--dur-press)] ease-out disabled:opacity-40",
+                        "press-pill micro-label min-h-11 shrink-0 rounded-pill border-[length:var(--border-quick)] px-3.5 transition-[background-color,color,transform] duration-[var(--dur-press)] ease-out disabled:opacity-40",
                         selected
                           ? "border-c-lime bg-c-lime text-ink"
-                          : "border-chat-quick-border bg-transparent",
+                          : "border-ink bg-paper text-ink",
                       )}
                     >
                       {template}
@@ -118,7 +118,7 @@ export function ChatInput({
           )}
         </AnimatePresence>
 
-        <div className="flex min-h-[var(--send-size)] items-center gap-2.5 rounded-pill border border-transparent bg-chat-input-fill py-2 pl-5 pr-2 focus-within:border-c-lime">
+        <div className="flex h-[var(--send-size)] items-center gap-2.5 overflow-hidden rounded-pill border-2 border-ink bg-paper pl-5 pr-2 focus-within:border-live">
           <input
             value={text}
             onChange={(e) => {
@@ -128,7 +128,7 @@ export function ChatInput({
             onKeyDown={(e) => e.key === "Enter" && canSend && handleSend()}
             placeholder="Send a chat..."
             disabled={disabled}
-            className="min-w-0 flex-1 bg-transparent font-utility text-body text-chat-text placeholder:text-chat-muted outline-none disabled:opacity-40"
+            className="min-w-0 flex-1 self-stretch bg-transparent font-utility text-body text-ink placeholder:text-ink-muted outline-none disabled:opacity-40"
           />
           <AnimatePresence mode="popLayout">
             {canSend && (
@@ -145,7 +145,7 @@ export function ChatInput({
                     ? { duration: 0 }
                     : { duration: 0.18, ease: "easeOut" }
                 }
-                className="flex size-[var(--send-size)] shrink-0 items-center justify-center overflow-hidden rounded-full bg-c-lime text-ink disabled:opacity-40"
+                className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-c-lime text-ink disabled:opacity-40"
                 aria-label="Send"
               >
                 <ArrowUp className="h-5 w-5" strokeWidth={1.75} />

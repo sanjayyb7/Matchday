@@ -28,7 +28,6 @@ import { upsertUserIdentity } from "@/lib/identity/insforge-identity";
 import type { Match, Player, Team } from "@/types";
 import { NameStack } from "@/components/visual/NameStack";
 import { cn } from "@/lib/utils";
-import { BOTTOM_NAV_CLEARANCE } from "@/lib/layout/constants";
 
 function ensureLocalFallbackSquads(home?: Team, away?: Team): boolean {
   const missing: Player[] = [];
@@ -196,7 +195,6 @@ export function MatchSelectionPanel({
           ? "min-h-0 flex-1 bg-paper"
           : "h-dvh overflow-hidden overscroll-contain bg-paper",
       )}
-      style={embedded ? undefined : { paddingBottom: BOTTOM_NAV_CLEARANCE }}
     >
       <div
         className={cn(
@@ -263,6 +261,9 @@ export function MatchSelectionPanel({
           step === "team"
             ? "flex min-h-0 flex-1 flex-col"
             : "min-h-0 flex-1 overflow-y-auto",
+          !embedded &&
+            step !== "team" &&
+            "pb-[calc(var(--list-clearance)+env(safe-area-inset-bottom))]",
           embedded && step !== "team" && "pb-6",
         )}
       >

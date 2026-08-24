@@ -215,12 +215,12 @@ export default function ChatPage({
   const showQuickReplies = !messages.some((msg) => msg.userId === user?.id);
 
   return (
-    <div className="relative flex h-dvh flex-col overflow-hidden bg-chat-bg">
-      <header className="relative z-50 flex items-center gap-3 overflow-visible border-b border-chat-hairline bg-chat-bg px-[var(--gut)] py-3">
+    <div className="relative flex h-dvh flex-col overflow-hidden bg-dots">
+      <header className="relative z-50 flex items-center gap-3 overflow-visible bg-paper px-[var(--gut)] py-3">
         <Link
           href="/map"
           aria-label="Back"
-          className="press-pill flex size-11 items-center justify-center rounded-full border-[length:var(--border-ink)] border-chat-quick-border text-paper"
+          className="press-pill flex size-11 items-center justify-center rounded-full border-[length:var(--border-ink)] border-ink text-ink"
         >
           <ChevronLeft className="h-6 w-6" strokeWidth={2.5} />
         </Link>
@@ -235,10 +235,10 @@ export default function ChatPage({
           </div>
         )}
         <div className="min-w-0 flex-1">
-          <h1 className="truncate font-display text-team-list text-paper">
+          <h1 className="truncate font-display text-team-list text-ink">
             {team?.name ?? "Team"} Squad
           </h1>
-          <p className="truncate font-utility text-micro font-medium text-chat-muted">
+          <p className="truncate font-utility text-micro font-medium text-ink-muted">
             {matchLabel
               ? `${matchLabel}${match && getDerivedMatchStatus(match) === "live" ? " · LIVE" : ""}`
               : messages.length > 0
@@ -256,7 +256,7 @@ export default function ChatPage({
               aria-haspopup="menu"
               disabled={leaving || resetting}
               onClick={() => setMenuOpen((open) => !open)}
-              className="press-pill flex size-11 items-center justify-center rounded-full text-paper"
+              className="press-pill flex size-11 items-center justify-center rounded-full text-ink"
             >
               <MoreVertical className="h-5 w-5" strokeWidth={2.25} />
             </button>
@@ -308,18 +308,13 @@ export default function ChatPage({
           }
         />
 
-        {/* Squad rail floats over the thread: messages scroll underneath and
-            dissolve into a blur instead of hitting a hard clipped edge. */}
+        {/* Solid paper behind the squad so the dotted chat field stays distinct. */}
         <div className="pointer-events-none absolute inset-x-0 top-0 z-20">
           <div
-            aria-hidden
-            className="absolute inset-0 bg-chat-bg"
-          />
-          <div
-            aria-hidden
-            className="absolute inset-0 bg-chat-bg"
-          />
-          <div ref={railRef} className="pointer-events-auto relative">
+            ref={railRef}
+            className="pointer-events-auto relative bg-paper"
+            style={{ boxShadow: "0 2px 8px rgba(12, 12, 12, 0.08)" }}
+          >
             <ChatStoriesRow
               messages={messages}
               teamId={teamId}
@@ -328,15 +323,6 @@ export default function ChatPage({
             />
           </div>
         </div>
-
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-16 bg-chat-bg"
-        />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-16 bg-chat-bg"
-        />
       </div>
       <ChatInput
         onSend={handleSend}

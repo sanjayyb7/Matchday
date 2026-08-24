@@ -104,17 +104,18 @@ export function ChatStoriesRow({
   });
 
   return (
-    <div className="px-[var(--gut)] py-3">
-      <p className="micro-label mb-2.5 text-chat-muted">
-        Live squad {sorted.length > 0 ? `· ${sorted.length}` : ""}
+    <div className="px-[var(--gut)] py-2">
+      <p className="sr-only">
+        Live squad{sorted.length > 0 ? ` · ${sorted.length}` : ""}
       </p>
-      <div className="flex gap-3 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {sorted.length === 0 && (
-          <p className="font-utility text-micro font-medium text-chat-muted">
-            No teammates in yet — invite a friend.
-          </p>
-        )}
-        {sorted.map(({ userId, playerId, player }) => {
+      <div className="overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="flex gap-3 px-1.5 pt-1.5">
+          {sorted.length === 0 && (
+            <p className="font-utility text-micro font-medium text-ink-muted">
+              No teammates in yet — invite a friend.
+            </p>
+          )}
+          {sorted.map(({ userId, playerId, player }) => {
           const isYou = identity?.userId === userId;
           const name = player?.name ?? "Fan";
 
@@ -126,24 +127,26 @@ export function ChatStoriesRow({
               onClick={() => player && setSelectedPlayerProfile(player)}
               className="flex shrink-0 flex-col items-center gap-1.5"
             >
-              <div
-                className="rounded-full"
-                style={isYou ? { boxShadow: "var(--ring-you)" } : undefined}
-              >
-                <div className="relative size-[var(--avatar-squad)] overflow-hidden rounded-full bg-paper">
-                  <Image
-                    src={player?.imageUrl ?? fallbackAvatar(playerId, resolvedTeam)}
-                    alt={name}
-                    fill
-                    className="object-cover"
-                    unoptimized
-                  />
+              <div className="p-[6px]">
+                <div
+                  className="relative size-10 rounded-full bg-paper"
+                  style={isYou ? { boxShadow: "var(--ring-you)" } : undefined}
+                >
+                  <div className="relative size-full overflow-hidden rounded-full">
+                    <Image
+                      src={player?.imageUrl ?? fallbackAvatar(playerId, resolvedTeam)}
+                      alt={name}
+                      fill
+                      className="object-cover"
+                      unoptimized
+                    />
+                  </div>
                 </div>
               </div>
               <span
                 className={cn(
                   "micro-label max-w-[56px] truncate",
-                  isYou ? "text-c-lime" : "text-chat-muted",
+                  isYou ? "text-ink" : "text-ink-muted",
                 )}
               >
                 {isYou ? "You" : name.split(" ").pop()}
@@ -151,6 +154,7 @@ export function ChatStoriesRow({
             </button>
           );
         })}
+        </div>
       </div>
     </div>
   );

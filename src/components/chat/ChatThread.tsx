@@ -38,8 +38,8 @@ export function ChatThread({
             <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-c-lime text-2xl">
               👋
             </div>
-            <p className="font-display text-team-list text-paper">Say hey to your squad</p>
-            <p className="mt-1 max-w-[220px] font-utility text-micro font-medium text-chat-muted">
+            <p className="font-display text-team-list text-ink">Say hey to your squad</p>
+            <p className="mt-1 max-w-[220px] font-utility text-micro font-medium text-ink-muted">
               Tap a quick reply below or send your first message
             </p>
           </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { Calendar, Globe, Shield } from "lucide-react";
 import { UpcomingMatchCard } from "./UpcomingMatchCard";
 import { getDerivedMatchStatus } from "@/lib/mock/data";
@@ -8,6 +9,7 @@ import {
   filterMatchesByLeague,
   listLeaguesFromMatches,
 } from "@/lib/matches/league-filter";
+import { getLeagueLogoUrl } from "@/lib/matches/league-logos";
 import { BOTTOM_NAV_CLEARANCE } from "@/lib/layout/constants";
 import { NameStack } from "@/components/visual/NameStack";
 import { Pill } from "@/components/visual/Pill";
@@ -47,6 +49,30 @@ interface LeagueOption {
   id: string | null;
   label: string;
   shortLabel: string;
+}
+
+function LeagueMark({ league }: { league: string | null }) {
+  if (!league) {
+    return <Globe className="size-5" strokeWidth={2.25} />;
+  }
+
+  const src = getLeagueLogoUrl(league);
+  if (!src) {
+    return <Shield className="size-5" strokeWidth={2.25} />;
+  }
+
+  return (
+    <span className="relative block size-5 overflow-hidden">
+      <Image
+        src={src}
+        alt=""
+        fill
+        sizes="20px"
+        className="object-contain"
+        unoptimized
+      />
+    </span>
+  );
 }
 
 function shortenLeagueLabel(name: string): string {
@@ -109,13 +135,7 @@ export function UpcomingMatchList({ matches, onSelect }: UpcomingMatchListProps)
                 role="tab"
                 aria-selected={isActive}
                 active={isActive}
-                mark={
-                  option.id === null ? (
-                    <Globe className="size-4" strokeWidth={2.25} />
-                  ) : (
-                    <Shield className="size-4" strokeWidth={2.25} />
-                  )
-                }
+                mark={<LeagueMark league={option.id} />}
                 onClick={() => setSelectedLeague(option.id)}
               >
                 {option.shortLabel}

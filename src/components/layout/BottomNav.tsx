@@ -28,49 +28,67 @@ export function BottomNav() {
 
   if (/^\/chat\/[^/]+/.test(pathname)) return null;
 
+  const onPicker = pathname === "/chat";
+
   return (
-    <nav
-      className="pointer-events-none fixed inset-x-0 z-50 flex justify-center"
-      style={{
-        bottom: "calc(var(--tab-offset) + env(safe-area-inset-bottom))",
-      }}
-    >
+    <nav className="pointer-events-none fixed inset-x-0 bottom-0 z-50">
+      {!onPicker && (
+        <div
+          aria-hidden
+          className="absolute inset-x-0 bottom-0 h-[calc(var(--list-clearance)+env(safe-area-inset-bottom))]"
+          style={{
+            WebkitBackdropFilter: "blur(16px)",
+            backdropFilter: "blur(16px)",
+            WebkitMaskImage:
+              "linear-gradient(to top, black 0%, rgba(0,0,0,0.55) 42%, transparent 100%)",
+            maskImage:
+              "linear-gradient(to top, black 0%, rgba(0,0,0,0.55) 42%, transparent 100%)",
+          }}
+        />
+      )}
       <div
-        className="pointer-events-auto flex items-center rounded-pill bg-ink"
+        className="relative flex justify-center"
         style={{
-          padding: "var(--tab-pad)",
-          boxShadow: "var(--shadow-tab)",
+          paddingBottom: "calc(var(--tab-offset) + env(safe-area-inset-bottom))",
         }}
       >
-        {resolvedTabs.map(({ id, href, icon: Icon, label }) => {
-          const active = pathname.startsWith(id);
-          return (
-            <Link
-              key={id}
-              href={href}
-              aria-label={label}
-              aria-current={active ? "page" : undefined}
-              className={cn(
-                "press-pill focus-visible-live flex min-h-11 min-w-11 items-center justify-center overflow-hidden rounded-pill",
-                "transition-[max-width,gap,padding,background-color] duration-[var(--dur-ui)] ease-out",
-                active
-                  ? "gap-2 bg-c-lime px-3.5 text-ink"
-                  : "px-0 text-paper/55",
-              )}
-            >
-              <Icon className="size-5 shrink-0" strokeWidth={active ? 2.25 : 1.75} />
-              <span
+        <div
+          className="pointer-events-auto flex items-center rounded-pill bg-ink"
+          style={{
+            padding: "var(--tab-pad)",
+            boxShadow: "var(--shadow-tab)",
+          }}
+        >
+          {resolvedTabs.map(({ id, href, icon: Icon, label }) => {
+            const active = pathname.startsWith(id);
+            return (
+              <Link
+                key={id}
+                href={href}
+                aria-label={label}
+                aria-current={active ? "page" : undefined}
                 className={cn(
-                  "overflow-hidden whitespace-nowrap font-utility text-tab font-semibold uppercase tracking-[var(--micro-tracking)]",
-                  "transition-[max-width,opacity] duration-[var(--dur-ui)] ease-out",
-                  active ? "max-w-[9rem] opacity-100" : "max-w-0 opacity-0",
+                  "press-pill focus-visible-live flex min-h-11 min-w-11 items-center justify-center overflow-hidden rounded-pill",
+                  "transition-[max-width,gap,padding,background-color] duration-[var(--dur-ui)] ease-out",
+                  active
+                    ? "gap-2 bg-c-lime px-3.5 text-ink"
+                    : "px-0 text-paper/55",
                 )}
               >
-                {label}
-              </span>
-            </Link>
-          );
-        })}
+                <Icon className="size-5 shrink-0" strokeWidth={active ? 2.25 : 1.75} />
+                <span
+                  className={cn(
+                    "overflow-hidden whitespace-nowrap font-utility text-tab font-semibold uppercase tracking-[var(--micro-tracking)]",
+                    "transition-[max-width,opacity] duration-[var(--dur-ui)] ease-out",
+                    active ? "max-w-[9rem] opacity-100" : "max-w-0 opacity-0",
+                  )}
+                >
+                  {label}
+                </span>
+              </Link>
+            );
+          })}
+        </div>
       </div>
     </nav>
   );
