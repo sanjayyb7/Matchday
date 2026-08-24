@@ -1,43 +1,20 @@
 "use client";
 
-import Image from "next/image";
-import { motion } from "framer-motion";
 import { getDerivedMatchStatus, getTeam } from "@/lib/mock/data";
-import { Well } from "@/components/visual/Well";
+import { cardSurface, Fold } from "@/components/visual/Card";
+import { Crest } from "@/components/visual/Crest";
+import { MicroLabel } from "@/components/visual/MicroLabel";
+import { NameStack } from "@/components/visual/NameStack";
+import { matchTone } from "@/components/visual/matchTone";
 import type { Match } from "@/types";
 import { cn } from "@/lib/utils";
 
-function formatMatchDate(kickoff: string): string {
-  return new Date(kickoff).toLocaleDateString(undefined, {
-    day: "2-digit",
-    month: "long",
-  });
-}
-
-function formatMatchTime(kickoff: string): string {
+function formatKickoffTime(kickoff: string): string {
   return new Date(kickoff).toLocaleTimeString(undefined, {
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
   });
-}
-
-function Crest({ src, alt }: { src?: string; alt: string }) {
-  return (
-    <Well className="size-12 bg-paper/40">
-      {src ? (
-        <span className="absolute inset-1 overflow-hidden rounded-full">
-          <Image
-            src={src}
-            alt={alt}
-            fill
-            className="object-contain p-0.5"
-            unoptimized
-          />
-        </span>
-      ) : null}
-    </Well>
-  );
 }
 
 interface UpcomingMatchCardProps {
@@ -49,47 +26,76 @@ export function UpcomingMatchCard({ match, onSelect }: UpcomingMatchCardProps) {
   const homeTeam = getTeam(match.homeTeamId);
   const awayTeam = getTeam(match.awayTeamId);
   const isLive = getDerivedMatchStatus(match) === "live";
+  const elapsed =
+    match.elapsedMinutes != null && match.elapsedMinutes >= 0
+      ? `${match.elapsedMinutes}'`
+      : null;
+  const hasScore =
+    typeof match.homeScore === "number" && typeof match.awayScore === "number";
 
   return (
-    <motion.button
+    <button
       type="button"
-      whileTap={{ filter: "brightness(0.96)" }}
       onClick={() => onSelect(match)}
-      className={cn(
-        "dog-ear relative min-h-[148px] w-full overflow-hidden rounded-card px-4 py-4 text-left",
-        "transition-[filter] duration-[var(--duration-press)] ease-out",
-        "focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-offset-[3px] focus-visible:outline-live",
-      )}
+      className={cn(cardSurface, matchTone(match.id))}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <Crest src={homeTeam?.flagUrl} alt={homeTeam?.name ?? "Home"} />
-          <Crest src={awayTeam?.flagUrl} alt={awayTeam?.name ?? "Away"} />
-        </div>
-        <div className="flex min-h-11 flex-col items-end justify-start gap-2">
-          <p className="font-display text-micro text-ink-muted">
-            {formatMatchDate(match.kickoff)}
-          </p>
-          {isLive && (
-            <span className="inline-flex min-h-11 items-center gap-2 rounded-pill bg-ink px-3 font-display text-chip text-paper">
-              <span className="live-pulse size-2 rounded-full bg-live" />
-              Live
-            </span>
-          )}
-        </div>
-      </div>
+      <Fold />
 
-      <div className="mt-6 flex items-end justify-between gap-3">
-        <p className="font-display text-block text-ink">
-          {formatMatchTime(match.kickoff)}
-        </p>
-        <p className="text-right font-display text-name leading-[0.88]">
-          <span className="block text-ink">{homeTeam?.name ?? "Home"}</span>
-          <span className="block text-ink-muted-soft">
-            {awayTeam?.name ?? "Away"}
+      <span className="flex items-baseline justify-between gap-3">
+        <MicroLabel className="truncate">{match.league ?? ""}</MicroLabel>
+        {/* The right margin keeps the status clear of the dog-ear. */}
+        <span
+          className={cn(
+            "mr-[26px] flex shrink-0 items-center gap-1.5 font-display text-status",
+            isLive ? "text-ink" : "text-ink-muted",
+          )}
+        >
+          {isLive ? (
+            <>
+              <span className="live-pulse size-1.5 rounded-full bg-live" />
+              {elapsed ?? "Live"}
+            </>
+          ) : (
+            formatKickoffTime(match.kickoff)
+          )}
+        </span>
+      </span>
+
+      {/* 1fr / score / 1fr. The score is taken out of flow, so both team
+          columns are pinned or the away side lands in the middle track. */}
+      <span className="relative mt-6 grid grid-cols-[1fr_var(--score-column)_1fr] items-start">
+        <span className="col-start-1 flex flex-col gap-3">
+          <Crest src={homeTeam?.flagUrl} />
+          <NameStack
+            name={homeTeam?.name ?? "Home"}
+            emphasize="first"
+            className="text-team-list"
+          />
+        </span>
+
+        {isLive && hasScore ? (
+          /* Centred on the midpoint between the two crests, not the layout. */
+          <span
+            className="absolute flex items-center font-display text-score text-ink"
+            style={{
+              left: "calc(25% + 16.5px + var(--crest-list) / 2)",
+              height: "var(--crest-list)",
+              transform: "translateX(-50%)",
+            }}
+          >
+            {match.homeScore}&#8211;{match.awayScore}
           </span>
-        </p>
-      </div>
-    </motion.button>
+        ) : null}
+
+        <span className="col-start-3 flex flex-col gap-3">
+          <Crest src={awayTeam?.flagUrl} />
+          <NameStack
+            name={awayTeam?.name ?? "Away"}
+            emphasize="last"
+            className="text-team-list"
+          />
+        </span>
+      </span>
+    </button>
   );
 }

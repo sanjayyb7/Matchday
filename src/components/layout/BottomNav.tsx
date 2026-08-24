@@ -29,25 +29,45 @@ export function BottomNav() {
   if (/^\/chat\/[^/]+/.test(pathname)) return null;
 
   return (
-    <nav className="pointer-events-none fixed bottom-0 left-0 right-0 z-50 bg-ink pb-[env(safe-area-inset-bottom)]">
-      <div className="pointer-events-auto grid grid-cols-3">
+    <nav
+      className="pointer-events-none fixed inset-x-0 z-50 flex justify-center"
+      style={{
+        bottom: "calc(var(--tab-offset) + env(safe-area-inset-bottom))",
+      }}
+    >
+      <div
+        className="pointer-events-auto flex items-center rounded-pill bg-ink"
+        style={{
+          padding: "var(--tab-pad)",
+          boxShadow: "var(--shadow-tab)",
+        }}
+      >
         {resolvedTabs.map(({ id, href, icon: Icon, label }) => {
           const active = pathname.startsWith(id);
           return (
             <Link
               key={id}
               href={href}
-              className="flex min-h-14 items-center justify-center transition-transform duration-[var(--duration-press)] ease-out active:scale-95"
               aria-label={label}
               aria-current={active ? "page" : undefined}
+              className={cn(
+                "press-pill focus-visible-live flex min-h-11 min-w-11 items-center justify-center overflow-hidden rounded-pill",
+                "transition-[max-width,gap,padding,background-color] duration-[var(--dur-ui)] ease-out",
+                active
+                  ? "gap-2 bg-c-lime px-3.5 text-ink"
+                  : "px-0 text-paper/55",
+              )}
             >
-              <Icon
+              <Icon className="size-5 shrink-0" strokeWidth={active ? 2.25 : 1.75} />
+              <span
                 className={cn(
-                  "h-6 w-6",
-                  active ? "text-c-lime" : "text-paper",
+                  "overflow-hidden whitespace-nowrap font-utility text-tab font-semibold uppercase tracking-[var(--micro-tracking)]",
+                  "transition-[max-width,opacity] duration-[var(--dur-ui)] ease-out",
+                  active ? "max-w-[9rem] opacity-100" : "max-w-0 opacity-0",
                 )}
-                strokeWidth={active ? 1.75 : 1.5}
-              />
+              >
+                {label}
+              </span>
             </Link>
           );
         })}

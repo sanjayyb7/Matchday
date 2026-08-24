@@ -26,6 +26,7 @@ import { getHistoryAdapter } from "@/hooks/useHistory";
 import { INSFORGE_ENABLED } from "@/lib/insforge/config";
 import { upsertUserIdentity } from "@/lib/identity/insforge-identity";
 import type { Match, Player, Team } from "@/types";
+import { NameStack } from "@/components/visual/NameStack";
 import { cn } from "@/lib/utils";
 import { BOTTOM_NAV_CLEARANCE } from "@/lib/layout/constants";
 
@@ -178,21 +179,30 @@ export function MatchSelectionPanel({
     router.replace(`/chat/${selectedTeamId}`);
   };
 
+  const elapsed =
+    match.elapsedMinutes != null && match.elapsedMinutes >= 0
+      ? `${match.elapsedMinutes}'`
+      : null;
+  const statusLine =
+    matchStatus === "live"
+      ? `Live${elapsed ? ` · ${elapsed}` : ""}`
+      : formatKickoff(match.kickoff);
+
   return (
     <div
       className={cn(
         "flex flex-col",
         embedded
           ? "min-h-0 flex-1 bg-paper"
-          : "h-dvh overflow-y-auto overscroll-contain bg-paper",
+          : "h-dvh overflow-hidden overscroll-contain bg-paper",
       )}
       style={embedded ? undefined : { paddingBottom: BOTTOM_NAV_CLEARANCE }}
     >
       <div
         className={cn(
-          "sticky top-0 z-10 shrink-0 px-4 pb-4",
-          "bg-paper",
-          embedded ? "pr-14 pt-10" : "pt-6",
+          "sticky top-0 z-10 shrink-0 bg-paper px-[var(--gut)]",
+          embedded ? "pr-14 pt-10" : "pt-[var(--header-pad-t)]",
+          step === "team" ? "pb-[var(--header-pad-b)]" : "pb-4",
         )}
       >
         <div className="flex items-center gap-3">
@@ -201,7 +211,7 @@ export function MatchSelectionPanel({
               type="button"
               onClick={onBack}
               aria-label="Back to matches"
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-ink bg-paper text-ink transition-[transform] duration-[var(--duration-press)] ease-out active:scale-95"
+              className="press-pill focus-visible-live flex size-11 shrink-0 items-center justify-center rounded-full border-[length:var(--border-ink)] border-ink bg-paper text-ink"
             >
               <ChevronLeft className="h-5 w-5" strokeWidth={2.5} />
             </button>
@@ -211,37 +221,37 @@ export function MatchSelectionPanel({
               type="button"
               onClick={() => setStep("team")}
               aria-label="Change team"
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-ink bg-paper text-ink transition-[transform] duration-[var(--duration-press)] ease-out active:scale-95"
+              className="press-pill focus-visible-live flex size-11 shrink-0 items-center justify-center rounded-full border-[length:var(--border-ink)] border-ink bg-paper text-ink"
             >
               <ChevronLeft className="h-5 w-5" strokeWidth={2.5} />
             </button>
           )}
-          <div className="min-w-0 flex-1 text-center">
-            <h1 className="font-display text-name text-ink">
-              Match
-            </h1>
-            <p className="mt-0.5 truncate font-utility text-xs text-ink-muted">
-              {match.league
-                ? `${match.league} · ${
-                    matchStatus === "live" ? "Live now" : formatKickoff(match.kickoff)
-                  }`
-                : matchStatus === "live"
-                  ? "Live now"
-                  : formatKickoff(match.kickoff)}
-            </p>
+          <div className="min-w-0 flex-1">
+            {step === "team" ? (
+              <>
+                <p className="truncate font-utility text-tab font-semibold uppercase tracking-[var(--micro-tracking)] text-ink">
+                  {match.league || "Matchday"}
+                </p>
+                <p className="micro-label mt-0.5 text-ink-muted">{statusLine}</p>
+              </>
+            ) : (
+              <p className="truncate font-utility text-tab font-semibold uppercase tracking-[var(--micro-tracking)] text-ink">
+                {selectedTeam?.name ?? "Team"}
+              </p>
+            )}
           </div>
-          {/* Spacer for header symmetry — mirrors the back button width. */}
-          <div className="h-10 w-10 shrink-0" aria-hidden />
         </div>
 
-        {step === "player" && (
-          <p className="mt-4 text-center font-display text-section text-ink-muted">
-            Pick your player
-          </p>
-        )}
+        <h1 className="mt-5">
+          <NameStack
+            name={step === "team" ? "Pick a side" : "Pick your player"}
+            tone="ghost"
+            className="text-sub"
+          />
+        </h1>
 
         {!selectionOpen && !earlyPick && matchStatus === "upcoming" && (
-          <p className="mt-3 text-center font-utility text-xs text-ink-muted">
+          <p className="mt-3 font-utility text-micro font-medium text-ink-muted">
             Team selection opens in{" "}
             {formatTimeUntil(getSelectionOpensAt(match))}
           </p>

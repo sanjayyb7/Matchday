@@ -37,9 +37,11 @@
   --chat-bg: #141414;
   --chat-incoming: #262626;
   --chat-text: #f2f2f2;
+  --chat-muted: rgba(255, 255, 255, 0.5);
   --chat-hairline: rgba(255, 255, 255, 0.1);
   --chat-quick-border: rgba(255, 255, 255, 0.28);
   --chat-input-fill: rgba(255, 255, 255, 0.05);
+  --ring-you: 0 0 0 3px var(--chat-bg), 0 0 0 6px var(--c-lime);
 
   /* ---- Type — two faces, strict split -------------------------------- */
   --family-display: var(--font-display-face), "Arial Black", Impact, sans-serif;
@@ -174,6 +176,10 @@
   --color-chat-bg: var(--chat-bg);
   --color-chat-incoming: var(--chat-incoming);
   --color-chat-text: var(--chat-text);
+  --color-chat-muted: var(--chat-muted);
+  --color-chat-hairline: var(--chat-hairline);
+  --color-chat-quick-border: var(--chat-quick-border);
+  --color-chat-input-fill: var(--chat-input-fill);
 
   --font-display: var(--family-display);
   --font-utility: var(--family-utility);

@@ -215,12 +215,12 @@ export default function ChatPage({
   const showQuickReplies = !messages.some((msg) => msg.userId === user?.id);
 
   return (
-    <div className="relative flex h-dvh flex-col overflow-hidden bg-paper">
-      <header className="relative z-50 flex items-center gap-3 overflow-visible bg-ink px-3 py-3">
+    <div className="relative flex h-dvh flex-col overflow-hidden bg-chat-bg">
+      <header className="relative z-50 flex items-center gap-3 overflow-visible border-b border-chat-hairline bg-chat-bg px-[var(--gut)] py-3">
         <Link
           href="/map"
           aria-label="Back"
-          className="flex h-11 w-11 items-center justify-center rounded-full text-paper transition-transform duration-[var(--duration-press)] ease-out active:scale-95"
+          className="press-pill flex size-11 items-center justify-center rounded-full border-[length:var(--border-ink)] border-chat-quick-border text-paper"
         >
           <ChevronLeft className="h-6 w-6" strokeWidth={2.5} />
         </Link>
@@ -235,10 +235,10 @@ export default function ChatPage({
           </div>
         )}
         <div className="min-w-0 flex-1">
-          <h1 className="truncate font-display text-name text-paper">
+          <h1 className="truncate font-display text-team-list text-paper">
             {team?.name ?? "Team"} Squad
           </h1>
-          <p className="truncate font-utility text-xs text-paper/70">
+          <p className="truncate font-utility text-micro font-medium text-chat-muted">
             {matchLabel
               ? `${matchLabel}${match && getDerivedMatchStatus(match) === "live" ? " · LIVE" : ""}`
               : messages.length > 0
@@ -256,7 +256,7 @@ export default function ChatPage({
               aria-haspopup="menu"
               disabled={leaving || resetting}
               onClick={() => setMenuOpen((open) => !open)}
-              className="flex h-11 w-11 items-center justify-center rounded-full text-paper transition-transform duration-[var(--duration-press)] ease-out active:scale-95"
+              className="press-pill flex size-11 items-center justify-center rounded-full text-paper"
             >
               <MoreVertical className="h-5 w-5" strokeWidth={2.25} />
             </button>
@@ -313,11 +313,11 @@ export default function ChatPage({
         <div className="pointer-events-none absolute inset-x-0 top-0 z-20">
           <div
             aria-hidden
-            className="absolute inset-0 bg-paper"
+            className="absolute inset-0 bg-chat-bg"
           />
           <div
             aria-hidden
-            className="absolute inset-0 bg-paper"
+            className="absolute inset-0 bg-chat-bg"
           />
           <div ref={railRef} className="pointer-events-auto relative">
             <ChatStoriesRow
@@ -331,11 +331,11 @@ export default function ChatPage({
 
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-16 bg-paper"
+          className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-16 bg-chat-bg"
         />
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-16 bg-paper"
+          className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-16 bg-chat-bg"
         />
       </div>
       <ChatInput

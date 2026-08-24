@@ -104,13 +104,13 @@ export function ChatStoriesRow({
   });
 
   return (
-    <div className="px-4 py-3">
-      <p className="mb-2.5 font-display text-section text-ink-muted">
+    <div className="px-[var(--gut)] py-3">
+      <p className="micro-label mb-2.5 text-chat-muted">
         Live squad {sorted.length > 0 ? `· ${sorted.length}` : ""}
       </p>
       <div className="flex gap-3 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {sorted.length === 0 && (
-          <p className="font-utility text-xs text-ink-muted">
+          <p className="font-utility text-micro font-medium text-chat-muted">
             No teammates in yet — invite a friend.
           </p>
         )}
@@ -128,9 +128,9 @@ export function ChatStoriesRow({
             >
               <div
                 className="rounded-full"
-                style={isYou ? { boxShadow: "var(--ring-avatar)" } : undefined}
+                style={isYou ? { boxShadow: "var(--ring-you)" } : undefined}
               >
-                <div className="relative h-14 w-14 overflow-hidden rounded-full border-[3px] border-ink bg-paper">
+                <div className="relative size-[var(--avatar-squad)] overflow-hidden rounded-full bg-paper">
                   <Image
                     src={player?.imageUrl ?? fallbackAvatar(playerId, resolvedTeam)}
                     alt={name}
@@ -142,8 +142,8 @@ export function ChatStoriesRow({
               </div>
               <span
                 className={cn(
-                  "max-w-[56px] truncate font-display text-micro",
-                  isYou ? "text-ink" : "text-ink-muted",
+                  "micro-label max-w-[56px] truncate",
+                  isYou ? "text-c-lime" : "text-chat-muted",
                 )}
               >
                 {isYou ? "You" : name.split(" ").pop()}

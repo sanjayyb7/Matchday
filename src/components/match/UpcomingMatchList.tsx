@@ -1,18 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
+import { Calendar, Globe, Shield } from "lucide-react";
 import { UpcomingMatchCard } from "./UpcomingMatchCard";
 import { getDerivedMatchStatus } from "@/lib/mock/data";
 import {
   filterMatchesByLeague,
   listLeaguesFromMatches,
 } from "@/lib/matches/league-filter";
-import { getLeagueLogoUrl } from "@/lib/matches/league-logos";
 import { BOTTOM_NAV_CLEARANCE } from "@/lib/layout/constants";
 import { NameStack } from "@/components/visual/NameStack";
 import { Pill } from "@/components/visual/Pill";
-import { Well } from "@/components/visual/Well";
 import type { Match } from "@/types";
 
 interface UpcomingMatchListProps {
@@ -32,16 +30,7 @@ function MatchSection({
   return (
     <section>
       <h2 className="sr-only">{title}</h2>
-      <div
-        className={[
-          "flex flex-col gap-3",
-          "[&>*:nth-child(5n+1)]:bg-match-2",
-          "[&>*:nth-child(5n+2)]:bg-match-3",
-          "[&>*:nth-child(5n+3)]:bg-match-4",
-          "[&>*:nth-child(5n+4)]:bg-match-5",
-          "[&>*:nth-child(5n+5)]:bg-match-1",
-        ].join(" ")}
-      >
+      <div className="card-stack flex flex-col">
         {matches.map((match) => (
           <UpcomingMatchCard
             key={match.id}
@@ -88,8 +77,7 @@ export function UpcomingMatchList({ matches, onSelect }: UpcomingMatchListProps)
     (match) => getDerivedMatchStatus(match) !== "live",
   );
   const showSections = liveMatches.length > 0 && upcomingMatches.length > 0;
-  const heading = activeLeague ?? "Matches";
-  const headingLogo = activeLeague ? getLeagueLogoUrl(activeLeague) : null;
+  const heading = activeLeague ?? "Matches Today";
 
   const leagueOptions: LeagueOption[] = [
     { id: null, label: "All", shortLabel: "All" },
@@ -100,88 +88,97 @@ export function UpcomingMatchList({ matches, onSelect }: UpcomingMatchListProps)
     })),
   ];
 
+  /* The bottom padding adds the card overlap back, so the first card can ride
+     up over it without colliding with the filters. */
+  const header = (
+    <header className="px-[var(--gut)] pb-[var(--header-pad-b)] pt-[var(--header-pad-t)]">
+      <h1>
+        <NameStack name={heading} tone="ghost" className="text-page" />
+      </h1>
+      {leagueOptions.length > 1 && (
+        <div
+          className="mt-6 flex gap-2.5 overflow-x-auto py-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          role="tablist"
+          aria-label="Filter by league"
+        >
+          {leagueOptions.map((option) => {
+            const isActive = activeLeague === option.id;
+            return (
+              <Pill
+                key={option.id ?? "all"}
+                role="tab"
+                aria-selected={isActive}
+                active={isActive}
+                mark={
+                  option.id === null ? (
+                    <Globe className="size-4" strokeWidth={2.25} />
+                  ) : (
+                    <Shield className="size-4" strokeWidth={2.25} />
+                  )
+                }
+                onClick={() => setSelectedLeague(option.id)}
+              >
+                {option.shortLabel}
+              </Pill>
+            );
+          })}
+        </div>
+      )}
+    </header>
+  );
+
   return (
     <div
       className="relative h-dvh overflow-y-auto overscroll-contain bg-paper"
       style={{ paddingBottom: BOTTOM_NAV_CLEARANCE }}
     >
-      <div className="sticky top-0 z-10 bg-paper">
-        <div className="px-5 pb-4 pt-5">
-          {headingLogo ? (
-            <Well className="mb-3 size-10">
-              <Image
-                src={headingLogo}
-                alt=""
-                fill
-                className="object-contain p-1"
-                unoptimized
+      {filtered.length === 0 ? (
+        <>
+          {header}
+          <div className="flex flex-col items-center gap-4 px-[var(--gut)] pb-16 text-center">
+            <span className="flex size-16 items-center justify-center rounded-well border-[length:var(--border-quick)] border-dashed border-ink-muted">
+              <Calendar className="size-6 text-ink-muted" strokeWidth={2} />
+            </span>
+            <p className="font-utility text-body text-ink-label">
+              No matches in {activeLeague ?? "this filter"} right now.
+            </p>
+          </div>
+        </>
+      ) : (
+        <div className="card-stack">
+          {header}
+          {showSections ? (
+            <div className="card-stack">
+              <MatchSection
+                title={liveMatches.length === 1 ? "Live Match" : "Live Matches"}
+                matches={liveMatches}
+                onSelect={onSelect}
               />
-            </Well>
-          ) : null}
-          <h1 className="text-page">
-            <NameStack name={heading} />
-          </h1>
-          {leagueOptions.length > 1 && (
-            <div
-              className="mt-4 flex gap-2 overflow-x-auto py-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-              role="tablist"
-              aria-label="Filter by league"
-            >
-              {leagueOptions.map((option) => {
-                const isActive = activeLeague === option.id;
-                return (
-                  <Pill
-                    key={option.id ?? "all"}
-                    role="tab"
-                    aria-selected={isActive}
-                    active={isActive}
-                    onClick={() => setSelectedLeague(option.id)}
-                  >
-                    {option.shortLabel}
-                  </Pill>
-                );
-              })}
+              <MatchSection
+                title={
+                  upcomingMatches.length === 1
+                    ? "Upcoming Match"
+                    : "Upcoming Matches"
+                }
+                matches={upcomingMatches}
+                onSelect={onSelect}
+              />
             </div>
-          )}
-        </div>
-      </div>
-
-      <div className="px-4">
-        {filtered.length === 0 ? (
-          <p className="py-10 text-center font-utility text-sm text-ink-muted">
-            No matches in {activeLeague ?? "this filter"} right now.
-          </p>
-        ) : showSections ? (
-          <div className="flex flex-col gap-3">
-            <MatchSection
-              title={liveMatches.length === 1 ? "Live Match" : "Live Matches"}
-              matches={liveMatches}
-              onSelect={onSelect}
-            />
+          ) : (
             <MatchSection
               title={
-                upcomingMatches.length === 1
-                  ? "Upcoming Match"
+                liveMatches.length > 0
+                  ? liveMatches.length === 1
+                    ? "Live Match"
+                    : "Live Matches"
                   : "Upcoming Matches"
               }
-              matches={upcomingMatches}
+              matches={liveMatches.length > 0 ? liveMatches : upcomingMatches}
               onSelect={onSelect}
             />
-          </div>
-        ) : (
-          <MatchSection
-            title={
-              liveMatches.length > 0
-                ? liveMatches.length === 1
-                  ? "Live Match"
-                  : "Live Matches"
-                : "Upcoming Matches"
-            }
-            matches={liveMatches.length > 0 ? liveMatches : upcomingMatches}
-            onSelect={onSelect}
-          />
-        )}
-      </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

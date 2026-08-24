@@ -9,7 +9,7 @@ import {
   BOTTOM_NAV_CLEARANCE,
   BOTTOM_SAFE_CLEARANCE,
 } from "@/lib/layout/constants";
-import { enterVariants, uiTransition } from "@/lib/motion/tokens";
+import { uiTransition } from "@/lib/motion/tokens";
 import { cn } from "@/lib/utils";
 import type { OutgoingChatResult } from "@/lib/chat/safety";
 import type { Team } from "@/types";
@@ -103,10 +103,10 @@ export function ChatInput({
                       }}
                       disabled={disabled}
                       className={cn(
-                        "min-h-11 shrink-0 rounded-pill border-2 border-ink px-3.5 font-display text-chip transition-[background-color,color,transform] duration-[var(--duration-press)] ease-out active:scale-95 disabled:opacity-40",
+                        "press-pill micro-label min-h-11 shrink-0 rounded-pill border-[length:var(--border-quick)] px-3.5 text-paper transition-[background-color,color,transform] duration-[var(--dur-press)] ease-out disabled:opacity-40",
                         selected
-                          ? "bg-ink text-paper"
-                          : "bg-paper text-ink",
+                          ? "border-c-lime bg-c-lime text-ink"
+                          : "border-chat-quick-border bg-transparent",
                       )}
                     >
                       {template}
@@ -118,7 +118,7 @@ export function ChatInput({
           )}
         </AnimatePresence>
 
-        <div className="flex min-h-14 items-center gap-2.5 rounded-pill border-2 border-ink bg-paper py-2 pl-5 pr-2">
+        <div className="flex min-h-[var(--send-size)] items-center gap-2.5 rounded-pill border border-transparent bg-chat-input-fill py-2 pl-5 pr-2 focus-within:border-c-lime">
           <input
             value={text}
             onChange={(e) => {
@@ -128,7 +128,7 @@ export function ChatInput({
             onKeyDown={(e) => e.key === "Enter" && canSend && handleSend()}
             placeholder="Send a chat..."
             disabled={disabled}
-            className="min-w-0 flex-1 bg-transparent font-utility text-[17px] leading-snug text-ink placeholder:text-ghost outline-none disabled:opacity-40"
+            className="min-w-0 flex-1 bg-transparent font-utility text-body text-chat-text placeholder:text-chat-muted outline-none disabled:opacity-40"
           />
           <AnimatePresence mode="popLayout">
             {canSend && (
@@ -137,13 +137,15 @@ export function ChatInput({
                 type="button"
                 onClick={handleSend}
                 disabled={disabled}
-                initial="initial"
-                animate="animate"
-                exit="exit"
-                variants={enterVariants(reduced)}
-                transition={uiTransition(reduced, 0.16)}
-                whileTap={reduced ? undefined : { scale: 0.97 }}
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-ink text-c-lime disabled:opacity-40"
+                initial={{ scale: 0.5, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.5, opacity: 0 }}
+                transition={
+                  reduced
+                    ? { duration: 0 }
+                    : { duration: 0.18, ease: "easeOut" }
+                }
+                className="flex size-[var(--send-size)] shrink-0 items-center justify-center overflow-hidden rounded-full bg-c-lime text-ink disabled:opacity-40"
                 aria-label="Send"
               >
                 <ArrowUp className="h-5 w-5" strokeWidth={1.75} />

@@ -1,6 +1,6 @@
-/** Floating nav footprint (~5.25rem) + comfortable gap above the pill. */
+/** Clears the floating tab pill: 110px bar+offset plus the home-indicator. */
 export const BOTTOM_NAV_CLEARANCE =
-  "calc(7rem + env(safe-area-inset-bottom))";
+  "calc(var(--list-clearance) + env(safe-area-inset-bottom))";
 
 /** Safe area only — when bottom nav is hidden (e.g. chat). */
 export const BOTTOM_SAFE_CLEARANCE =

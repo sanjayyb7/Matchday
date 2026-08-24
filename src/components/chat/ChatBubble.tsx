@@ -30,7 +30,10 @@ export function ChatBubble({ message, isOwn, showAvatar = false, team }: ChatBub
       type="button"
       onClick={() => player && setSelectedPlayerProfile(player)}
       aria-label={player ? `View ${player.name}` : "View player"}
-      className="relative mt-auto h-7 w-7 shrink-0 overflow-hidden rounded-full border-2 border-ink"
+      className={cn(
+        "relative mt-auto h-7 w-7 shrink-0 overflow-hidden rounded-full",
+        isOwn ? "bg-c-lime" : "bg-paper",
+      )}
     >
       {player && (
         <Image
@@ -58,7 +61,7 @@ export function ChatBubble({ message, isOwn, showAvatar = false, team }: ChatBub
       {!isOwn && avatar}
       <div className={cn("flex max-w-[78%] flex-col", isOwn ? "items-end" : "items-start")}>
         {showAvatar && (
-          <span className="mb-1 px-1 font-display text-micro text-ink-muted">
+          <span className="micro-label mb-1 px-1 text-chat-muted">
             {isOwn ? "You" : (player?.name.split(" ").pop() ?? "Fan")}
           </span>
         )}
@@ -66,8 +69,8 @@ export function ChatBubble({ message, isOwn, showAvatar = false, team }: ChatBub
           type="button"
           onClick={() => player && setSelectedPlayerProfile(player)}
           className={cn(
-            "chat-bubble inline-block max-w-full rounded-card px-4 py-2.5 text-left font-utility text-[15px] leading-snug whitespace-pre-wrap break-words text-ink transition-transform duration-[var(--duration-press)] ease-out active:scale-95",
-            isOwn ? "bg-c-lime" : "bg-chat-incoming",
+            "chat-bubble inline-block max-w-full rounded-[18px] px-4 py-2.5 text-left font-utility text-body whitespace-pre-wrap break-words transition-[filter] duration-[var(--dur-press)] ease-out active:brightness-[0.97]",
+            isOwn ? "bg-c-lime text-ink" : "bg-chat-incoming text-chat-text",
           )}
           style={{
             textAlign: "left",

@@ -23,6 +23,7 @@ import { UserPlayerMarkerContent } from "./UserPlayerMarker";
 import { UserLocationMarker } from "./UserLocationMarker";
 import { FanMarker } from "./FanMarker";
 import { Badge } from "@/components/ui/badge";
+import { map } from "@/lib/theme/tokens";
 import type { FanPresence, Player, Team } from "@/types";
 
 function isPlaceholderLocation(lat: number, lng: number) {
@@ -182,7 +183,7 @@ export function PubMap() {
   }
 
   return (
-    <div className="relative h-dvh w-full">
+    <div className="relative h-dvh w-full bg-chat-bg">
       {liveMatch && getDerivedMatchStatus(liveMatch) === "live" && (
         <Badge
           className={`absolute z-10 min-h-11 gap-2 rounded-pill border-0 bg-ink px-3 font-display text-chip text-paper ${error ? "right-4 top-4" : "left-4 top-4"}`}
@@ -226,7 +227,7 @@ export function PubMap() {
         mapboxAccessToken={MAPBOX_TOKEN}
         initialViewState={initialViewState}
         style={{ width: "100%", height: "100%" }}
-        mapStyle="mapbox://styles/mapbox/light-v11"
+        mapStyle={map.style}
         attributionControl={false}
       >
         {pubs.map((pub) => (

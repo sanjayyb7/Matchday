@@ -24,6 +24,7 @@ export const color = {
   chatBg: "#141414",
   chatIncoming: "#262626",
   chatText: "#F2F2F2",
+  chatMuted: "rgba(255,255,255,.5)",
   chatHairline: "rgba(255,255,255,.1)",
   chatQuickBorder: "rgba(255,255,255,.28)",
   chatInputFill: "rgba(255,255,255,.05)",
@@ -43,6 +44,11 @@ export const type = {
   utility: 'var(--font-utility-face), "Helvetica Neue", Arial, sans-serif',
   displayTracking: -0.5,
   microTracking: 1.5,
+} as const;
+
+/** Mapbox cannot read CSS variables — this is the one dark basemap. */
+export const map = {
+  style: "mapbox://styles/mapbox/dark-v11",
 } as const;
 
 /** Coupled values — overlap must exceed the corner cut, and padBottom must
@@ -86,6 +92,10 @@ export const shape = {
 /** The only shadow in the app. */
 export const shadow = {
   tab: "0 8px 24px rgba(12,12,12,.18)",
+} as const;
+
+export const ring = {
+  you: `0 0 0 3px ${color.chatBg}, 0 0 0 6px ${color.lime}`,
 } as const;
 
 export const motion = {
