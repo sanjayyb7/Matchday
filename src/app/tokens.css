@@ -1,8 +1,8 @@
 /* Visual-system tokens. Hex lives here (and the TS mirror). Nowhere else.
-   Import from globals.css after `@import "tailwindcss"` — after review. */
+   Imported from globals.css after `@import "tailwindcss"`. */
 
 :root {
-  /* Color */
+  /* ---- Color ---------------------------------------------------------- */
   --ink: #0c0c0c;
   --paper: #ffffff;
   --live: #f0533a;
@@ -12,110 +12,141 @@
   --c-blue: #8fb2f7;
   --c-mint: #cff0d8;
   --c-amber: #f7c86a;
-  --pitch: #bfe9cc;
 
-  --land: #ecebe8;
-  --block: #e2e1dd;
-  --water: #c9dcf7;
-
-  --ink-muted: rgba(12, 12, 12, 0.38);
-  --ink-muted-soft: rgba(12, 12, 12, 0.35);
-  --ink-muted-strong: rgba(12, 12, 12, 0.42);
-  --ink-faint: rgba(12, 12, 12, 0.22);
-  --fold: rgba(255, 255, 255, 0.55);
-
-  --ghost: #e0e0e0;
-  --ghost-fill: #ededed;
-  --chat-incoming: #f2f2f2;
-
+  /* Card colour cycle, in the order the reference runs them. */
   --match-1: var(--c-lime);
   --match-2: var(--c-pink);
   --match-3: var(--c-blue);
   --match-4: var(--c-mint);
   --match-5: var(--c-amber);
 
-  /* Type — Anton / Archivo variables are set by next/font after review */
-  --family-display: var(--font-anton), "Arial Black", Impact, sans-serif;
-  --family-utility: var(--font-archivo), "Helvetica Neue", Arial, sans-serif;
+  /* Muted ink — a tint of ink, never grey. */
+  --ink-muted: rgba(12, 12, 12, 0.35);
+  --ink-label: rgba(12, 12, 12, 0.5);
+
+  /* Greys are for white surfaces only. */
+  --ghost: #dfdfdf;
+  --squad-number: #e4e4e4;
+  --divider: #f0f0f0;
+  --skeleton: #ededed;
+
+  /* The fold triangle in the cut corner. */
+  --fold: rgba(255, 255, 255, 0.5);
+
+  /* ---- Chat — the one dark surface ------------------------------------ */
+  --chat-bg: #141414;
+  --chat-incoming: #262626;
+  --chat-text: #f2f2f2;
+  --chat-hairline: rgba(255, 255, 255, 0.1);
+  --chat-quick-border: rgba(255, 255, 255, 0.28);
+  --chat-input-fill: rgba(255, 255, 255, 0.05);
+
+  /* ---- Type — two faces, strict split -------------------------------- */
+  --family-display: var(--font-display-face), "Arial Black", Impact, sans-serif;
+  --family-utility: var(--font-utility-face), "Helvetica Neue", Arial, sans-serif;
+
+  --display-tracking: -0.5px;
+  --micro-tracking: 1.5px;
 
   --type-page: 52px;
-  --type-page-leading: 0.84;
-  --type-page-tracking: -1px;
+  --type-page-leading: 0.86;
 
-  --type-block: 34px;
-  --type-block-leading: 0.86;
-  --type-block-tracking: -0.5px;
+  --type-sub: 40px;
+  --type-sub-leading: 0.86;
 
-  --type-name: 24px;
-  --type-name-leading: 0.9;
-  --type-name-tracking: -0.3px;
+  --type-team-list: 22px;
+  --type-team-list-leading: 0.88;
 
-  --type-section: 15px;
-  --type-section-leading: 1.2;
-  --type-section-tracking: 1.2px;
+  --type-team-side: 30px;
+  --type-team-side-leading: 0.86;
 
-  --type-chip: 14px;
-  --type-chip-leading: 1;
-  --type-chip-tracking: 1.2px;
+  --type-score: 24px;
+  --type-squad-number: 30px;
+  --type-status: 15px;
 
-  --type-micro: 11px;
-  --type-micro-leading: 1.2;
-  --type-micro-tracking: 1.4px;
+  --type-player-first: 14px;
+  --type-player-last: 20px;
 
-  --type-score: 76px;
-  --type-score-leading: 0.84;
-  --type-score-tracking: -1px;
+  --type-body: 15px;
+  --type-tab: 13.5px;
+  --type-micro: 12.5px;
 
-  --type-stat: 32px;
-  --type-stat-leading: 0.88;
-  --type-stat-tracking: -0.5px;
+  /* ---- Layout --------------------------------------------------------- */
+  --gut: 20px;
 
-  /* Shape */
-  --radius-block: 22px;
-  --radius-block-tl: 22px 0 0 0;
-  --radius-card: 16px;
-  --radius-ticket: 16px;
+  /* Coupled — see the card block below. */
+  --card-cut: 32px;
+  --card-overlap: 36px;
+  --card-pad-b: 52px;
+  --card-pad-t: 20px;
+  --card-radius-tl: 22px;
+
+  /* Anything directly above the first card adds the overlap back. */
+  --header-pad-t: 46px;
+  --header-pad-b: 72px;
+
+  --crest-list: 56px;
+  --crest-side: 66px;
+  --well-player: 48px;
+  --avatar-squad: 52px;
+  --score-column: 66px;
+
+  --tap-min: 44px;
+  --pill-min: 46px;
+  --send-size: 52px;
+
+  --tab-offset: 26px;
+  --tab-pad: 7px;
+  --list-clearance: 110px;
+
+  /* ---- Shape ---------------------------------------------------------- */
   --radius-pill: 100px;
-  --radius-fold: 32px;
+  --radius-well: 12px;
 
   --border-ink: 2px;
-  --border-well: 1.6px;
-  --tap-min: 44px;
-  --cta-min: 56px;
-  --fold-size: 32px;
+  --border-quick: 1.5px;
+  --hairline: 1px;
 
   --clip-dog-ear: polygon(
     0 0,
-    calc(100% - var(--fold-size)) 0,
-    100% var(--fold-size),
+    calc(100% - var(--card-cut)) 0,
+    100% var(--card-cut),
     100% 100%,
     0 100%
   );
 
-  --hatch-next: repeating-linear-gradient(
-    45deg,
-    var(--ink) 0 2px,
-    transparent 2px 6px
+  --clip-fold: polygon(0 0, 100% 100%, 0 100%);
+
+  --card-texture: radial-gradient(
+    rgba(12, 12, 12, 0.09) 1.2px,
+    transparent 1.2px
   );
+  --card-texture-size: 11px 11px;
 
-  /* The only allowed shadow — flat double-ring on selected avatars */
-  --ring-avatar: 0 0 0 3px var(--paper), 0 0 0 6px var(--c-lime);
+  /* The only shadow in the app. */
+  --shadow-tab: 0 8px 24px rgba(12, 12, 12, 0.18);
 
-  /* Motion */
-  --duration-press: 140ms;
-  --duration-ui: 150ms;
-  --duration-sheet: 300ms;
+  /* ---- Motion --------------------------------------------------------- */
+  --dur-press: 140ms;
+  --dur-ui: 180ms;
+  --dur-slow: 220ms;
+  --dur-view: 340ms;
   --ease-out: ease-out;
-  --ease-sheet: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-view: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* The deliberate pause before the player pick advances. */
+  --delay-advance: 180ms;
+
   --focus-ring: 3px solid var(--live);
   --focus-offset: 3px;
 }
 
 @media (prefers-reduced-motion: reduce) {
   :root {
-    --duration-press: 0ms;
-    --duration-ui: 0ms;
-    --duration-sheet: 0ms;
+    --dur-press: 0ms;
+    --dur-ui: 0ms;
+    --dur-slow: 0ms;
+    --dur-view: 0ms;
   }
 }
 
@@ -128,83 +159,260 @@
   --color-c-blue: var(--c-blue);
   --color-c-mint: var(--c-mint);
   --color-c-amber: var(--c-amber);
-  --color-pitch: var(--pitch);
-  --color-land: var(--land);
-  --color-block: var(--block);
-  --color-water: var(--water);
-  --color-ink-muted: var(--ink-muted);
-  --color-ink-muted-soft: var(--ink-muted-soft);
-  --color-ink-muted-strong: var(--ink-muted-strong);
-  --color-ink-faint: var(--ink-faint);
-  --color-fold: var(--fold);
-  --color-ghost: var(--ghost);
-  --color-ghost-fill: var(--ghost-fill);
-  --color-chat-incoming: var(--chat-incoming);
   --color-match-1: var(--match-1);
   --color-match-2: var(--match-2);
   --color-match-3: var(--match-3);
   --color-match-4: var(--match-4);
   --color-match-5: var(--match-5);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-label: var(--ink-label);
+  --color-ghost: var(--ghost);
+  --color-squad-number: var(--squad-number);
+  --color-divider: var(--divider);
+  --color-skeleton: var(--skeleton);
+  --color-fold: var(--fold);
+  --color-chat-bg: var(--chat-bg);
+  --color-chat-incoming: var(--chat-incoming);
+  --color-chat-text: var(--chat-text);
 
   --font-display: var(--family-display);
   --font-utility: var(--family-utility);
 
-  --text-page: var(--type-page);
-  --text-page--line-height: var(--type-page-leading);
-  --text-page--letter-spacing: var(--type-page-tracking);
-  --text-block: var(--type-block);
-  --text-block--line-height: var(--type-block-leading);
-  --text-block--letter-spacing: var(--type-block-tracking);
-  --text-name: var(--type-name);
-  --text-name--line-height: var(--type-name-leading);
-  --text-name--letter-spacing: var(--type-name-tracking);
-  --text-section: var(--type-section);
-  --text-section--line-height: var(--type-section-leading);
-  --text-section--letter-spacing: var(--type-section-tracking);
-  --text-chip: var(--type-chip);
-  --text-chip--line-height: var(--type-chip-leading);
-  --text-chip--letter-spacing: var(--type-chip-tracking);
-  --text-micro: var(--type-micro);
-  --text-micro--line-height: var(--type-micro-leading);
-  --text-micro--letter-spacing: var(--type-micro-tracking);
-  --text-score: var(--type-score);
-  --text-score--line-height: var(--type-score-leading);
-  --text-score--letter-spacing: var(--type-score-tracking);
-  --text-stat: var(--type-stat);
-  --text-stat--line-height: var(--type-stat-leading);
-  --text-stat--letter-spacing: var(--type-stat-tracking);
+  --radius-pill: var(--radius-pill);
+  --radius-well: var(--radius-well);
 
-  --radius-block: 22px;
-  --radius-card: 16px;
-  --radius-ticket: 16px;
-  --radius-pill: 100px;
+  --spacing-gut: var(--gut);
 }
 
 @layer utilities {
+  /* ---- Faces ---------------------------------------------------------- */
+
+  /* Display: headlines, team names, scores, squad numbers. Never under 15px. */
   .font-display {
     font-family: var(--family-display);
+    font-weight: 400;
     text-transform: uppercase;
+    letter-spacing: var(--display-tracking);
     font-synthesis: none;
   }
 
+  /* Utility: everything small. */
   .font-utility {
     font-family: var(--family-utility);
   }
 
-  .dog-ear {
-    clip-path: var(--clip-dog-ear);
-    border-top-left-radius: var(--radius-block);
+  /* ---- Type scale ----------------------------------------------------- */
+  .text-page {
+    font-size: var(--type-page);
+    line-height: var(--type-page-leading);
   }
 
-  .dog-ear::after {
-    content: "";
-    pointer-events: none;
+  .text-sub {
+    font-size: var(--type-sub);
+    line-height: var(--type-sub-leading);
+  }
+
+  .text-team-list {
+    font-size: var(--type-team-list);
+    line-height: var(--type-team-list-leading);
+  }
+
+  .text-team-side {
+    font-size: var(--type-team-side);
+    line-height: var(--type-team-side-leading);
+  }
+
+  .text-score {
+    font-size: var(--type-score);
+    line-height: 1;
+  }
+
+  .text-squad-number {
+    font-size: var(--type-squad-number);
+    line-height: 1;
+  }
+
+  .text-status {
+    font-size: var(--type-status);
+    line-height: 1;
+  }
+
+  .text-player-first {
+    font-size: var(--type-player-first);
+    line-height: 1.1;
+  }
+
+  .text-player-last {
+    font-size: var(--type-player-last);
+    line-height: 1;
+  }
+
+  .text-body {
+    font-size: var(--type-body);
+    line-height: 1.35;
+  }
+
+  .text-tab {
+    font-size: var(--type-tab);
+    line-height: 1;
+  }
+
+  /* Small uppercase labels: utility face at 600, never the display face. */
+  .micro-label {
+    font-family: var(--family-utility);
+    font-size: var(--type-micro);
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: var(--micro-tracking);
+    text-transform: uppercase;
+  }
+
+  /* ---- The card ------------------------------------------------------- */
+  .dog-ear {
+    position: relative;
+    border-top-left-radius: var(--card-radius-tl);
+    clip-path: var(--clip-dog-ear);
+  }
+
+  /* The fold triangle that sits in the cut corner. */
+  .dog-ear-fold {
     position: absolute;
     top: 0;
     right: 0;
-    width: var(--fold-size);
-    height: var(--fold-size);
+    width: var(--card-cut);
+    height: var(--card-cut);
     background: var(--fold);
-    clip-path: polygon(0 0, 100% 0, 100% 100%);
+    clip-path: var(--clip-fold);
+    pointer-events: none;
+  }
+
+  /* Cards ride up over the one above so the fold opens onto colour. */
+  .card-stack > * + * {
+    margin-top: calc(var(--card-overlap) * -1);
+  }
+
+  .card-texture::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: var(--card-texture);
+    background-size: var(--card-texture-size);
+    pointer-events: none;
+  }
+
+  /* ---- Interaction ---------------------------------------------------- */
+  .press-pill {
+    transition: transform var(--dur-press) var(--ease-out);
+  }
+
+  .press-pill:active {
+    transform: scale(0.95);
+  }
+
+  .press-card {
+    transition: filter var(--dur-press) var(--ease-out);
+  }
+
+  .press-card:active {
+    filter: brightness(0.97);
+  }
+
+  .focus-visible-live:focus-visible {
+    outline: var(--focus-ring);
+    outline-offset: var(--focus-offset);
+  }
+}
+
+/* ======================================================================
+   TEMPORARY BRIDGE — delete in the final commit.
+
+   Maps the previous token names onto the new ones so screens that have
+   not been restyled yet keep rendering while the restyle lands one
+   screen at a time. Nothing new should reference anything below.
+   ====================================================================== */
+
+:root {
+  --canvas: var(--paper);
+
+  --ink-muted-soft: var(--ink-muted);
+  --ink-muted-strong: rgba(12, 12, 12, 0.42);
+  --ink-faint: rgba(12, 12, 12, 0.22);
+
+  --ghost-fill: #ededed;
+  --land: #ecebe8;
+  --block: #e2e1dd;
+  --water: #c9dcf7;
+  --pitch: #bfe9cc;
+
+  --radius-block: 22px;
+  --radius-card: 16px;
+  --radius-ticket: 16px;
+
+  --duration-press: var(--dur-press);
+  --duration-ui: var(--dur-ui);
+  --duration-sheet: var(--dur-view);
+  --ease-sheet: var(--ease-view);
+
+  --ring-avatar: 0 0 0 3px var(--paper), 0 0 0 6px var(--c-lime);
+  --hatch-next: repeating-linear-gradient(
+    45deg,
+    var(--ink) 0 2px,
+    transparent 2px 6px
+  );
+}
+
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-ink-muted-soft: var(--ink-muted-soft);
+  --color-ink-muted-strong: var(--ink-muted-strong);
+  --color-ink-faint: var(--ink-faint);
+  --color-ghost-fill: var(--ghost-fill);
+  --color-land: var(--land);
+  --color-block: var(--block);
+  --color-water: var(--water);
+  --color-pitch: var(--pitch);
+
+  --radius-block: var(--radius-block);
+  --radius-card: var(--radius-card);
+  --radius-ticket: var(--radius-ticket);
+}
+
+@layer utilities {
+  .text-block {
+    font-size: 34px;
+    line-height: 0.86;
+  }
+
+  .text-name {
+    font-size: 24px;
+    line-height: 0.9;
+  }
+
+  .text-section {
+    font-size: 15px;
+    line-height: 1.2;
+    letter-spacing: 1.2px;
+  }
+
+  .text-chip {
+    font-size: 14px;
+    line-height: 1;
+    letter-spacing: 1.2px;
+  }
+
+  .text-micro {
+    font-size: 11px;
+    line-height: 1.2;
+    letter-spacing: 1.4px;
+  }
+
+  .text-stat {
+    font-size: 32px;
+    line-height: 0.88;
+  }
+
+  .font-score {
+    font-family: var(--family-display);
+    font-synthesis: none;
   }
 }

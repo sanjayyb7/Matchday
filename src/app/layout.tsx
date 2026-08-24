@@ -1,19 +1,19 @@
 import type { Metadata, Viewport } from "next";
-import { Anton, Archivo } from "next/font/google";
+import { Archivo, Archivo_Black } from "next/font/google";
 import { Providers } from "@/components/layout/Providers";
 import { color } from "@/lib/theme/tokens";
 import "./globals.css";
 
-const anton = Anton({
+const display = Archivo_Black({
   weight: "400",
   subsets: ["latin"],
-  variable: "--font-anton",
+  variable: "--font-display-face",
 });
 
-const archivo = Archivo({
+const utility = Archivo({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-archivo",
+  weight: ["500", "600", "700"],
+  variable: "--font-utility-face",
 });
 
 export const metadata: Metadata = {
@@ -61,10 +61,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="h-full light" suppressHydrationWarning>
-      <body
-        className={`${anton.variable} ${archivo.variable} min-h-full bg-paper font-utility text-ink antialiased`}
-      >
+    <html
+      lang="en"
+      className={`${display.variable} ${utility.variable} h-full light`}
+      suppressHydrationWarning
+    >
+      <body className="min-h-full bg-paper font-utility text-ink antialiased">
         <Providers>{children}</Providers>
       </body>
     </html>
