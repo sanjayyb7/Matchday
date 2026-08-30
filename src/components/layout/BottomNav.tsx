@@ -11,7 +11,7 @@ import { isIdentityStillActive } from "@/lib/mock/data";
 const tabs = [
   { href: "/map", icon: Map, label: "Map" },
   // Jersey = pick team/player so your fan marker shows on the map
-  { href: "/chat", icon: Shirt, label: "Pick your side" },
+  { href: "/chat", icon: Shirt, label: "Pick Side" },
   { href: "/profile", icon: User, label: "Profile" },
 ];
 
@@ -53,11 +53,8 @@ export function BottomNav() {
         }}
       >
         <div
-          className="pointer-events-auto flex items-center rounded-pill bg-ink"
-          style={{
-            padding: "var(--tab-pad)",
-            boxShadow: "var(--shadow-tab)",
-          }}
+          className="pointer-events-auto flex items-center overflow-hidden rounded-pill"
+          style={{ boxShadow: "var(--shadow-tab)" }}
         >
           {resolvedTabs.map(({ id, href, icon: Icon, label }) => {
             const active = pathname.startsWith(id);
@@ -68,22 +65,20 @@ export function BottomNav() {
                 aria-label={label}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "press-pill focus-visible-live flex min-h-11 min-w-11 items-center justify-center overflow-hidden rounded-pill",
-                  "transition-[max-width,gap,padding,background-color] duration-[var(--dur-ui)] ease-out",
-                  active
-                    ? "gap-2 bg-c-lime px-3.5 text-ink"
-                    : "px-0 text-paper/55",
+                  "press-pill focus-visible-live flex min-h-11 min-w-11 items-center justify-center px-2.5",
+                  active ? "bg-c-lime text-ink" : "bg-ink text-paper/55",
                 )}
               >
                 <Icon className="size-5 shrink-0" strokeWidth={active ? 2.25 : 1.75} />
                 <span
                   className={cn(
-                    "overflow-hidden whitespace-nowrap font-utility text-tab font-semibold uppercase tracking-[var(--micro-tracking)]",
-                    "transition-[max-width,opacity] duration-[var(--dur-ui)] ease-out",
-                    active ? "max-w-[9rem] opacity-100" : "max-w-0 opacity-0",
+                    "grid min-w-0 transition-[grid-template-columns,opacity] duration-[var(--dur-ui)] ease-[var(--ease-out)]",
+                    active ? "grid-cols-[1fr] opacity-100" : "grid-cols-[0fr] opacity-0",
                   )}
                 >
-                  {label}
+                  <span className="overflow-hidden whitespace-nowrap pl-2 font-utility text-tab font-medium uppercase tracking-[var(--micro-tracking)]">
+                    {label}
+                  </span>
                 </span>
               </Link>
             );
