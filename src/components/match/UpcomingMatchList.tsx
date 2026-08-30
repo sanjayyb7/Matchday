@@ -4,15 +4,16 @@ import { useState } from "react";
 import Image from "next/image";
 import { Calendar, Globe, Shield } from "lucide-react";
 import { UpcomingMatchCard } from "./UpcomingMatchCard";
+import { listTone } from "@/components/visual/matchTone";
 import { getDerivedMatchStatus } from "@/lib/mock/data";
 import {
   filterMatchesByLeague,
   listLeaguesFromMatches,
 } from "@/lib/matches/league-filter";
 import { getLeagueLogoUrl } from "@/lib/matches/league-logos";
-import { BOTTOM_NAV_CLEARANCE } from "@/lib/layout/constants";
 import { NameStack } from "@/components/visual/NameStack";
 import { Pill } from "@/components/visual/Pill";
+import { cn } from "@/lib/utils";
 import type { Match } from "@/types";
 
 interface UpcomingMatchListProps {
@@ -23,21 +24,32 @@ interface UpcomingMatchListProps {
 function MatchSection({
   title,
   matches,
+  startIndex,
   onSelect,
+  fillLast,
 }: {
   title: string;
   matches: Match[];
+  startIndex: number;
   onSelect: (match: Match) => void;
+  fillLast?: boolean;
 }) {
   return (
-    <section>
+    <section className={fillLast ? "flex min-h-0 flex-1 flex-col" : undefined}>
       <h2 className="sr-only">{title}</h2>
-      <div className="card-stack flex flex-col">
-        {matches.map((match) => (
+      <div
+        className={cn(
+          "card-stack flex flex-col",
+          fillLast && "min-h-0 flex-1",
+        )}
+      >
+        {matches.map((match, index) => (
           <UpcomingMatchCard
             key={match.id}
             match={match}
+            tone={listTone(startIndex + index)}
             onSelect={onSelect}
+            fill={fillLast && index === matches.length - 1}
           />
         ))}
       </div>
@@ -104,6 +116,8 @@ export function UpcomingMatchList({ matches, onSelect }: UpcomingMatchListProps)
   );
   const showSections = liveMatches.length > 0 && upcomingMatches.length > 0;
   const heading = activeLeague ?? "Matches Today";
+  const liveStart = 0;
+  const upcomingStart = showSections ? liveMatches.length : 0;
 
   const leagueOptions: LeagueOption[] = [
     { id: null, label: "All", shortLabel: "All" },
@@ -117,7 +131,7 @@ export function UpcomingMatchList({ matches, onSelect }: UpcomingMatchListProps)
   /* The bottom padding adds the card overlap back, so the first card can ride
      up over it without colliding with the filters. */
   const header = (
-    <header className="px-[var(--gut)] pb-[var(--header-pad-b)] pt-[var(--header-pad-t)]">
+    <header className="px-[var(--gut)] pb-[var(--header-pad-b)] pt-4">
       <h1>
         <NameStack name={heading} tone="ghost" className="text-page" />
       </h1>
@@ -148,10 +162,7 @@ export function UpcomingMatchList({ matches, onSelect }: UpcomingMatchListProps)
   );
 
   return (
-    <div
-      className="relative h-dvh overflow-y-auto overscroll-contain bg-paper"
-      style={{ paddingBottom: BOTTOM_NAV_CLEARANCE }}
-    >
+    <div className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain bg-paper">
       {filtered.length === 0 ? (
         <>
           {header}
@@ -165,13 +176,14 @@ export function UpcomingMatchList({ matches, onSelect }: UpcomingMatchListProps)
           </div>
         </>
       ) : (
-        <div className="card-stack">
+        <div className="card-stack flex min-h-full flex-col">
           {header}
           {showSections ? (
-            <div className="card-stack">
+            <>
               <MatchSection
                 title={liveMatches.length === 1 ? "Live Match" : "Live Matches"}
                 matches={liveMatches}
+                startIndex={liveStart}
                 onSelect={onSelect}
               />
               <MatchSection
@@ -181,9 +193,11 @@ export function UpcomingMatchList({ matches, onSelect }: UpcomingMatchListProps)
                     : "Upcoming Matches"
                 }
                 matches={upcomingMatches}
+                startIndex={upcomingStart}
                 onSelect={onSelect}
+                fillLast
               />
-            </div>
+            </>
           ) : (
             <MatchSection
               title={
@@ -194,7 +208,9 @@ export function UpcomingMatchList({ matches, onSelect }: UpcomingMatchListProps)
                   : "Upcoming Matches"
               }
               matches={liveMatches.length > 0 ? liveMatches : upcomingMatches}
+              startIndex={0}
               onSelect={onSelect}
+              fillLast
             />
           )}
         </div>

@@ -5,7 +5,6 @@ import { cardSurface, Fold } from "@/components/visual/Card";
 import { Crest } from "@/components/visual/Crest";
 import { MicroLabel } from "@/components/visual/MicroLabel";
 import { NameStack } from "@/components/visual/NameStack";
-import { matchTone } from "@/components/visual/matchTone";
 import type { Match } from "@/types";
 import { cn } from "@/lib/utils";
 
@@ -20,9 +19,12 @@ function formatKickoffTime(kickoff: string): string {
 interface UpcomingMatchCardProps {
   match: Match;
   onSelect: (match: Match) => void;
+  tone: string;
+  /** Stretch to fill leftover viewport so the stack reaches the bottom. */
+  fill?: boolean;
 }
 
-export function UpcomingMatchCard({ match, onSelect }: UpcomingMatchCardProps) {
+export function UpcomingMatchCard({ match, onSelect, tone, fill }: UpcomingMatchCardProps) {
   const homeTeam = getTeam(match.homeTeamId);
   const awayTeam = getTeam(match.awayTeamId);
   const isLive = getDerivedMatchStatus(match) === "live";
@@ -37,7 +39,12 @@ export function UpcomingMatchCard({ match, onSelect }: UpcomingMatchCardProps) {
     <button
       type="button"
       onClick={() => onSelect(match)}
-      className={cn(cardSurface, matchTone(match.id))}
+      className={cn(
+        cardSurface,
+        tone,
+        fill &&
+          "min-h-0 flex-1 pb-[calc(var(--card-pad-b)+var(--list-clearance)+env(safe-area-inset-bottom))]",
+      )}
     >
       <Fold />
 

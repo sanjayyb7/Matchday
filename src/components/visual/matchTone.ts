@@ -19,3 +19,8 @@ function toneIndex(matchId: string): number {
 export function matchTone(matchId: string, offset = 0): string {
   return TONES[(toneIndex(matchId) + offset) % TONES.length];
 }
+
+/** List fill by position so two stacked cards can never share a colour. */
+export function listTone(index: number): string {
+  return TONES[((index % TONES.length) + TONES.length) % TONES.length];
+}
