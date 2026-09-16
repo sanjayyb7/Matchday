@@ -41,7 +41,7 @@ export function PubSquadSheet() {
               render={
                 <button
                   type="button"
-                  className="absolute left-1/2 top-0 z-10 flex h-11 w-24 -translate-x-1/2 items-center justify-center"
+                  className="absolute left-1/2 top-0 z-10 flex h-11 w-24 -translate-x-1/2 items-start justify-center pt-2"
                 />
               }
             >
@@ -60,7 +60,7 @@ export function PubSquadSheet() {
                   />
                 </div>
                 <div className="flex min-w-0 flex-1 flex-col justify-start gap-0.5">
-                  <SheetTitle className="min-w-0 text-left font-display text-name leading-none text-ink">
+                  <SheetTitle className="min-w-0 text-left font-display text-[28px] leading-[0.88] text-ink">
                     {selectedPub.name}
                   </SheetTitle>
                   <p className="font-utility text-micro font-medium text-ink-muted">

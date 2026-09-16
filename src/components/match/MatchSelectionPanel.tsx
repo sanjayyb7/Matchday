@@ -193,23 +193,23 @@ export function MatchSelectionPanel({
         "flex flex-col",
         embedded
           ? "min-h-0 flex-1 bg-paper"
-          : "h-dvh overflow-hidden overscroll-contain bg-paper",
+          : "min-h-0 flex-1 overflow-hidden overscroll-contain bg-paper",
       )}
     >
       <div
         className={cn(
           "sticky top-0 z-10 shrink-0 bg-paper px-[var(--gut)]",
-          embedded ? "pr-14 pt-10" : "pt-[var(--header-pad-t)]",
+          embedded ? "pr-14 pt-4" : "pt-4",
           step === "team" ? "pb-[var(--header-pad-b)]" : "pb-4",
         )}
       >
-        <div className="flex items-center gap-3">
+        <div className="flex items-start gap-3">
           {step === "team" && onBack && (
             <button
               type="button"
               onClick={onBack}
               aria-label="Back to matches"
-              className="press-pill focus-visible-live flex size-11 shrink-0 items-center justify-center rounded-full border-[length:var(--border-ink)] border-ink bg-paper text-ink"
+              className="press-pill focus-visible-live mt-1 flex size-11 shrink-0 items-center justify-center rounded-full border-[length:var(--border-ink)] border-ink bg-paper text-ink"
             >
               <ChevronLeft className="h-5 w-5" strokeWidth={2.5} />
             </button>
@@ -219,34 +219,27 @@ export function MatchSelectionPanel({
               type="button"
               onClick={() => setStep("team")}
               aria-label="Change team"
-              className="press-pill focus-visible-live flex size-11 shrink-0 items-center justify-center rounded-full border-[length:var(--border-ink)] border-ink bg-paper text-ink"
+              className="press-pill focus-visible-live mt-1 flex size-11 shrink-0 items-center justify-center rounded-full border-[length:var(--border-ink)] border-ink bg-paper text-ink"
             >
               <ChevronLeft className="h-5 w-5" strokeWidth={2.5} />
             </button>
           )}
-          <div className="min-w-0 flex-1">
-            {step === "team" ? (
-              <>
-                <p className="truncate font-utility text-tab font-semibold uppercase tracking-[var(--micro-tracking)] text-ink">
-                  {match.league || "Matchday"}
-                </p>
-                <p className="micro-label mt-0.5 text-ink-muted">{statusLine}</p>
-              </>
-            ) : (
-              <p className="truncate font-utility text-tab font-semibold uppercase tracking-[var(--micro-tracking)] text-ink">
-                {selectedTeam?.name ?? "Team"}
-              </p>
-            )}
-          </div>
+          <h1 className="min-w-0 flex-1">
+            <NameStack
+              name={
+                step === "team"
+                  ? match.league || "Pick a side"
+                  : "Pick your player"
+              }
+              tone="ghost"
+              className="text-page"
+            />
+          </h1>
         </div>
 
-        <h1 className="mt-5">
-          <NameStack
-            name={step === "team" ? "Pick a side" : "Pick your player"}
-            tone="ghost"
-            className="text-sub"
-          />
-        </h1>
+        <p className="mt-6 font-utility text-tab font-semibold uppercase tracking-[var(--micro-tracking)] text-ink-muted">
+          {step === "team" ? `Pick a side · ${statusLine}` : (selectedTeam?.name ?? "Team")}
+        </p>
 
         {!selectionOpen && !earlyPick && matchStatus === "upcoming" && (
           <p className="mt-3 font-utility text-micro font-medium text-ink-muted">
@@ -263,7 +256,7 @@ export function MatchSelectionPanel({
             : "min-h-0 flex-1 overflow-y-auto",
           !embedded &&
             step !== "team" &&
-            "pb-[calc(var(--list-clearance)+env(safe-area-inset-bottom))]",
+            "pb-[calc(var(--list-clearance)+1.5rem+env(safe-area-inset-bottom))]",
           embedded && step !== "team" && "pb-6",
         )}
       >

@@ -58,13 +58,13 @@ export function MatchChatGate() {
 
   if (selectedMatch) {
     return (
-      <>
+      <div className="flex h-dvh flex-col overflow-hidden">
         {fallbackBanner}
         <MatchSelectionPanel
           match={selectedMatch}
           onBack={() => setSelectedMatch(null)}
         />
-      </>
+      </div>
     );
   }
 
@@ -72,10 +72,10 @@ export function MatchChatGate() {
   // the first live game (often an obscure league) hid every other match.
   if (upcoming.length > 0) {
     return (
-      <>
+      <div className="flex h-dvh flex-col overflow-hidden">
         {fallbackBanner}
         <UpcomingMatchList matches={upcoming} onSelect={setSelectedMatch} />
-      </>
+      </div>
     );
   }
 

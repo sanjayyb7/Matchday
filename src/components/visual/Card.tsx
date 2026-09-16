@@ -9,8 +9,8 @@ export const cardSurface =
   "px-[var(--gut)] pt-[var(--card-pad-t)] pb-[var(--card-pad-b)]";
 
 /** Every card needs one of these, or the cut corner reads as a missing chunk. */
-export function Fold() {
-  return <span aria-hidden className="dog-ear-fold" />;
+export function Fold({ className }: { className?: string } = {}) {
+  return <span aria-hidden className={cn("dog-ear-fold", className)} />;
 }
 
 export function Card({

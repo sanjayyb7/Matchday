@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { Check, ChevronRight, Lock, X } from "lucide-react";
+import { ChevronDown, ChevronRight, Lock, X } from "lucide-react";
 import QRCode from "qrcode";
+import { Fold } from "@/components/visual/Card";
 import { NameStack } from "@/components/visual/NameStack";
 import {
   getPubCoupons,
@@ -28,11 +29,70 @@ interface ClaimedCoupon {
 }
 
 const TICKET_FILLS = [
-  "var(--c-amber)",
-  "var(--c-pink)",
-  "var(--c-blue)",
-  "var(--c-mint)",
+  "var(--match-5)",
+  "var(--match-2)",
+  "var(--match-3)",
+  "var(--match-4)",
 ] as const;
+
+/** Side bite: a V with a small fillet at the point. */
+const DASH_INSET = 16;
+const DEMO_FILLED_COUPON_ID = "full-squad";
+
+const TICKET_V_CLIP = [
+  "0 0",
+  "100% 0",
+  "calc(100% - 5px) calc(50% - 6.5px)",
+  "calc(100% - 7.2px) calc(50% - 3.6px)",
+  "calc(100% - 8.4px) calc(50% - 1.6px)",
+  "calc(100% - 8.9px) calc(50% - 0.5px)",
+  "calc(100% - 9px) 50%",
+  "calc(100% - 8.9px) calc(50% + 0.5px)",
+  "calc(100% - 8.4px) calc(50% + 1.6px)",
+  "calc(100% - 7.2px) calc(50% + 3.6px)",
+  "calc(100% - 5px) calc(50% + 6.5px)",
+  "100% 100%",
+  "0 100%",
+  "5px calc(50% + 6.5px)",
+  "7.2px calc(50% + 3.6px)",
+  "8.4px calc(50% + 1.6px)",
+  "8.9px calc(50% + 0.5px)",
+  "9px 50%",
+  "8.9px calc(50% - 0.5px)",
+  "8.4px calc(50% - 1.6px)",
+  "7.2px calc(50% - 3.6px)",
+  "5px calc(50% - 6.5px)",
+].join(",");
+
+function TicketPerforation() {
+  return (
+    <div
+      className="card-texture relative h-6"
+      style={{
+        backgroundColor: "var(--ticket-fill)",
+        clipPath: `polygon(${TICKET_V_CLIP})`,
+      }}
+    >
+      <div
+        aria-hidden
+        className="pointer-events-none absolute top-1/2 z-10 -translate-y-px border-t border-dashed border-ink/25"
+        style={{ left: DASH_INSET, right: DASH_INSET }}
+      />
+    </div>
+  );
+}
+
+function withDemoFill(coupons: PubCoupon[]): PubCoupon[] {
+  return coupons.map((coupon) => {
+    if (coupon.id !== DEMO_FILLED_COUPON_ID || !coupon.target) return coupon;
+    return {
+      ...coupon,
+      status: "unlocked",
+      current: coupon.target,
+      progress: 100,
+    };
+  });
+}
 
 function SegmentBar({
   filled,
@@ -61,6 +121,33 @@ function SegmentBar({
   );
 }
 
+function TicketFace({
+  unlocked,
+  expanded,
+  onToggle,
+  children,
+}: {
+  unlocked: boolean;
+  expanded: boolean;
+  onToggle: () => void;
+  children: ReactNode;
+}) {
+  if (!unlocked) {
+    return <div>{children}</div>;
+  }
+
+  return (
+    <button
+      type="button"
+      aria-expanded={expanded}
+      onClick={onToggle}
+      className="block w-full cursor-pointer bg-transparent text-left"
+    >
+      {children}
+    </button>
+  );
+}
+
 function CouponCard({
   coupon,
   reduced,
@@ -77,6 +164,7 @@ function CouponCard({
   fillIndex: number;
 }) {
   const unlocked = coupon.status === "unlocked";
+  const [expanded, setExpanded] = useState(unlocked);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const isThisClaimed = claimed?.couponId === coupon.id;
@@ -112,99 +200,171 @@ function CouponCard({
   };
 
   const fill = unlocked
-    ? "var(--c-lime)"
+    ? "var(--match-1)"
     : TICKET_FILLS[fillIndex % TICKET_FILLS.length];
 
   return (
     <motion.article
       variants={staggerItem(reduced)}
-      className="overflow-hidden rounded-[20px] px-4 py-4 text-left"
-      style={{ backgroundColor: fill }}
+      className="dog-ear relative text-left"
+      style={{ ["--ticket-fill"]: fill } as CSSProperties}
     >
-      <div className="flex items-center gap-3">
+      <div className="overflow-hidden rounded-[22px] rounded-tr-none">
+      <TicketFace
+        unlocked={unlocked}
+        expanded={expanded}
+        onToggle={() => setExpanded((open) => !open)}
+      >
         <div
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-card bg-paper text-xl"
-          aria-hidden
+          className="card-texture relative flex flex-col justify-center px-4 py-2.5"
+          style={{ backgroundColor: "var(--ticket-fill)" }}
         >
-          {coupon.emoji}
-        </div>
-        <div className="flex min-w-0 flex-1 items-center justify-between gap-2">
-          <div className="min-w-0">
-            <p className="font-display text-chip leading-none text-ink">
-              {coupon.title}
-            </p>
-            <p
-              className={cn(
-                "mt-0.5 font-utility text-xs leading-snug",
-                unlocked ? "text-ink/70" : "text-ink-muted",
-              )}
+          <div className="flex items-center gap-3">
+            <div
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-card bg-paper text-lg"
+              aria-hidden
             >
-              {coupon.description}
-            </p>
+              {coupon.emoji}
+            </div>
+            <div className="flex min-w-0 flex-1 items-center justify-between gap-2">
+              <div className="min-w-0">
+                <p className="font-display text-chip leading-none text-ink">
+                  {coupon.title}
+                </p>
+                <p
+                  className={cn(
+                    "mt-1 font-utility text-xs leading-snug",
+                    unlocked ? "text-ink/70" : "text-ink-muted",
+                  )}
+                >
+                  {coupon.description}
+                </p>
+              </div>
+              <span
+                className={cn(
+                  "mr-[26px] shrink-0 rounded-pill bg-ink px-2.5 py-1 font-display text-micro",
+                  unlocked ? "text-c-lime" : "text-paper",
+                )}
+              >
+                {coupon.value}
+              </span>
+            </div>
           </div>
-          <span
-            className={cn(
-              "shrink-0 rounded-pill bg-ink px-2.5 py-1 font-display text-micro",
-              unlocked ? "text-c-lime" : "text-paper",
-            )}
-          >
-            {coupon.value}
-          </span>
         </div>
-      </div>
 
-      <div className="my-3 border-t border-dashed border-ink/25" />
+        <TicketPerforation />
 
-      <div className="flex items-center gap-1.5">
-        {unlocked ? (
-          <Check className="h-3.5 w-3.5 shrink-0 text-ink" strokeWidth={2.5} />
-        ) : (
-          <Lock className="h-3.5 w-3.5 shrink-0 text-ink-muted" strokeWidth={2.25} />
-        )}
-        <p className="min-w-0 flex-1 truncate font-display text-micro text-ink">
-          {coupon.requirement}
-        </p>
-        {target > 0 && (
-          <span className="shrink-0 font-display text-micro text-ink-muted">
-            {current}/{target}
-          </span>
-        )}
-      </div>
-
-      {target > 1 && (
-        <SegmentBar filled={current} total={target} next={next} />
-      )}
-
-      {canClaim && (
-        <button
-          type="button"
-          onClick={() => void claim()}
-          disabled={loading}
-          className="press-pill mt-3 flex min-h-11 w-full items-center justify-center gap-1 rounded-pill bg-ink font-display text-chip text-paper disabled:opacity-60"
+        <div
+          className="px-4 pt-3"
+          style={{
+            backgroundColor: "var(--ticket-fill)",
+            paddingBottom: expanded ? 0 : 12,
+          }}
         >
-          {loading ? "Claiming…" : "Show at the bar"}
-          {!loading && <ChevronRight className="h-4 w-4" strokeWidth={2.5} />}
-        </button>
-      )}
+          <div className="flex items-center gap-1.5">
+            {unlocked ? (
+              <span aria-hidden className="text-[13px] leading-none">
+                🎉
+              </span>
+            ) : (
+              <Lock className="h-3.5 w-3.5 shrink-0 text-ink-muted" strokeWidth={2.25} />
+            )}
+            <p className="min-w-0 flex-1 truncate font-display text-micro text-ink">
+              {coupon.requirement}
+            </p>
+            {unlocked ? (
+              <span className="shrink-0 rounded-pill bg-ink px-2 py-0.5 font-display text-micro text-c-lime">
+                Ready
+              </span>
+            ) : (
+              target > 0 && (
+                <span className="shrink-0 font-display text-micro text-ink-muted">
+                  {current}/{target}
+                </span>
+              )
+            )}
+            {unlocked && (
+              <ChevronDown
+                className={cn(
+                  "h-3.5 w-3.5 shrink-0 text-ink transition-transform duration-[var(--dur-ui)] ease-out",
+                  expanded && "rotate-180",
+                )}
+                strokeWidth={2.5}
+              />
+            )}
+          </div>
 
-      {isThisClaimed && (
-        <div className="mt-3 flex flex-col items-center gap-2 rounded-card bg-paper p-3">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={claimed.qrDataUrl} alt="Coupon QR" className="rounded-md" />
-          <p className="break-all text-center font-utility text-[10px] text-ink-muted">
-            {claimed.token}
-          </p>
-          <p className="text-center font-utility text-[11px] text-ink">
-            Show this to the pub to redeem
-          </p>
+          {target > 1 && (
+            <SegmentBar filled={current} total={target} next={next} />
+          )}
         </div>
-      )}
+      </TicketFace>
 
-      {error && (
-        <p className="mt-2 font-utility text-[11px] text-live" role="alert">
-          {error}
-        </p>
-      )}
+      <div style={{ backgroundColor: "var(--ticket-fill)" }}>
+        <motion.div
+          initial={false}
+          animate={{ gridTemplateRows: expanded ? "1fr" : "0fr" }}
+          transition={uiTransition(reduced, 0.28)}
+          className="grid"
+        >
+          <div
+            className="min-h-0 overflow-hidden"
+            aria-hidden={!expanded}
+            inert={!expanded ? true : undefined}
+          >
+            <div className="px-4 pb-4 pt-3">
+              {canClaim && (
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    void claim();
+                  }}
+                  disabled={loading}
+                  className="press-pill flex min-h-11 w-full items-center justify-center gap-1 rounded-pill bg-ink font-display text-chip text-paper disabled:opacity-60"
+                >
+                  {loading ? "Claiming…" : "Show at the bar"}
+                  {!loading && (
+                    <ChevronRight className="h-4 w-4" strokeWidth={2.5} />
+                  )}
+                </button>
+              )}
+
+              {unlocked && !pubId && !isThisClaimed && (
+                <p className="rounded-card bg-paper px-3 py-2.5 text-center font-utility text-[11px] text-ink">
+                  Open a venue to claim this round at the bar.
+                </p>
+              )}
+
+              {isThisClaimed && (
+                <div className="flex flex-col items-center gap-2 rounded-card bg-paper p-3">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={claimed.qrDataUrl}
+                    alt="Coupon QR"
+                    className="rounded-md"
+                  />
+                  <p className="break-all text-center font-utility text-[10px] text-ink-muted">
+                    {claimed.token}
+                  </p>
+                  <p className="text-center font-utility text-[11px] text-ink">
+                    Show this to the pub to redeem
+                  </p>
+                </div>
+              )}
+
+              {error && (
+                <p className="mt-2 font-utility text-[11px] text-live" role="alert">
+                  {error}
+                </p>
+              )}
+            </div>
+          </div>
+        </motion.div>
+      </div>
+      </div>
+
+      <Fold className="z-10" />
     </motion.article>
   );
 }
@@ -219,7 +379,7 @@ export function PubRewardsList({
   pubId?: string;
 }) {
   const reduced = useReducedMotion() ?? false;
-  const coupons = getPubCoupons(context);
+  const coupons = withDemoFill(getPubCoupons(context));
   const unlockedCount = coupons.filter((c) => c.status === "unlocked").length;
   const [claimed, setClaimed] = useState<ClaimedCoupon | null>(null);
 

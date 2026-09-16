@@ -132,9 +132,10 @@
   --dur-press: 140ms;
   --dur-ui: 180ms;
   --dur-slow: 220ms;
-  --dur-view: 340ms;
-  --ease-out: ease-out;
+  --dur-view: 320ms;
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-view: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
 
   /* The deliberate pause before the player pick advances. */
   --delay-advance: 180ms;

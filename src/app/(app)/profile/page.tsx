@@ -28,6 +28,7 @@ import { useRealtime } from "@/lib/realtime/context";
 import { INSFORGE_ENABLED } from "@/lib/insforge/config";
 import { deleteUserIdentityForMatch } from "@/lib/identity/insforge-identity";
 import { cn } from "@/lib/utils";
+import { SegmentedTabs } from "@/components/visual/SegmentedTabs";
 
 type ProfileTab = "history" | "settings";
 
@@ -138,37 +139,18 @@ export default function ProfilePage() {
         </div>
       </header>
 
-      <div
-        role="tablist"
-        aria-label="Profile sections"
-        className="mb-6 flex gap-1 rounded-pill border-2 border-ink bg-paper p-1"
-      >
-        {(
+      <SegmentedTabs
+        label="Profile sections"
+        value={activeTab}
+        options={
           [
             { id: "history", label: "Match history" },
             { id: "settings", label: "Settings" },
           ] as const
-        ).map((tab) => {
-          const isActive = activeTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              type="button"
-              role="tab"
-              aria-selected={isActive}
-              onClick={() => setActiveTab(tab.id)}
-              className={cn(
-                "flex-1 min-h-11 rounded-pill px-4 font-display text-chip transition-colors duration-[var(--duration-press)] ease-out",
-                isActive
-                  ? "bg-ink text-paper"
-                  : "text-ink-muted",
-              )}
-            >
-              {tab.label}
-            </button>
-          );
-        })}
-      </div>
+        }
+        onChange={setActiveTab}
+        className="mb-6"
+      />
 
       {activeTab === "history" && (
         <>

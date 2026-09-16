@@ -29,6 +29,7 @@ export function ChatInput({
 }: ChatInputProps) {
   const [text, setText] = useState("");
   const [policyWarning, setPolicyWarning] = useState<string | null>(null);
+  const [keyboardLift, setKeyboardLift] = useState(0);
   const pathname = usePathname();
   const reduced = useReducedMotion() ?? false;
   const bottomInset = pathname.startsWith("/chat")
@@ -36,6 +37,27 @@ export function ChatInput({
     : BOTTOM_NAV_CLEARANCE;
 
   const canSend = text.trim().length > 0;
+
+  useEffect(() => {
+    const viewport = window.visualViewport;
+    if (!viewport) return;
+
+    const sync = () => {
+      const inset = Math.max(
+        0,
+        window.innerHeight - viewport.height - viewport.offsetTop,
+      );
+      setKeyboardLift(inset);
+    };
+
+    sync();
+    viewport.addEventListener("resize", sync);
+    viewport.addEventListener("scroll", sync);
+    return () => {
+      viewport.removeEventListener("resize", sync);
+      viewport.removeEventListener("scroll", sync);
+    };
+  }, []);
 
   useEffect(() => {
     if (!policyWarning) return;
@@ -59,10 +81,13 @@ export function ChatInput({
 
   return (
     <div
-      className="pointer-events-none fixed bottom-0 left-0 right-0 z-40 px-4 pt-2"
-      style={{ paddingBottom: bottomInset }}
+      className="fixed right-0 left-0 z-40 px-4 pt-2"
+      style={{
+        bottom: keyboardLift,
+        paddingBottom: keyboardLift > 0 ? "0.5rem" : bottomInset,
+      }}
     >
-      <div className="pointer-events-auto mx-auto w-full max-w-md space-y-2">
+      <div className="mx-auto w-full max-w-md space-y-2">
         <AnimatePresence>
           {policyWarning && (
             <motion.div
@@ -118,7 +143,7 @@ export function ChatInput({
           )}
         </AnimatePresence>
 
-        <div className="flex h-[var(--send-size)] items-center gap-2.5 overflow-hidden rounded-pill border-2 border-ink bg-paper pl-5 pr-2 focus-within:border-live">
+        <div className="flex h-[var(--send-size)] items-center gap-2.5 rounded-pill border-2 border-ink bg-paper pl-5 pr-2 focus-within:border-live">
           <input
             value={text}
             onChange={(e) => {
@@ -127,8 +152,10 @@ export function ChatInput({
             }}
             onKeyDown={(e) => e.key === "Enter" && canSend && handleSend()}
             placeholder="Send a chat..."
-            disabled={disabled}
-            className="min-w-0 flex-1 self-stretch bg-transparent font-utility text-body text-ink placeholder:text-ink-muted outline-none disabled:opacity-40"
+            enterKeyHint="send"
+            autoComplete="off"
+            autoCorrect="on"
+            className="min-h-11 min-w-0 flex-1 bg-transparent font-utility text-[16px] leading-normal text-ink placeholder:text-ink-muted outline-none"
           />
           <AnimatePresence mode="popLayout">
             {canSend && (

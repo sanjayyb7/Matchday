@@ -38,7 +38,7 @@ export function TeamPicker({
 
   return (
     <div className="card-stack flex min-h-0 flex-1 flex-col">
-      {sides.map(({ team, label, emphasize, tone }) => (
+      {sides.map(({ team, label, emphasize, tone }, index) => (
         <button
           key={team.id}
           type="button"
@@ -47,6 +47,8 @@ export function TeamPicker({
             cardSurface,
             tone,
             "flex min-h-0 flex-1 flex-col justify-between",
+            index === sides.length - 1 &&
+              "pb-[calc(var(--card-pad-b)+var(--list-clearance)+env(safe-area-inset-bottom))]",
           )}
         >
           <Fold />

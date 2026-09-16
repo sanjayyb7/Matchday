@@ -83,7 +83,6 @@
   --sidebar-border: var(--ink);
   --sidebar-ring: var(--live);
   --ease-out-strong: var(--ease-out);
-  --ease-drawer: var(--ease-sheet);
 }
 
 .light {

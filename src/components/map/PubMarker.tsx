@@ -13,7 +13,7 @@ export function PubMarker({ pub, onClick }: PubMarkerProps) {
     <button
       type="button"
       onClick={onClick}
-      className="group flex min-h-11 flex-col items-center"
+      className="press-pill group flex min-h-11 flex-col items-center"
       aria-label={`Open ${pub.name}`}
     >
       <div className="relative h-12 w-12 overflow-hidden rounded-card border-[3px] border-ink bg-paper">

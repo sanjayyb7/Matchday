@@ -5,6 +5,7 @@ import Image from "next/image";
 import { motion, useReducedMotion } from "framer-motion";
 import { FormationPlayerCard } from "./FormationPlayerCard";
 import { PubRewardsList } from "./SquadCouponsSheet";
+import { SegmentedTabs } from "@/components/visual/SegmentedTabs";
 import {
   assignStartingEleven,
   countPresentStartingPlayers,
@@ -208,35 +209,17 @@ export function PubSquadPitch({ squad, pubName, pubId }: PubSquadPitchProps) {
         </div>
       )}
 
-      <div
-        role="tablist"
-        aria-label="Pub sections"
-        className="flex gap-1 rounded-pill border-2 border-ink bg-paper p-1"
-      >
-        {(
+      <SegmentedTabs
+        label="Pub sections"
+        value={tab}
+        options={
           [
             { id: "rewards", label: "Rewards" },
             { id: "squad", label: "Squad" },
           ] as const
-        ).map((item) => {
-          const isActive = tab === item.id;
-          return (
-            <button
-              key={item.id}
-              type="button"
-              role="tab"
-              aria-selected={isActive}
-              onClick={() => setTab(item.id)}
-              className={cn(
-                "flex min-h-11 flex-1 items-center justify-center rounded-pill px-4 font-display text-chip transition-colors duration-[var(--duration-press)] ease-out",
-                isActive ? "bg-ink text-paper" : "text-ink-muted",
-              )}
-            >
-              {item.label}
-            </button>
-          );
-        })}
-      </div>
+        }
+        onChange={setTab}
+      />
 
       {tab === "rewards" ? (
         <PubRewardsList

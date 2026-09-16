@@ -326,7 +326,6 @@ export default function ChatPage({
       </div>
       <ChatInput
         onSend={handleSend}
-        disabled={!hasActiveIdentity}
         team={team}
         showQuickReplies={showQuickReplies}
       />

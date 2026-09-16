@@ -13,7 +13,7 @@ export function MatchHistoryCard({ entry }: MatchHistoryCardProps) {
   const team = getTeam(entry.teamId);
 
   return (
-    <div className="rounded-card border-2 border-ink bg-paper p-4">
+    <div className="rounded-card border-2 border-ink/45 bg-paper p-4">
       <div className="mb-3 flex items-center justify-between">
         <p className="font-heading text-sm font-bold uppercase tracking-wide">
           {entry.matchLabel}
